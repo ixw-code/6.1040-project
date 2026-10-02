@@ -1,2 +1,39 @@
-# 6.1040-project
-Repo for 6.1040 personal project, fall 2026
+# [Application Name TBD]
+
+## Problem Statement
+
+### Domain 
+
+
+#### Stakeholders
+
+
+### Bad Situations 
+
+
+### Corroboration 
+
+
+### Workarounds and comparables 
+
+
+### Solution sketch
+
+
+## Pitch 
+### [Name TBD]
+**Motivation:**
+
+### Key Features
+
+
+## Concept Design 
+TBA
+
+
+## UI Design
+TBA
+
+
+## User Journey
+TBA
