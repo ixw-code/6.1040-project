@@ -29,13 +29,13 @@ The following are potential, slightly exaggerated, made-up scenarios:
     Some comments under the article express agreement with seeing more, unexpected modern hysteria around spoilers. Others also point to the value of spoilers, helping them to avoid wastes of time and read stories stress-free. Other comments corroborate the idea that readers still value a good first-time experience without knowing what happens next. 
 
 ### Workarounds and comparables 
-1.  [Spliki](spliki.com) was a spoiler-free wiki for a long time before shutting down.
+1.  [Spliki](https://spliki.com) was a spoiler-free wiki for a long time before shutting down.
  
-2.  [Without Spoilers](withoutspoilers.com) appears to be a wiki site with a collection of various narrative works where users can input their own reading progress before gaining access to the wiki's entry for that work. Articles appear based on whether your reading progress has reached a certain point, and the site also provides event timelines according to the same rules. Within articles themselves, certain sections also remain unlocked if your progress hasn't reached a certain point. 
+2.  [Without Spoilers](https://withoutspoilers.com) appears to be a wiki site with a collection of various narrative works where users can input their own reading progress before gaining access to the wiki's entry for that work. Articles appear based on whether your reading progress has reached a certain point, and the site also provides event timelines according to the same rules. Within articles themselves, certain sections also remain unlocked if your progress hasn't reached a certain point. 
 
     However, Without Spoilers provides a limited framework for developing a wiki without spoilers. Its rigidity is seen in the way that articles only reveal themselves incrementally based on your chronological reading progress, ignoring the non-chronological nature of relevant sections in any given article. Moreover, the style is uniform across the website, suggesting a lack of open contributor support. 
 
-3.  [Malazan Wiki](https://malazan.fandom.com/wiki/Malazan_Wiki:New_Readers_Zone) is a Fandom wiki contributed to by the Malazan fanbase with a specially curated spoiler-free section for new readers. Moreover, fan-made art, chapter summaries, and the like which comprise many pages of the wiki undergo a vetting process around keeping pages safe. This wiki is a great example of organizational efforts to keep a reading experience spoiler-free and enjoyable for new readers. Unfortunately, it is limited to a single franchise, Malazan, and a similar framework can be adapted for all-purpose use. 
+3.  [Malazan Wiki](https://malazan.fandom.com/wiki/Malazan_Wiki:New_Readers_Zone) is a Fandom wiki contributed to by the Malazan fanbase with a specially curated spoiler-free section for new readers. Moreover, fan-made art, chapter summaries, and the like which comprise many pages of the wiki undergo a vetting process around keeping pages safe. This wiki is a great example of organizational efforts to keep a reading experience spoiler-free and enjoyable for new readers. Unfortunately, this experience is limited to a single franchise, Malazan, and the platform it is built on, Fandom, doesn't offer native spoiler protections. However, a similar framework might be adapted for all-purpose use. 
 
 ### Solution sketch
 I propose a web application similar to the service provided by Fandom for creating wikis that can be openly contributed to. Unlike Fandom, [Insert Name] will be more opinionated, and provides a framework for contributors to produce articles as long as they follow the guidelines for spoiler-free article creation. 
@@ -257,7 +257,25 @@ Wikiplotter combines five core concepts to carry out its main features of organi
 A couple key reactions demonstrate how these independent concepts can interact. When a hub is created, *CollectionGrouping* first registers the hub and its name, necessarily prompting *Checkpointin* to initialize an empty sequence of checkpoints for the hub. When an article is created with *DocumentVersioning*, it must also naturally be grouped using *CollectionGrouping*. Viewing articles and browsing the hub aren't part of filter and search concepts, but rather Wikiplotter's Request/Response mechanism. Requests prompt *CollectionGrouping* and *DocumentVersioning* to verify the existence of the requested content, as well as *ProgressRecording*, *Checkpointing*, and *RequirementTagging* to check the eligibility of the requesting user for the requested content, and finally serves an appropriate Response only containing the eligible requested content.
 
 ## UI Design
-TBA
+### Wikiplotter Home/Landing Page
+<img src="docs/images/wikiplotter_home.jpeg" width="400" alt="Wikiplotter Home">
+Wikiplotter as a platform has its own home/landing page, serving as an entry to creating a more specialized wiki hub.
+
+### Wiki Hub Home Page
+<img src="docs/images/hub_home.jpeg" width="400" alt="Home">
+A wiki hub has their own home/landing page. 
+
+### Wiki Hub Checkpoints Settings
+<img src="docs/images/hub_checkpoints.jpeg" width="400" alt="Checkpoints">
+A wiki hub's checkpoints are managed within a "Settings" page.
+
+### Wiki Hub Progress Recording 
+<img src="docs/images/hub_update_progress.jpeg" width="400" alt="Update Progress">
+Before users are allowed into any wiki hub, they must set their progress for the first time. Users are also redirected here whenever they want to update their progress. 
+
+### Wiki Hub Article Page
+<img src="docs/images/hub_article.jpeg" width="400" alt="Article">
+Articles look like any regular wiki article, and can vary in layout between articles. Behind the scenes, only the non-spoiler contents are displayed to the user. 
 
 
 ## User Journey
