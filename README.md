@@ -258,24 +258,43 @@ A couple key reactions demonstrate how these independent concepts can interact. 
 
 ## UI Design
 ### Wikiplotter Home/Landing Page
-<img src="docs/images/wikiplotter_home.jpeg" width="400" alt="Wikiplotter Home">
-Wikiplotter as a platform has its own home/landing page, serving as an entry to creating a more specialized wiki hub.
+<figure>
+    <img src="docs/images/wikiplotter_home.jpeg" width="400" alt="Wikiplotter Home">
+    <figcaption align="center">Wikiplotter as a platform has its own home/landing page, serving as an entry to creating a more specialized wiki hub.
+    </figcaption>
+</figure>
 
 ### Wiki Hub Home Page
-<img src="docs/images/hub_home.jpeg" width="400" alt="Home">
-A wiki hub has their own home/landing page. 
+<figure>
+    <img src="docs/images/hub_home.jpeg" width="400" alt="Home">
+    <figcaption align="center">
+        A wiki hub has their own home/landing page. 
+    </figcaption>
+</figure>
 
 ### Wiki Hub Checkpoints Settings
-<img src="docs/images/hub_checkpoints.jpeg" width="400" alt="Checkpoints">
-A wiki hub's checkpoints are managed within a "Settings" page.
+<figure>
+    <img src="docs/images/hub_checkpoints.jpeg" width="400" alt="Checkpoints">
+    <figcaption align="center">
+        A wiki hub's checkpoints are managed within a "Settings" page.
+    </figcaption>
+</figure>
 
 ### Wiki Hub Progress Recording 
-<img src="docs/images/hub_update_progress.jpeg" width="400" alt="Update Progress">
-Before users are allowed into any wiki hub, they must set their progress for the first time. Users are also redirected here whenever they want to update their progress. 
+<figure>
+    <img src="docs/images/hub_update_progress.jpeg" width="400" alt="Update Progress">
+    <figcaption align="center">
+        Before users are allowed into any wiki hub, they must set their progress for the first time. Users are also redirected here whenever they want to update their progress. 
+    </figcaption>
+</figure>
 
 ### Wiki Hub Article Page
-<img src="docs/images/hub_article.jpeg" width="400" alt="Article">
-Articles look like any regular wiki article, and can vary in layout between articles. Behind the scenes, only the non-spoiler contents are displayed to the user. 
+<figure>
+    <img src="docs/images/hub_article.jpeg" width="400" alt="Article">
+    <figcaption align="center">
+        Articles look like any regular wiki article, and can vary in layout between articles. Behind the scenes, only the non-spoiler contents are displayed to the user. 
+    </figcaption>
+</figure>
 
 
 ## User Journey
