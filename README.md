@@ -10,13 +10,13 @@ Unfortunately, as a central hub of information, the wiki is also home to "spoile
 ### Bad Situations 
 The following are potential, slightly exaggerated, made-up scenarios:
 
-1. *Art contains spoilers or is spoiler-adjacent.* Alice has recently picked up The Adventures of the Red Dragon. She's only at around chapter 20, and most of the story has revolved around setting the scene and building up a picture of the world and its characters. In particular, Alice has fallen in love with the image of the Red Dragon in her mind and can't hold herself back from searching up official or fan-made art of the Red Dragon to compare with her own mental image. However, the first result in Google Image Search is a beautiful fan-made piece depicting the Red Dragon... holding her dead brother in her arms. A pivotal turning point in the later chapters has now been irreversibly implanted in Alice's mind, and she will carry it with her from chapter 20 onwards. 
+1. *Art contains spoilers or is spoiler-adjacent.* Alice has recently picked up The Adventures of the Red Dragon. She's only at around chapter 20, and most of the story has revolved around setting the scene and building up a picture of the world and its characters. In particular, Alice has fallen in love with the image of the Red Dragon in her mind and can't hold herself back from searching up official or fan-made art of the Red Dragon to compare with her own mental image. However, the first result in Google Image Search is a beautiful fan-made piece depicting the Red Dragon... holding her dead brother in her arms. A pivotal turning point in the later chapters has been irreversibly placed in Alice's mind to carry for the rest of her read. 
 
-2. *Reading a spoiler while referring to the wiki.* Bob has also started reading The Adventures of the Red Dragon. Compared to Alice, Bob is much further along and has managed to steer clear of any spoilers until around chapter 50. However, the world of the dragons is incredibly vast and the author packed it with details. Bob thinks he remembers a particular plot-relevant detail about an item mentioned in earlier chapters and thinks it's worth searching the wiki to confirm it. Unfortunately, even as experienced as he is at browsing wikis, upon finding the relevant sentence in the wiki, he also reads the next sentence unceremoniously explaining exactly how it becomes relevant to the plot with. It was even a bit of a plot twist, but Bob now knows exactly how events will unfold around this item, pouring a bucket of water on his usual speculation. 
+2. *Reading a spoiler while referring to the wiki.* Bob has also started reading The Adventures of the Red Dragon. Compared to Alice, Bob is much further along and has managed to steer clear of any spoilers until around chapter 50. However, the world of the dragons is incredibly vast and the author packed it with details. Bob recalls a particular plot-relevant detail about an item introduced early on and thinks it's worth searching the wiki to confirm it. Unfortunately, even as experienced as he is at browsing wikis, upon finding the relevant sentence in the wiki, he accidentally reads the next sentence spoiling its major upcoming plot relevance. Reading this plot twist, Bob now knows exactly how events will unfold around this item, making his usual speculation far less enjoyable. 
 
-3. *Spoiler-free page has unexpected spoilers.* 
+3. *A spoiler-free page contains unexpected spoilers.* While reading The Adventures of the Red Dragon, Charlie suddenly becomes curious about how two characters are related. He finds a wiki page labeled "Spoiler-free Character Guide" and immediately thinks he's found what he's looking for. Unfortunately, while the character descriptions indeed don't contain any spoilers, a couple of hyperlinks and art on the page leak plot-relevant information on the characters. Charlie has no been exposed to the very information he trusted this page to protect against. 
 
-4. *Spoiler-tagged page still reveals an unintended spoiler. ie no way to track progress* 
+4. *A spoiler warning doesn't account for individual reading progress.* Dana is up to chapter 70 of The Adventures of the Red Dragon and halfway through the chapter, she feels like it's worth revisiting an explanation of how magic works in this world. She finds the relevant wiki article on magic, and it's labeled with a spoiler warning. Having already read through important scenes and thinking she's far enough ahead in the story, she bypasses the spoiler warning to see the full article. While most of the article is familiar, she stumbles upon a major secret about the magic system not revealed until chapter 100, much to her dissatisfaction. Despite there being a spoiler warning, this binary signal simply provided no useful way to determine how appropriate the article's full contents were for Dana's individual reading progress.
 
 
 ### Corroboration 
@@ -58,33 +58,213 @@ Wikiplotter is the wiki creation platform for narrative fiction that protects it
 
 **Progress Tracking**. Before entry into any series hub, users can identify their reading progress by selecting their latest chapter completed. Wikiplotter then remembers that information and uses it to filter out information on every article the user visits. As readers advance through the series, they have the option to update their reading progress as well and previously unavailable relevant information will become revealed to them. This circumvents the need for spoiler warnings, and returns control to the readers. 
 
-**Granular Filtering**. Articles on the wiki can have varying levels of protection, from the article itself down to individual passages or sentences. A reader can browse the basic information on an article for an item that has been introduced early on, while any passages related to its later significance remain hidden to them. If a reader wants to see portraits of a character introduced in Chapter One, they can search for their images without fear of stumbling upon art of a future event. Readers are given safety guarantees, while contributors maintain the references on a single article. Wikiplotter does all the rest.
+**Granular Filtering**. Articles on the wiki can have varying levels of protection, from the article itself down to individual passages or sentences. A reader can browse the basic information on an article for an item that has been introduced early on, while any passages related to its later significance remain hidden to them. If a reader wants to see portraits of a character introduced in Chapter One, they can search for their images without fear of stumbling upon art of a future event. Whether it be paragraphs, headings, titles, images, or captions, readers are given safety guarantees on the content that they are allowed to see. Contributors only need to maintain the references on a single article. Wikiplotter does all the rest.
 
-**Uniquely Yours**. Every wiki hub is different, because every story is different. Contributors take upon the responsibility of managing contribution guidelines, setting standardized checkpoints for the series, and the finer visibility settings for information that would be considered spoilers. Like any other wiki, one created with Wikiplotter is an open contribution project. We provide the framework, you have the freedom to build around it. For contributors, they can focus on morphing the wiki into its ideal form without worrying about how spoilers are handled. For creators, an online space unique to their universe can also be a safe place for the community to document and discuss their favorite series. 
+**Uniquely Yours**. Every wiki hub is different, because every story is different. Like any other wiki, one created with Wikiplotter is an open contribution project. We provide the framework, you have the freedom to build around it. Contributors take upon the responsibility of setting up the hub's introduction page, managing contribution guidelines, and defining the series' checkpoints. For contributors, the benefit is only needing to identify spoilers and assign checkpoints once, and they can trust Wikiplotter to handle the work of protecting readers. For creators, an online space unique to their universe can also be a safe place for the community to document and discuss their favorite series. 
 
 Wikiplotter redefines the wiki into a friendly companion that follows the reader as the story unfolds, useful and welcoming rather than potentially dangerous. 
 
 
-## Concept Design 
-1.  **concept** Authenticating \
-    **purpose** 
+## Concept Specification (MVP)
+1.  **concept** Checkpointing [Scope]  
+    **purpose** define a sequence of reference points which can be interpreted unambiguously under a certain scope.  
+    **principle** after an organizer creates a sequence and appends checkpoints to it, identifying any checkpoint gives a deterministic, ordered prefix of checkpoints until that one.  
+    **state**  
+    a set of Sequences with 
+    - a unique scope Scope 
+    - a checkpoints seq of Checkpoints
+    
+    a set of Checkpoints with 
+    - a label String 
+    
+    *Rule:* a checkpoint can only belong to one sequence.
+    *Rule:* a scope has exactly one sequence.  
 
-1.  **concept** ProgressTracking \
-    **purpose** 
+    **actions**  
+    create(scope: Scope): (sequence: Sequence)  
+    *where* no sequence exists for the scope.   
+    *then*  return an empty sequence belonging to the scope.
 
-1.  **concept** Checkpointing \
-    **purpose** 
+    append(sequence: Sequence, checkpoint: Checkpoint, label: String)  
+    *where* the sequence exists.  
+    *then*  create a checkpoint with the label and append it in order to the sequence.
 
-1.  **concept** \
-    **purpose** 
+    relabel(checkpoint: Checkpoint, newLabel: String)  
+    *where* the checkpoint exists.  
+    *then*  replace its current label with newLabel.
 
-1.  **concept** \
-    **purpose** 
+    **queries**   
+    _sequence(scope: Scope): (sequence: Sequence)  
+    *Return* the scope's sequence, if scope exists. 
 
+    _prefix(sequence: Sequence, checkpoint: Checkpoint): optional (checkpoints: seq of Checkpoints)  
+    *Return* the ordered prefix of checkpoints in the sequence until the supplied checkpoint. *Return* None if there is no such sequence or checkpoint doesn't belong to it.  
+
+
+1.  **concept** ProgressRecording [Scope, User, Checkpoint]  
+    **purpose** let users resume an activity from a remembered checkpoint within a scope.  
+    **principle** after a user records their checkpoint position within a scope, they can retrieve the remembered checkpoint, update it, or clear it.  
+    **state**   
+    a set of Records with 
+    - a unique scope Scope
+    - a unique user User 
+    - a checkpoint Checkpoint
+
+    **actionss**   
+    record(scope: Scope, user: User, checkpoint: Checkpoint)   
+    *then*  create a new Record with scope and user, or update an existing Record if one with both user and scope already exists, using the supplied checkpoint. 
+
+    clear(scope: Scope, user: User)   
+    *where* a Record exists with scope and user.   
+    *then*  delete that Record. 
+    
+    **queries**   
+    _checkpoint(scope: Scope, user: User): (checkpoint: Checkpoint)   
+    *Return* the recorded checkpoint if a Record with both scope and user exists, otherwise *Return* None.  
+
+
+1.  **concept** DocumentVersioning [Scope]  
+    **purpose** maintain distinct documents while preserving old version histories when updates are made.  
+    **principle** after an author creates a document and saves an ordered collection of content blocks to it as a version, old versions are still retrievable when the document is updated to new a version.  
+    **state**  
+    *BlockType is TITLE or TEXT or IMAGE*
+
+    a set of Documents with 
+    - a name String
+    - a unique scope Scope 
+    - a versions seq of Versions 
+
+    a set of Versions with 
+    - a unique id String
+    - a blocks seq of Blocks 
+
+    a set of Blocks with 
+    - a type BlockType
+    - a body Content
+
+    **actions**  
+    create(scope: Scope, name: String): (document: Document)  
+    **then** create and return an empty document with the supplied name and scope. 
+
+    update(scope: Scope, document: Document, content: seq of (type, body) values):  
+    *where* document exists within the scope, content is all of valid type, and content contains exactly one title.  
+    *then*  create a version with the supplied content in order, and append it to document's sequence of versions. 
+
+    **queries**  
+    _latest(scope: Scope, document: Document): optional (version: Version)  
+    *Return* the latest updated version of the document, or None if there are no versions. 
+
+    _version(scope: Scope, document: Document, id: String): optional (version: Version)  
+    *Return* the version of the document with id, or None if it doesn't exist. 
+
+    _contentBlocks(version: Version): optional (set of blocks: Block)   
+    *Return* the set of blocks in order in the version, or None if version doesn't exist.  
+
+    _content(block: Block): optional (content: Content)  
+    *Return* the content in the body of the block, or None if block doesn't exist.
+
+
+1.  **concept** RequirementTagging [Item, Token]  
+    **purpose** associate items with requirements for eligibility, preventing uneligible access to an item if requirements aren't met.  
+    **principle** after an organizer tags an item with requirements, supplied tokens are checked against the requirements, and eligibility only succeeds when all requirements are met.  
+    **state**  
+    a set of Rules with 
+    - an item Item
+    - a required set of Tokens 
+    
+    *Rule*: every item belongs to exactly one Rule.  
+
+    **actions**  
+    tag(item: Item, required: set of Tokens)  
+    *then* create a new Rule for item with the required set of tokens, or if a Rule for item already exists then replace its set of tokens with the supplied required set.
+
+    untag(item: Item)  
+    *where* a Rule exists for item.  
+    *then*  delete that Rule.
+
+    **queries**  
+    _eligible(item: Item, tokens: set of Tokens): (eligibility: Flag)   
+    *Return* True if every token in the required set belongs in the supplied set of tokens (vacuously true if no such Rule exists), otherwise return False.
+
+
+1.  **concept** CollectionGrouping [Item]  
+    **purpose** allow items to be found easier by organizing them into named groups.  
+    **principle** after someone creates a collection and adds items to it, those items can be easily found together.  
+    **state**  
+    a set of Groupings with
+    - a collection Collection
+    - an items set of Items
+    
+    a set of Collections with 
+    - a unique label String 
+    
+    **actions**  
+    create(label: String): (collection: Collection)  
+    *then* create and return an empty Collection with the supplied label. 
+
+    relabel(collection: Collection, newLabel: String)  
+    *where* collection exists.
+    *then*  replace collection's label with the new label. 
+
+    remove(collection: Collection, item: Item)
+    *where* collection exists and a Grouping for collection with item exists.  
+    *then*  remove item from that Grouping. 
+
+    assign(collection: Collection, item: Item)  
+    *where* collection exists.  
+    *then*  if a Grouping exists for collection, add item to the Grouping. Otherwise, create a new Grouping for collection and add item. 
+
+    **queries**  
+    _items(collection: Collection): optional (items: set of Items)  
+    *Return* the set of items grouped with collection, or None if no grouping exists.
+
+    _group(item: Item): optional (collection: Collection)  
+    *Return* the collection which the item is grouped with, or None if no grouping exists.
+
+### Reactions 
+1.  **Establishing a hub**  
+    *When*  CollectionGrouping.create (name) : (hub)  
+    *Where* Checkpointing: no sequence exists for hub  
+    *Then*  Checkpointing.create (hub) : (checkpoints)
+
+1.  **Grouping articles**
+    *When*  DocumentVersioning.create (hub, name) : (article)  
+    *Where* CollectionGrouping: hub exists  
+    *Then*  CollectionGrouping.assign (hub, article)  
+
+1.  **Viewing articles**  
+    *When*  Requesting.request ( viewArticle, hub, user, article )  
+    *Where* - CollectionGrouping: article belongs to hub  AND  
+            - DocumentVersioning: document is scoped to hub  AND  
+            - ProgressRecording.checkpoint (user) : (checkpoint) exists AND  
+            - Checkpointing: checkpoint exists for hub  AND  
+            - RequirementTagging.eligible (block, checkpoint) succeeds for all blocks in eligibleBlocks
+    *Then*  Requesting.respond ( eligibleBlocks )
+
+1.  **Browsing a hub**  
+    *When*  Requesting.request ( browseHub, hub, user, query )  
+    *Where* - CollectionGrouping.items (hub) : ( contents ) exists  AND  
+            - ProgressRecording.checkpoint (user) : (checkpoint) exists  AND  
+            - Checkpointing: checkpoint exists for hub  AND  
+            - RequirementTagging.eligible (content, checkpoint) succeeds for some eligible subset of contents  
+    *Then*  Requesting.respond ( eligibleContents )
+
+### Integration (MVP)
+Wikiplotter combines five core concepts to carry out its main features of organizing articles within a community wiki hub and disclose the information on each article according to reading progress. 
+
+**CollectionGrouping** represents how articles and other contents are grouped by wiki; the parameter Collection refers to a wiki hub and Item is a generic type that can be any type of content. **DocumentVersioning** describes how wiki articles can be contributed to over time; the overall document structure is a sequence of content blocks, and any edits to a document become the latest version in a sequence of versions. **ProgressRecording** enables users to define their reading progress via checkpoints from the **Checkpointing** concept; User is a generic parameter for identifying any reader, such as a browser session. The Scope parameter used in *Checkpointing*, *ProgressRecording*, and *DocumentVersioning* is defined to be the wiki hub itself, helping to scope checkpoints and articles unique to a series. **RequirementTagging** ties the core functionality together by introducing a way to tag any content on the site with a checkpoint completion requirement before it is eligible for viewing; it accepts content as the generic Item and Checkpointing checkpoints as Tokens to compare against rules. 
+
+A couple key reactions demonstrate how these independent concepts can interact. When a hub is created, *CollectionGrouping* first registers the hub and its name, necessarily prompting *Checkpointin* to initialize an empty sequence of checkpoints for the hub. When an article is created with *DocumentVersioning*, it must also naturally be grouped using *CollectionGrouping*. Viewing articles and browsing the hub aren't part of filter and search concepts, but rather Wikiplotter's Request/Response mechanism. Requests prompt *CollectionGrouping* and *DocumentVersioning* to verify the existence of the requested content, as well as *ProgressRecording*, *Checkpointing*, and *RequirementTagging* to check the eligibility of the requesting user for the requested content, and finally serves an appropriate Response only containing the eligible requested content.
 
 ## UI Design
 TBA
 
 
 ## User Journey
-TBA
+Bob is an avid narrative fiction enjoyer, having just finished reading chapter 50 of *The Adventures of the Red Dragon.* The last chapter had a reference to an artifact that he recalls reading about in an earlier chapter, but he can't quite remember the details surrounding its introduction. He wants to jog his memory a little bit, so he considers consulting a wiki. However, unsure of whether an ordinary wiki will lead to spoilers about this potentially important artifact, he decides to consult the relevant page on **Wikiplotter** instead.
+
+It's his first time browsing the *The Adventures of the Red Dragon* wiki hub on Wikiplotter, so it prompts him to enter his current reading progress before entering; Chapter 50, selected and done. Wikiplotter will remember his progress and apply it throughout his hub visit for his browser session. Bob uses the navigation tools on the hub's landing page in order to find the article he's looking for. Wikiplotter won't display any articles or their titles which are not appropriate for Bob's level of progress, allowing safe navigation from the moment he starts browsing. 
+
+Bob finds the link to the article he's looking for by name and clicks on it. Within the article view, the artifact's description and a quote from its introduction are immediately visible. An official illustration of the staff as originally described is also in view. Passages and images containing information only introduced starting past chapter 50 have been properly ommitted in their entirety, without the need for spoiler warnings or placeholder content, as the page is designed to not even allow Bob the option to view the spoiler information. Bob is content with what he finds, and can happily return to reading. 
+
+Over the next few days, Bob continues reading up to chapter 70, finding out new details about the artifact. He returns to Wikiplotter and opens the settings menu where he can update his progress tracker to chapter 70. The wiki hub refreshes and a couple of new articles are now available to him. When he navigates back to the artifact's article from the other day, he can now view passages related to the artifact in the chapter he just finished reading. Details past chapter 70 remain hidden, just like before. As Bob continues to progress throughout the book, this Wikiplotter page will continue to progress with him, serving as a useful and trustworthy reference throughout.
