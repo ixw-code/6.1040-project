@@ -15,6 +15,7 @@
       "@/*": [ "./src/*" ],
       "@design/*": [ "./design/*" ],
       "@generated/*": [ "./generated/*" ],
+      "@frontend/*": [ "./frontend/src/*" ],
       "@tests/*": [ "./tests/*" ]
     },
     "moduleResolution": "bundler",
@@ -34,6 +35,6 @@
     "./*.ts",
     "src/**/*.ts",
     "tests/**/*.ts",
-    "scripts/**/*.ts"
+    "scripts/**/*.ts",
   ]
 }

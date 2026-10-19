@@ -3,7 +3,11 @@
   "compilerOptions": {
     "paths": {
       "@/*": [
-        "./src/*"
+        "./src/*",
+        "../src/*"
+      ],
+      "@generated/*": [
+        "../generated/*"
       ]
     },
     "types": [

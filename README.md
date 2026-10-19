@@ -4,7 +4,7 @@ Wikiplotter is a spoiler-aware wiki for narrative fiction. Each series has a hub
 
 **A reader's journey:** Bob finishes chapter 50 and visits the series hub to look up an artifact mentioned earlier in the series. As this is his first time visiting, before he is allowed to view any pages, he is prompted to select his latest completed chapter. The site refreshes and he can now browse all the articles and content available up to that point in the story. Whether browsing or reading an article, any later revelations remain hidden, including any revealing article titles or passages. When Bob reaches chapter 70, he can update his progress at the click of a button and the site will refresh with newly available information up until that point. There's no stress involved with navigating vague spoiler warnings.
 
-The project is being built incrementally with TypeScript, Bun, sync-engine **1.1.0**, and MongoDB. The features above describe the target application. The instructions below start with the bare sync-engine scaffold; an untouched scaffold has no wiki endpoints or browser UI.
+The project is being built incrementally with TypeScript, Bun, sync-engine **1.1.0**, and MongoDB. The features above describe the target application; the current Alpha frontend supports hub discovery and management, reader progress, and spoiler-filtered reading.
 
 ## Alpha scope
 
@@ -45,7 +45,7 @@ For reading, the backend retrieves saved progress and collects the inclusive che
 
 The reader assembly includes HubManagement, ReaderProgress, and Reading. The local setup assembly also provides ContentManagement so the fixture script and local gateway can install documents and requirement tags. Both use the same persistent application data. `generated/setup/` is pinned from the full setup assembly for complete design and source checks; `generated/reader/` is pinned from the reader assembly for the HTTP route set.
 
-A gateway invokes the assembled endpoints. The backend serves the reader assembly through the sync-engine HTTP adapter under `/api`; ContentManagement has no HTTP route. Vite proxies `/api` to the backend during development. The Vue reader interface remains future work. Calling an API endpoint will not navigate the browser to that endpoint.
+A gateway invokes the assembled endpoints. The backend serves the reader assembly through the sync-engine HTTP adapter under `/api`; ContentManagement has no HTTP route. Vite proxies `/api` to the backend during development. The Vue frontend uses the generated reader HTTP client and hash navigation, with a dummy reader ID in browser storage. Calling an API endpoint will not navigate the browser to that endpoint.
 
 ## Getting Started
 

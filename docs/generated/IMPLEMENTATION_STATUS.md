@@ -1,6 +1,6 @@
-# Implementation status — through Milestone 7
+# Implementation status — through Milestone 8
 
-Milestone 4A HubManagement, Milestone 4B ContentManagement, and Milestone 6A/6B ReaderProgress and Reading are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through the setup gateway. The reader assembly now serves HubManagement, ReaderProgress, and Reading through HTTP under `/api`; ContentManagement remains local-only. The Vue reader flow remains for a later milestone.
+Milestone 4A HubManagement, Milestone 4B ContentManagement, and Milestone 6A/6B ReaderProgress and Reading are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through the setup gateway. The reader assembly serves HubManagement, ReaderProgress, and Reading through HTTP under `/api`; ContentManagement remains local-only. Milestone 8 adds the minimal Vue reader and hub-management interface.
 
 ContentManagement creates a required, scope-unique document title plus ordered TEXT and IMAGE blocks. It checks hub existence before creation; checks document or block ownership before tagging and untagging; and validates every requirement token against the hub's checkpoint sequence. Tagging replaces the full rule. An explicit empty rule permits eligibility without checkpoint requirements; removing a rule makes the item ineligible. NotStarted is a valid checkpoint token.
 
@@ -229,3 +229,35 @@ The HTTP adapter derives routes from the reader assembly, so ContentManagement r
 - Publish HubManagement, ReaderProgress, and Reading through the sync-engine adapter under `/api`.
 - Keep ContentManagement local-only with a reader-specific generated wire.
 - Verify HTTP responses, refusals, and Vite proxy behavior against MongoDB.
+
+## Milestone 8 — minimal Alpha frontend
+
+The Vue site now has a hub directory, hub and document views, and a hub settings view, arranged around the sketches' header, hub rail, content area, and progress panel. It uses only the generated reader HTTP client. Missing progress prompts for a selection; NotStarted is a normal selectable checkpoint. The backend remains the sole spoiler filter, and the client renders only returned titles and TEXT/IMAGE blocks.
+
+| File | Change |
+| --- | --- |
+| `frontend/src/App.vue`, `frontend/src/style.css` | Add hash navigation, hub creation/management, progress controls, eligible document browsing and reading, loading/empty/error states, and restrained sketch-inspired styling. Invalidate pending reads and clear visible content on navigation and mutations. |
+| `frontend/src/api.ts`, `frontend/tsconfig.json` | Call reader endpoints through the generated typed HTTP client at `/api`; resolve both frontend and generated-wire type aliases. |
+| `frontend/src/reader.ts`, `frontend/src/main.ts` | Persist a random dummy reader identity in browser storage and mount the Vue application. |
+| `frontend/src/vue.d.ts` | Declare Vue single-file modules so plain TypeScript and editor tooling resolve the `App.vue` import. |
+| `tests/frontend/ReaderIdentity.test.ts`, `tsconfig.json` | Verify reader identity reuse across app loads and add the frontend test alias. |
+| `README.md`, this file | Describe the implemented interface and verification. |
+
+Hash links provide direct navigation and browser history without another dependency. Request generations prevent an earlier hub, document, or checkpoint response from restoring stale visible content. The management UI uses existing unauthenticated HubManagement operations; document setup remains local-only.
+
+### Verification
+
+- `bun run check`: passed design, framework, artifact, backend/frontend type, frontend build, and **48 tests** (0 failed). Framework checks retain 21 setup and 17 reader nonfatal advisories. Vite emitted nonfatal Node built-in externalization warnings while bundling the framework client.
+- Focused reader-identity test: **1 passed**, confirming the same browser storage returns the same reader ID across app loads.
+- Live Vite `/api` smoke with a temporary reader: missing progress returned null; recording the latest checkpoint exposed 3 documents and allowed a read; recording NotStarted reduced the list to 2; clearing restored null. The temporary progress record was cleared. An invalid hub creation returned `INVALID_REQUEST`; Vite served `/` and the Vue component with HTTP 200.
+- Existing HTTP integration tests cover hub/checkpoint mutations and refusal responses. No automated browser rendering test was available; the UI flow was checked through its generated client and live proxy.
+- `git diff --check`: passed.
+- Follow-up declaration check: plain `tsc -p frontend/tsconfig.json --noEmit` initially reported TS2307 for `@/App.vue`; it and `bun run typecheck:frontend` both passed after adding `frontend/src/vue.d.ts`.
+
+### Suggested commit message
+
+`feat(alpha): add minimal Vue reader interface`
+
+- Build hub directory, progress, document, and hub settings views against the reader HTTP API.
+- Clear stale content during navigation and progress changes; persist a dummy reader identity.
+- Verify the generated client journey through Vite and the complete project checks.
