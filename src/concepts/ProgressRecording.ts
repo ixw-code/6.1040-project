@@ -12,7 +12,7 @@ export class ProgressRecordingConcept {
 
   async record({ scope, reader, checkpoint }: {
     scope: string; reader: string; checkpoint: string;
-  }): Promise<void> {
+  }): Promise<Record<string, never>> {
     try {
       await this.progress.updateOne(
         { scope, reader },
@@ -25,6 +25,7 @@ export class ProgressRecordingConcept {
       const result = await this.progress.updateOne({ scope, reader }, { $set: { checkpoint } });
       if (!result.matchedCount) throw error;
     }
+    return {};
   }
 
   async clear({ scope, reader }: { scope: string; reader: string }): Promise<{ cleared: boolean }> {

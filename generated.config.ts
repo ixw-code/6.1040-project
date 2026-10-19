@@ -3,7 +3,7 @@ import { assembleSetupWikiplotter } from "@/assembly.ts";
 export default {
     assemble: assembleSetupWikiplotter,
     title: "Wikiplotter",
-    directory: new URL("./generated/reader/", import.meta.url),
+    directory: new URL("./generated/setup/", import.meta.url),
 
     design: {
         version: 1,

@@ -17,7 +17,7 @@ function assembleWith(db: Db | undefined, setup: boolean) {
     instances: createMongoConceptInstances(handle),
     composition: setup
       ? { HubManagement: hubManagement, ContentManagement: contentManagement, ReaderProgress: readerProgress, Reading: reading }
-      : { HubManagement: hubManagement, ReaderProgress: readerProgress, Reading: reading },
+      : { ReaderProgress: readerProgress, Reading: reading },
   });
 }
 

@@ -31,9 +31,9 @@ The concepts do not call one another. Composition connects them into application
 | Composition | Workflow |
 | --- | --- |
 | HubManagement | Create a hub and its initial checkpoint sequence; rename hubs, list sequences, append checkpoints, and relabel them. |
-| ContentManagement | Create fixture documents, tag or untag documents and blocks, and check the installed catalog. |
+| ContentManagement | Create fixture documents and tag or untag documents and blocks. |
 | ReaderProgress | Retrieve, validate and record, or clear a reader's checkpoint selection. |
-| Reading | List hubs and checkpoints, browse eligible article titles, and return eligible content blocks. |
+| Reading | List hubs, browse eligible article titles, and return eligible content blocks. |
 
 Each composition module groups endpoint declarations and any supporting reactions, views, or formers. An endpoint may invoke one concept operation or coordinate several. Cross-concept checks, such as requiring tagged checkpoints to belong to the document's hub, live here.
 
@@ -43,23 +43,50 @@ For reading, the backend retrieves saved progress and collects the inclusive che
 
 `src/assembly.ts` selects the concept implementations and composition modules that form the application.
 
-The reader assembly includes HubManagement, ReaderProgress, and Reading. The local setup assembly also provides ContentManagement so the fixture script can install documents and requirement tags. Both use the same persistent application data.
+The reader assembly includes ReaderProgress and Reading. The local setup assembly also provides HubManagement and ContentManagement so the fixture script and local gateway can install hubs, checkpoints, documents, and requirement tags. Both use the same persistent application data. `generated/setup/` is pinned from the setup assembly for complete design and source checks; a reader-only client should be generated when the HTTP reader host is implemented.
 
-A gateway invokes the assembled endpoints. The backend host exposes reader endpoints through the sync-engine HTTP adapter; Vue calls them in the background and renders the results. Calling an API endpoint does not navigate the browser to that endpoint.
+A gateway invokes the assembled endpoints. The HTTP reader host and Vue client remain future work; the host should use the reader assembly through the sync-engine HTTP adapter. Calling an API endpoint will not navigate the browser to that endpoint.
 
-## Setup and checks
+## Getting Started
 
-Install Bun 1.x and start a local MongoDB instance.
+### Installation
+
+Install [Bun 1.x](https://bun.sh) and ensure MongoDB is available locally.
 
 ```sh
 bun install
+bun run db:up
 ```
 
-Copy `.env.example` to `.env`, `.env.test.example` to `.env.test.local`, and `.env.production.example` to `.env.production.local`. Set the same MongoDB username, password, and port in all three ignored files and their `MONGODB_URL` values. The database names are fixed by profile: `wikiplotter_dev` for development, `wikiplotter_test_*` for tests, and `wikiplotter` for production. `src/db.ts` rejects a database name that does not match `WIKIPLOTTER_ENV` before connecting or creating indexes.
+### Environment Setup
 
-Run `bun run db:up` to initialize the shared local MongoDB server from `.env`; `bun run dev` uses `.env`, `bun run test` uses `.env.test.local`, and `bun run start` uses `.env.production.local`. Each test creates and drops a disposable `wikiplotter_test_<id>` database. Compose's host bind and port come from `MONGO_BIND_HOST` and `MONGO_PORT`; backend and Vite ports come from each profile's `HOST`/`PORT` and `FRONTEND_HOST`/`FRONTEND_PORT`. MongoDB applies credentials when its volume is first initialized, so changing env files alone does not rotate an existing user. Populate the demo through the local fixture workflow before serving reader content.
+Create the environment files from their templates:
 
-The backend scaffold commands are:
+```sh
+cp .env.example .env
+cp .env.test.example .env.test.local
+cp .env.production.example .env.production.local
+```
+
+Configure matching MongoDB credentials and ports across all three files. Each environment uses a separate database:
+
+| Environment | Database | Configuration |
+|---|---|---|
+| Development | `wikiplotter_dev` | `.env` |
+| Testing | `wikiplotter_test_*` | `.env.test.local` |
+| Production | `wikiplotter` | `.env.production.local` |
+
+Database names are validated against `WIKIPLOTTER_ENV` to prevent cross-environment access.
+
+### Running the Application
+
+**Development** (backend and frontend):
+
+```sh
+bun run dev
+```
+
+**Production:**
 
 ```sh
 bun run generate
@@ -67,9 +94,15 @@ bun run check
 bun run start
 ```
 
-`package.json` defines the available startup scripts; the fixture and Vue startup commands are added with their implementations.
+Populate demonstration content using the local fixture workflow before serving reader content.
 
-Run behavior tests with `bun run test`. Concept tests cover individual actions and queries. Composition tests cover complete workflows and rejected cross-hub references. Persistence tests verify that MongoDB data survives reconnecting.
+### Testing & Notes
+
+- Run tests with `bun run test` and project checks with `bun run check`.
+- Tests use isolated, disposable MongoDB databases.
+- Concept, composition, and persistence tests verify individual operations, workflows, and database durability.
+- MongoDB credentials are initialized when the database volume is first created; changing environment files does not update existing credentials.
+- See `package.json` for additional commands and configuration.
 
 ## Project layout
 
@@ -77,10 +110,10 @@ Run behavior tests with `bun run test`. Concept tests cover individual actions a
 | --- | --- |
 | `docs/decisions/` | Architectural decisions and rationale between iterations. |
 | `design/concepts/` | Independent concept specifications. |
-| `design/composition/` | Application workflows and endpoint contracts. |
+| `design/compositions/` | Application workflows and endpoint contracts. |
 | `design/types.md` | Concept instances and application type bindings. |
 | `src/concepts/`, `src/concepts.ts` | Concept implementations, registrations, and the application concept set. |
-| `src/composition/` | Executable composition declarations. |
+| `src/compositions/` | Executable composition declarations. |
 | `src/assembly.ts` | Reader and local setup assembly construction. |
 | `src/main.ts`, `src/db.ts` | Backend startup and MongoDB connection. |
 | `frontend/` | Vue application. |

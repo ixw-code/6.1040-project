@@ -7,7 +7,7 @@ describe('ProgressRecording', () => {
   test('distinguishes missing progress from an actual selected first checkpoint', async () => {
     const c = new ProgressRecordingConcept(mongo.db());
     expect(await c._checkpoint({ scope: 'hub1', reader: 'reader1' })).toEqual([]);
-    expect(await c.record({ scope: 'hub1', reader: 'reader1', checkpoint: 'first' })).toBeUndefined();
+    expect(await c.record({ scope: 'hub1', reader: 'reader1', checkpoint: 'first' })).toEqual({});
     expect(await c._checkpoint({ scope: 'hub1', reader: 'reader1' })).toEqual([{ checkpoint: 'first' }]);
   });
 

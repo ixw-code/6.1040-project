@@ -4,7 +4,7 @@ Readers can browse through catalogued hubs, record their reading progress based 
 
 The bindings support the following design choices:
 
-- Readers and contributors are wiki users. 
+- Readers use application-defined dummy identities.
 - Every document belongs to a hub.
 - Checkpoints are organized within hubs.
 - Reader's progress is recorded separately per hub. 
@@ -20,12 +20,8 @@ concrete Reader
     An application-defined dummy reader identity retained by the browser.
     It identifies progress records and does not assert authentication.
 
-concrete Contributor 
-    An authenticated user, not disjoint with set of Readers,
-    Not yet implemented.
-
 concrete ContentItem
-    A document or block identity owned by Documenting, supplied by a contributor.
+    A document or block identity owned by Documenting and used for requirement rules.
     Document and block identities occupy disjoint namespaces.
 ```
 

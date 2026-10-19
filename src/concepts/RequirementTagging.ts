@@ -12,18 +12,20 @@ export class RequirementTaggingConcept {
     this.rules = db.collection<Rule>('requirements');
   }
 
-  async tag({ item, required }: { item: string; required: string[] }): Promise<void> {
+  async tag({ item, required }: { item: string; required: string[] }): Promise<Record<string, never>> {
     const sorted = [...new Set(required)].sort();
     await this.rules.updateOne(
       { _id: item },
       { $set: { required: sorted } },
       { upsert: true },
     );
+    return {};
   }
 
-  async untag({ item }: { item: string }): Promise<void> {
+  async untag({ item }: { item: string }): Promise<Record<string, never>> {
     const result = await this.rules.deleteOne({ _id: item });
     if (!result.deletedCount) throw new RequirementRuleNotFound();
+    return {};
   }
 
   async _rule({ item }: { item: string }): Promise<{ required: string[] }[]> {

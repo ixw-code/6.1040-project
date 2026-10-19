@@ -9,9 +9,11 @@ describe('ContentManagement local gateway', () => {
   const mongo = useMongoTestDb();
 
   test('keeps setup routes out of the reader assembly', () => {
-    const routes = Object.keys(assembleWikiplotter(mongo.db()).publicInterface.routes);
-    expect(routes).toContain('/hubs/create');
-    expect(routes.some((route) => route.startsWith('/setup/'))).toBe(false);
+    const routes = Object.keys(assembleWikiplotter(mongo.db()).publicInterface.routes).sort();
+    expect(routes).toEqual([
+      '/content/documents/read', '/hubs/browse', '/hubs/list',
+      '/progress/clear', '/progress/get', '/progress/record',
+    ]);
   });
 
   async function createHub(gateway: ReturnType<typeof createApplication>['gateway'], name: string) {

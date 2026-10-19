@@ -1,6 +1,6 @@
 # Implementation status — through Milestone 6B
 
-Milestone 4A HubManagement, Milestone 4B ContentManagement, and Milestone 6A/6B ReaderProgress and Reading are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through the setup gateway. ContentManagement is selected only by the local setup assembly; the reader assembly has no `/setup/*` routes. HTTP serving and the Vue reader flow remain for later milestones.
+Milestone 4A HubManagement, Milestone 4B ContentManagement, and Milestone 6A/6B ReaderProgress and Reading are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through the setup gateway. HubManagement and ContentManagement are selected only by the local setup assembly; the reader assembly contains ReaderProgress and Reading. HTTP serving and the Vue reader flow remain for later milestones.
 
 ContentManagement creates a required, scope-unique document title plus ordered TEXT and IMAGE blocks. It checks hub existence before creation; checks document or block ownership before tagging and untagging; and validates every requirement token against the hub's checkpoint sequence. Tagging replaces the full rule. An explicit empty rule permits eligibility without checkpoint requirements; removing a rule makes the item ineligible. NotStarted is a valid checkpoint token.
 
@@ -169,3 +169,32 @@ The `_prefix` query remains unchanged. `_prefixTokens` is the smallest contract 
 - Derive scoped inclusive checkpoint tokens from saved reader progress.
 - Filter document titles and ordered text/image blocks by explicit requirement rules.
 - Verify hidden metadata stays out of gateway responses across progress changes.
+
+## Architecture check after Contributor removal
+
+With the unused `Contributor` type removed from `design/types.md`, `bun run check` reached source agreement and found three `returns ()` actions implemented with `Promise<void>`. ProgressRecording.record and RequirementTagging.tag/untag now return `{}` after successful writes, matching the framework's empty object result shape without changing their state transitions or authored contracts. The generated setup wire was pinned from the complete local setup assembly, and the reader assembly now selects only ReaderProgress and Reading so setup mutations cannot enter its route set.
+
+| File | Change |
+| --- | --- |
+| `design/types.md` | Preserve the removal of Contributor and align the remaining descriptions with Alpha's dummy readers and concept-owned content items. |
+| `src/concepts/ProgressRecording.ts`, `src/concepts/RequirementTagging.ts` | Return empty objects for successful actions declared `returns ()`. |
+| `tests/concepts/ProgressRecording.test.ts` | Assert the framework-compatible empty action result. |
+| `src/assembly.ts`, `tests/compositions/ContentManagement.test.ts` | Exclude HubManagement from the reader assembly and verify setup mutations are absent. |
+| `generated.config.ts`, `generated/setup/wikiplotter.md`, `generated/setup/wire.ts` | Pin complete setup artifacts under a matching name through `bun run generate`; generated files were not hand-edited. |
+| `README.md`, `docs/generated/IMPLEMENTATION_STATUS.md` | Explain the reader/setup boundary, artifact role, changes, and verification. |
+
+The existing `tsconfig.json` addition of root TypeScript files was present before this repair and was preserved. The setup wire includes setup routes intentionally for complete design checking; it is not the future reader HTTP client. The current framework check emits 21 nonfatal advisories: 14 endpoint fallback warnings and seven order-sensitive former notices. Existing gateway tests cover the supported success and rejection paths and ordering cases, but they do not prove every possible concurrent or corrupted-state path.
+
+### Verification
+
+- `bun run check`: passed design, framework source agreement and diagnostics, pinned artifacts, backend/frontend types, frontend build, and **44 MongoDB-backed tests**.
+- `sync-engine check --show-advisories`: 21 nonfatal advisories as categorized above.
+- `git diff --check`: passed.
+
+### Suggested commit message
+
+`fix(alpha): align concept results and isolate reader assembly`
+
+- Return framework-compatible empty results for no-output concept actions.
+- Keep setup mutations out of the reader assembly and pin setup artifacts.
+- Document the full check result and remaining nonfatal advisories.
