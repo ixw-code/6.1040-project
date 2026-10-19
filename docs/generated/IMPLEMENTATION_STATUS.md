@@ -1,6 +1,6 @@
-# Implementation status — through Milestone 6A
+# Implementation status — through Milestone 6B
 
-Milestone 4A HubManagement, Milestone 4B ContentManagement, and Milestone 6A ReaderProgress are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through the setup gateway. ContentManagement is selected only by the local setup assembly; the reader assembly has no `/setup/*` routes. Reading, HTTP serving, and the Vue reader flow remain for later milestones.
+Milestone 4A HubManagement, Milestone 4B ContentManagement, and Milestone 6A/6B ReaderProgress and Reading are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through the setup gateway. ContentManagement is selected only by the local setup assembly; the reader assembly has no `/setup/*` routes. HTTP serving and the Vue reader flow remain for later milestones.
 
 ContentManagement creates a required, scope-unique document title plus ordered TEXT and IMAGE blocks. It checks hub existence before creation; checks document or block ownership before tagging and untagging; and validates every requirement token against the hub's checkpoint sequence. Tagging replaces the full rule. An explicit empty rule permits eligibility without checkpoint requirements; removing a rule makes the item ineligible. NotStarted is a valid checkpoint token.
 
@@ -139,3 +139,33 @@ The nullable result uses a small many-row view around ProgressRecording._checkpo
 - Validate hub and scoped checkpoint selection before recording reader progress.
 - Preserve missing versus NotStarted progress, backward movement, isolation, and idempotent clearing.
 - Add focused MongoDB-backed gateway tests and register progress in local assemblies.
+
+## Milestone 6B — spoiler-filtered reading
+
+Reading lists hubs, browses eligible titles, and returns only eligible document blocks through local gateways. It derives tokens from the reader's saved checkpoint and the hub's inclusive Checkpointing prefix. Missing progress returns `PROGRESS_NOT_SET`; an explicit NotStarted selection supplies its token. Unknown hubs return `HUB_NOT_FOUND`, and unavailable documents return `{ content: null }`. Missing rules hide items; explicit empty rules allow them. Restricted titles and block IDs, bodies, image URLs, alt text, and other block metadata are absent from responses.
+
+| File | Change |
+| --- | --- |
+| `src/compositions/Reading.ts` | Add hub list, browse, and read workflows with scoped progress, document, and block eligibility views and response formers. |
+| `src/assembly.ts` | Select Reading in both local assemblies without adding an HTTP host. |
+| `src/concepts/Checkpointing.ts` | Add `_prefixTokens`, a read-only one-row form of the existing inclusive prefix for query bindings. |
+| `design/concepts/Checkpointing.md`, `design/compositions/Reading.md`, `docs/decisions/ALPHA.md` | Specify the token-array query, missing-progress response, and actual Reading data flow. |
+| `tests/compositions/Reading.test.ts` | Exercise local gateway filtering, hidden-data absence, backward progress, image-only content, and scope isolation. |
+| `tests/concepts/Checkpointing.test.ts` | Verify ordered inclusive token arrays and invalid-reference behavior. |
+| `docs/generated/IMPLEMENTATION_STATUS.md` | Record the increment, decisions, and verification. |
+
+The `_prefix` query remains unchanged. `_prefixTokens` is the smallest contract addition needed to supply RequirementTagging._eligible with a token array: framework formers construct response values and cannot feed their output back into a query-bound view. Reading uses no database writes or peer concept calls.
+
+### Verification
+
+- Focused Reading gateway tests: **3 passed, 0 failed**. Full MongoDB-backed suite: **44 passed, 0 failed**.
+- Backend/frontend type checks, design form check for 10 files, and `git diff --check`: passed.
+- Framework and artifact checks each report **one preexisting issue**, the unused `Contributor` type. The baseline before Reading had 17 issues, including unresolved Reading declarations; no Reading issue remains.
+
+### Suggested commit message
+
+`feat(alpha): implement spoiler-filtered Reading workflows`
+
+- Derive scoped inclusive checkpoint tokens from saved reader progress.
+- Filter document titles and ordered text/image blocks by explicit requirement rules.
+- Verify hidden metadata stays out of gateway responses across progress changes.

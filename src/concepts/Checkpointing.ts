@@ -99,6 +99,13 @@ export class CheckpointingConcept {
     return i === -1 ? [] : [start, ...seq.checkpoints.slice(0, i + 1).map(({ checkpoint }) => ({ checkpoint }))];
   }
 
+  async _prefixTokens({ scope, sequence, checkpoint }: {
+    scope: string; sequence: string; checkpoint: string;
+  }): Promise<{ tokens: string[] }[]> {
+    const prefix = await this._prefix({ scope, sequence, checkpoint });
+    return prefix.length ? [{ tokens: prefix.map((row) => row.checkpoint) }] : [];
+  }
+
   async _contains({ scope, sequence, tokens }: {
     scope: string; sequence: string; tokens: string[];
   }): Promise<{ valid: boolean }> {

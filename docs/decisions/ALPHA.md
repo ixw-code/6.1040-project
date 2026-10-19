@@ -111,6 +111,7 @@ Composition validates hub and checkpoint existence before recording. Missing pro
 - _sequences(scope): many (sequence)
 - _checkpoints(scope, sequence): many (checkpoint, label, position) 
 - _prefix(scope, sequence, checkpoint): optional (completed) - return a prefix of all completed checkpoints
+- _prefixTokens(scope, sequence, checkpoint): optional (tokens) - return the same inclusive prefix as one token array for eligibility checks
 
 Checkpoint labels must be spoiler-neutral, and sequences must have at least one label representing a status of 'Not Started'. Appending new checkpoints does not change what existing checkpoint selections mean.
 
@@ -160,8 +161,8 @@ More complicated eligibility requirements are deferred for later iterations, whi
 | `ContentManagement` | Classify an item | Resolve the document or block through Documenting._documents and _blocks → validate every required token against the hub's full checkpoint list, including NotStarted → RequirementTagging.tag. |
 | `ContentManagement` | Validate the dataset | Require a sequence for every hub, valid scope for every document, explicit rules for every document/block, same-hub tokens, and safe title/document thresholds. Refuse startup on invalid data. |
 | `ReaderProgress` | Get/select/reset progress | Validate hub and reader; for record, validate the checkpoint with _prefix before ProgressRecording.record. Return null for missing progress; clear restores that state. |
-| `Reading` | Browse a hub | Resolve stored progress → derive inclusive prefix → list scoped documents → check document eligibility → read eligible document titles from document state. |
-| `Reading` | Read a document | Resolve stored progress → derive inclusive prefix → validate document scope and eligibility → form eligible text and image blocks in original order. |
+| `Reading` | Browse a hub | Resolve stored progress → derive inclusive prefix tokens → list scoped documents → check document eligibility → read eligible document titles from document state. |
+| `Reading` | Read a document | Resolve stored progress → derive inclusive prefix tokens → validate document scope and eligibility → form eligible text and image blocks in original order. |
 
 
 

@@ -3,6 +3,7 @@ import { MongoClient, type Db } from 'mongodb';
 import { composition as hubManagement } from '@/compositions/HubManagement.ts';
 import { composition as contentManagement } from '@/compositions/ContentManagement.ts';
 import { composition as readerProgress } from '@/compositions/ReaderProgress.ts';
+import { composition as reading } from '@/compositions/Reading.ts';
 import { applicationConceptSet } from '@/concepts.ts';
 import { createMongoConceptInstances } from '@/concept-instances.ts';
 
@@ -15,8 +16,8 @@ function assembleWith(db: Db | undefined, setup: boolean) {
     conceptSet: applicationConceptSet,
     instances: createMongoConceptInstances(handle),
     composition: setup
-      ? { HubManagement: hubManagement, ContentManagement: contentManagement, ReaderProgress: readerProgress }
-      : { HubManagement: hubManagement, ReaderProgress: readerProgress },
+      ? { HubManagement: hubManagement, ContentManagement: contentManagement, ReaderProgress: readerProgress, Reading: reading }
+      : { HubManagement: hubManagement, ReaderProgress: readerProgress, Reading: reading },
   });
 }
 

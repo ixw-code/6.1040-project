@@ -98,6 +98,10 @@ _prefix(scope: Scope, sequence: Sequence, checkpoint: Checkpoint) : many (checkp
   orders rows by ascending position
   answers no rows for an unknown sequence, wrong scope, or checkpoint outside the sequence.
 
+_prefixTokens(scope: Scope, sequence: Sequence, checkpoint: Checkpoint) : optional (tokens: TokenSet)
+  answers the same inclusive, ordered prefix as _prefix in one token array
+  answers no row for an unknown sequence, wrong scope, or checkpoint outside the sequence.
+
 _contains(scope: Scope, sequence: Sequence, tokens: TokenSet) : one (valid: Flag)
   answers true exactly when the sequence belongs to the scope and every supplied token is one of its checkpoints, including NotStarted
   answers false for an unknown sequence, wrong scope, or any unknown token

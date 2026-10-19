@@ -39,6 +39,10 @@ describe('Checkpointing', () => {
     expect(await c._prefix({ scope: 'one', sequence, checkpoint: b })).toEqual([
       { checkpoint: start }, { checkpoint: a }, { checkpoint: b },
     ]);
+    expect(await c._prefixTokens({ scope: 'one', sequence, checkpoint: start }))
+      .toEqual([{ tokens: [start] }]);
+    expect(await c._prefixTokens({ scope: 'one', sequence, checkpoint: b }))
+      .toEqual([{ tokens: [start, a, b] }]);
   });
 
   test('relabel preserves checkpoint IDs, sequence order, and prefixes', async () => {
@@ -74,6 +78,8 @@ describe('Checkpointing', () => {
     expect(await c._checkpoints({ scope: 'other', sequence })).toEqual([]);
     expect(await c._prefix({ scope: 'other', sequence, checkpoint })).toEqual([]);
     expect(await c._prefix({ scope: 'one', sequence, checkpoint: 'unknown' })).toEqual([]);
+    expect(await c._prefixTokens({ scope: 'other', sequence, checkpoint })).toEqual([]);
+    expect(await c._prefixTokens({ scope: 'one', sequence, checkpoint: 'unknown' })).toEqual([]);
     await expect(c.append({ sequence: 'wrong', label: 'X' })).rejects.toBeInstanceOf(SequenceNotFound);
     await expect(c.append({ sequence, label: '  ' })).rejects.toBeInstanceOf(CheckpointLabelRequired);
     await expect(c.relabel({ scope: 'other', checkpoint, label: 'X' })).rejects.toBeInstanceOf(CheckpointNotFound);
