@@ -11,7 +11,9 @@ describe('ContentManagement local gateway', () => {
   test('keeps setup routes out of the reader assembly', () => {
     const routes = Object.keys(assembleWikiplotter(mongo.db()).publicInterface.routes).sort();
     expect(routes).toEqual([
-      '/content/documents/read', '/hubs/browse', '/hubs/list',
+      '/checkpoints/append', '/checkpoints/list', '/checkpoints/relabel',
+      '/content/documents/read', '/hubs/browse', '/hubs/create', '/hubs/list',
+      '/hubs/rename', '/hubs/sequences',
       '/progress/clear', '/progress/get', '/progress/record',
     ]);
   });

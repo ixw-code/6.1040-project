@@ -1,6 +1,6 @@
-# Implementation status — through Milestone 6B
+# Implementation status — through Milestone 7
 
-Milestone 4A HubManagement, Milestone 4B ContentManagement, and Milestone 6A/6B ReaderProgress and Reading are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through the setup gateway. HubManagement and ContentManagement are selected only by the local setup assembly; the reader assembly contains ReaderProgress and Reading. HTTP serving and the Vue reader flow remain for later milestones.
+Milestone 4A HubManagement, Milestone 4B ContentManagement, and Milestone 6A/6B ReaderProgress and Reading are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through the setup gateway. The reader assembly now serves HubManagement, ReaderProgress, and Reading through HTTP under `/api`; ContentManagement remains local-only. The Vue reader flow remains for a later milestone.
 
 ContentManagement creates a required, scope-unique document title plus ordered TEXT and IMAGE blocks. It checks hub existence before creation; checks document or block ownership before tagging and untagging; and validates every requirement token against the hub's checkpoint sequence. Tagging replaces the full rule. An explicit empty rule permits eligibility without checkpoint requirements; removing a rule makes the item ineligible. NotStarted is a valid checkpoint token.
 
@@ -198,3 +198,34 @@ The existing `tsconfig.json` addition of root TypeScript files was present befor
 - Return framework-compatible empty results for no-output concept actions.
 - Keep setup mutations out of the reader assembly and pin setup artifacts.
 - Document the full check result and remaining nonfatal advisories.
+
+## Milestone 7 — reader HTTP adapter
+
+The backend now serves HubManagement, ReaderProgress, and Reading through the sync-engine HTTP adapter under `/api`. ContentManagement is present only in the local setup assembly and cannot be invoked over HTTP. HubManagement is intentionally unauthenticated in Alpha, as specified for the reader-facing API.
+
+| File | Change |
+| --- | --- |
+| `src/assembly.ts` | Select HubManagement alongside ReaderProgress and Reading in the reader assembly; retain ContentManagement only in setup. |
+| `src/http-policy.ts` | Set the adapter's `/api` base path and map public domain refusals to supported HTTP error categories. |
+| `src/edge.ts`, `src/main.ts` | Build the reader gateway and HTTP handler; serve it on configured `HOST`/`PORT`, close MongoDB on shutdown or startup failure, and keep `connectMongo` profile guards. |
+| `generated.reader.config.ts`, `generated/reader/` | Pin the reader-only wire and HTTP projection separately from the complete setup artifacts. Generated files were created by the framework CLI. |
+| `package.json`, `tsconfig.json` | Check and generate both artifact sets; resolve the generated reader wire through the `@generated/*` alias. |
+| `tests/http/ReaderHttp.test.ts`, `tests/compositions/ContentManagement.test.ts` | Exercise live HTTP requests, response shapes, refusals, malformed requests, and ContentManagement rejection; update the reader route-set assertion. |
+| `AGENTS.md`, `docs/decisions/ALPHA.md`, `README.md`, this file | Align the documented HTTP boundary and serving instructions with the implemented Alpha behavior. |
+
+The HTTP adapter derives routes from the reader assembly, so ContentManagement remains unavailable even when a caller guesses its local route name. The adapter returns category errors (`INVALID_REQUEST`, `NOT_FOUND`, `CONFLICT`) for mapped refusals, while successful endpoint bodies keep their composition shapes. Vite's existing `/api` proxy forwards requests to the backend without a frontend change.
+
+### Verification
+
+- `bun run check`: passed design checks, framework checks for setup and reader assemblies, pinned artifact checks, backend/frontend type checks, frontend build, and **47 MongoDB-backed tests** (0 failed). Framework checks reported 21 setup and 17 reader nonfatal advisories.
+- Focused live-listener HTTP tests: **3 passed, 0 failed**, including explicit ContentManagement rejection.
+- Process smoke: backend `POST /api/hubs/list` returned 200 and `POST /api/setup/documents/create` returned 404; the same requests through Vite's `/api` proxy returned 200 and 404. The backend stopped cleanly on SIGINT.
+- `git diff --check`: passed.
+
+### Suggested commit message
+
+`feat(alpha): serve reader compositions over HTTP`
+
+- Publish HubManagement, ReaderProgress, and Reading through the sync-engine adapter under `/api`.
+- Keep ContentManagement local-only with a reader-specific generated wire.
+- Verify HTTP responses, refusals, and Vite proxy behavior against MongoDB.

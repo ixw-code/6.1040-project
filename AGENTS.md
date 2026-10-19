@@ -17,7 +17,7 @@
 - Concepts own their state, MongoDB operations and local invariants. Do not import or call peer concepts.
 - Composition owns cross-concept coordination, scope checks and reader-response construction.
 - Keep concept specifications focused on purpose, principle, types, state, actions and queries. Keep application bindings in design/types.md and implementation details in ALPHA-TECHNICAL.md.
-- Keep setup operations out of reader HTTP. Derive completed checkpoints on the backend and omit ineligible content from responses.
+- Expose HubManagement, ReaderProgress, and Reading through reader HTTP; keep ContentManagement local-only. Derive completed checkpoints on the backend and omit ineligible content from responses.
 - Preserve the distinction between missing progress and NotStarted, and between a missing requirement rule and an explicit empty rule.
 - Use the framework's HTTP adapter and generated typed client. Do not hand-edit generated artifacts.
 

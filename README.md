@@ -43,9 +43,9 @@ For reading, the backend retrieves saved progress and collects the inclusive che
 
 `src/assembly.ts` selects the concept implementations and composition modules that form the application.
 
-The reader assembly includes ReaderProgress and Reading. The local setup assembly also provides HubManagement and ContentManagement so the fixture script and local gateway can install hubs, checkpoints, documents, and requirement tags. Both use the same persistent application data. `generated/setup/` is pinned from the setup assembly for complete design and source checks; a reader-only client should be generated when the HTTP reader host is implemented.
+The reader assembly includes HubManagement, ReaderProgress, and Reading. The local setup assembly also provides ContentManagement so the fixture script and local gateway can install documents and requirement tags. Both use the same persistent application data. `generated/setup/` is pinned from the full setup assembly for complete design and source checks; `generated/reader/` is pinned from the reader assembly for the HTTP route set.
 
-A gateway invokes the assembled endpoints. The HTTP reader host and Vue client remain future work; the host should use the reader assembly through the sync-engine HTTP adapter. Calling an API endpoint will not navigate the browser to that endpoint.
+A gateway invokes the assembled endpoints. The backend serves the reader assembly through the sync-engine HTTP adapter under `/api`; ContentManagement has no HTTP route. Vite proxies `/api` to the backend during development. The Vue reader interface remains future work. Calling an API endpoint will not navigate the browser to that endpoint.
 
 ## Getting Started
 
@@ -119,7 +119,7 @@ Populate demonstration content using the local fixture workflow before serving r
 | `frontend/` | Vue application. |
 | `scripts/` | Local fixture creation through the gateway. |
 | `tests/` | Concept, composition, and persistence tests. |
-| `generated.config.ts`, `generated/` | Design-check configuration and generated contracts. |
+| `generated.config.ts`, `generated.reader.config.ts`, `generated/` | Setup and reader design-check configurations and generated contracts. |
 
 ---
 

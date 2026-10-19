@@ -156,8 +156,8 @@ More complicated eligibility requirements are deferred for later iterations, whi
 | Composition module | Feature / flow | Required coordination |
 | --- | --- | --- |
 | `HubManagement` | Establish a hub | HubCataloguing.create → Checkpointing.create for its ID. Return the hub only after sequence initialization succeeds. Retry initialization idempotently after a partial failure. |
-| `HubManagement` | Manage checkpoints | Resolve an existing hub/sequence before append or relabel. Keep this in trusted setup for Alpha. |
-| `ContentManagement` | Create a document | Validate hub existence → Documenting.create with the entire ordered content array. No CollectionGrouping.assign step. |
+| `HubManagement` | Manage checkpoints | Resolve an existing hub/sequence before append or relabel. Alpha exposes these unauthenticated operations through reader HTTP. |
+| `ContentManagement` | Create a document | Validate hub existence → Documenting.create with the entire ordered content array. No CollectionGrouping.assign step. Keep this workflow local-only, outside reader HTTP. |
 | `ContentManagement` | Classify an item | Resolve the document or block through Documenting._documents and _blocks → validate every required token against the hub's full checkpoint list, including NotStarted → RequirementTagging.tag. |
 | `ContentManagement` | Validate the dataset | Require a sequence for every hub, valid scope for every document, explicit rules for every document/block, same-hub tokens, and safe title/document thresholds. Refuse startup on invalid data. |
 | `ReaderProgress` | Get/select/reset progress | Validate hub and reader; for record, validate the checkpoint with _prefix before ProgressRecording.record. Return null for missing progress; clear restores that state. |
