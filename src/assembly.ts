@@ -7,7 +7,9 @@ import { createMongoConceptInstances } from '@/concept-instances.ts';
 
 /** The no-argument form supports runtime and design tooling without opening a connection. */
 function assembleWith(db: Db | undefined, setup: boolean) {
-  const handle = db ?? new MongoClient('mongodb://127.0.0.1:27017/wikiplotter_alpha_tooling').db();
+  const mongoUrl = process.env.MONGODB_URL;
+  if (!db && !mongoUrl) throw new Error('MONGODB_URL must be set for the default assembly.');
+  const handle = db ?? new MongoClient(mongoUrl!).db();
   return assemble({
     conceptSet: applicationConceptSet,
     instances: createMongoConceptInstances(handle),

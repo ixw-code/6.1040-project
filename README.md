@@ -55,7 +55,9 @@ Install Bun 1.x and start a local MongoDB instance.
 bun install
 ```
 
-Configure `MONGODB_URL` and `PORT` in `.env`. Populate the demo through the local fixture workflow before serving reader content.
+Copy `.env.example` to `.env`, `.env.test.example` to `.env.test.local`, and `.env.production.example` to `.env.production.local`. Set the same MongoDB username, password, and port in all three ignored files and their `MONGODB_URL` values. The database names are fixed by profile: `wikiplotter_dev` for development, `wikiplotter_test_*` for tests, and `wikiplotter` for production. `src/db.ts` rejects a database name that does not match `WIKIPLOTTER_ENV` before connecting or creating indexes.
+
+Run `bun run db:up` to initialize the shared local MongoDB server from `.env`; `bun run dev` uses `.env`, `bun run test` uses `.env.test.local`, and `bun run start` uses `.env.production.local`. Each test creates and drops a disposable `wikiplotter_test_<id>` database. Compose's host bind and port come from `MONGO_BIND_HOST` and `MONGO_PORT`; backend and Vite ports come from each profile's `HOST`/`PORT` and `FRONTEND_HOST`/`FRONTEND_PORT`. MongoDB applies credentials when its volume is first initialized, so changing env files alone does not rotate an existing user. Populate the demo through the local fixture workflow before serving reader content.
 
 The backend scaffold commands are:
 
@@ -67,7 +69,7 @@ bun run start
 
 `package.json` defines the available startup scripts; the fixture and Vue startup commands are added with their implementations.
 
-Run behavior tests with `bun test`. Concept tests cover individual actions and queries. Composition tests cover complete workflows, rejected cross-hub references, missing progress, and exclusion of hidden content. Persistence tests verify that MongoDB data survives reconnecting.
+Run behavior tests with `bun run test`. Concept tests cover individual actions and queries. Composition tests cover complete workflows and rejected cross-hub references. Persistence tests verify that MongoDB data survives reconnecting.
 
 ## Project layout
 

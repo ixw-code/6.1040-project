@@ -1,13 +1,14 @@
 services:
   mongo:
     image: docker.io/library/mongo:8.0
+    # One local server; each application profile selects its own database via MONGODB_URL.
     ports:
-      - "127.0.0.1:27017:27017"
+      - "${MONGO_BIND_HOST:?Set MONGO_BIND_HOST}:${MONGO_PORT:?Set MONGO_PORT}:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: dev
-      MONGO_INITDB_ROOT_PASSWORD: dev
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:?Set MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:?Set MONGO_INITDB_ROOT_PASSWORD}
     volumes:
-      - mongo-data:/data/db
+      - mongo-secure-data:/data/db
 
 volumes:
-  mongo-data:
+  mongo-secure-data:

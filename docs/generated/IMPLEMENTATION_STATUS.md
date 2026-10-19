@@ -1,4 +1,4 @@
-# Implementation status — through Milestone 4B
+# Implementation status — through Milestone 4B and local configuration
 
 Milestone 4A HubManagement and Milestone 4B ContentManagement are implemented through MongoDB-backed sync-engine gateways. ContentManagement is selected only by the local setup assembly; the reader assembly has no `/setup/*` routes. Fixture seeding, reader progress and reading compositions, HTTP serving, and the Vue reader flow remain for later milestones.
 
@@ -51,3 +51,37 @@ Milestone 4A was committed as `55d5da0 feat(alpha): implement HubManagement gate
 - Create scoped documents with required titles and ordered text/image blocks.
 - Validate hub, item, and checkpoint ownership before replacing or removing requirement rules.
 - Separate setup routes from the reader assembly and cover gateway failures with MongoDB-backed tests.
+
+## Local environment configuration
+
+Ignored `.env`, `.env.test.local`, and `.env.production.local` share generated MongoDB credentials and select `wikiplotter_dev`, `wikiplotter_test_local` (plus disposable `wikiplotter_test_<id>` databases), and `wikiplotter` respectively. Compose reads credentials and host port 27018 from `.env` and uses the dedicated `mongo-secure-data` volume. `src/db.ts` refuses database names outside the selected profile before connecting or creating indexes. The obsolete `wikiplotter_alpha_demo_worktree` database and its `project-mongo-1` container were removed; the current Wikiplotter container and old volumes remain.
+
+### Files changed
+
+| File | Change |
+| --- | --- |
+| `.env`, `.env.test.local`, `.env.production.local` (ignored) | Store matching Mongo credentials and port, distinct database URLs/profile markers, and local host ports with mode 0600. |
+| `.env.example`, `.env.test.example`, `.env.production.example` | Document placeholder credentials, profile markers, and exact database names without real secrets. |
+| `compose.yaml` | Interpolate credentials and host port from `.env`; share one Mongo server across three database profiles. |
+| `package.json` | Explicitly load dev, test, and production env files for Bun/Vite commands; pass `.env` to Compose; remove literal credentials from `db:shell`. |
+| `src/db.ts`, `tests/db/MongoTarget.test.ts` | Reject database/profile mismatches before connection or index creation; cover permitted and forbidden targets. |
+| `tests/mongo-test-db.ts` | Require a `wikiplotter_test_*` input before creating each disposable test database. |
+| `frontend/vite.config.ts` | Read backend/frontend host and port from the selected profile and name the Vite mode in configuration errors. |
+| `src/assembly.ts` | Use `MONGODB_URL` for the no-argument tooling assembly. |
+| `README.md` | Document three profiles, exact database names, command routing, port settings, and MongoDB first-initialization behavior. |
+| `docs/generated/IMPLEMENTATION_STATUS.md` | Record the configuration work, verification, and remaining limits. |
+
+### Verification
+
+- Connected through all three profiles and confirmed exactly `wikiplotter`, `wikiplotter_dev`, and `wikiplotter_test_local` in the current MongoDB container; removed the obsolete database and container.
+- `bun run test`: **38 passed, 0 failed**, including three new guard tests. The initial sandbox-only run could not reach loopback MongoDB; the authorized rerun passed.
+- Backend and frontend type checks, frontend build, design form check, and `git diff --check`: passed.
+- Framework and artifact checks still report 28 unfinished ReaderProgress/Reading declarations and unused Contributor; no new configuration issue was reported.
+
+### Suggested commit message
+
+`chore(config): isolate MongoDB profiles and guard database targets`
+
+- Select separate production, development, and test databases with profile-specific env files and scripts.
+- Reject database/profile mismatches before MongoDB connection or index creation; cover the guard in tests.
+- Purge the obsolete Wikiplotter database and container while preserving the current MongoDB server.

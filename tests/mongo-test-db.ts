@@ -9,11 +9,11 @@ export function useMongoTestDb() {
 
   beforeEach(async () => {
     const raw = process.env.MONGODB_URL;
-    if (!raw) throw new Error('Set MONGODB_URL to the URL of a database ending in _test.');
+    if (!raw) throw new Error('Set MONGODB_URL to a wikiplotter_test_* database URL.');
     const parsed = new URL(raw);
     const databaseName = decodeURIComponent(parsed.pathname.slice(1));
-    if (!databaseName.endsWith('_test')) {
-      throw new Error('Refusing MongoDB tests: MONGODB_URL database must end in _test.');
+    if (!/^wikiplotter_test_[a-zA-Z0-9]+$/.test(databaseName)) {
+      throw new Error('Refusing MongoDB tests: MONGODB_URL database must match wikiplotter_test_*.');
     }
     parsed.pathname = `/wikiplotter_test_${crypto.randomUUID().replaceAll('-', '')}`;
     disposableUrl = parsed.toString();
