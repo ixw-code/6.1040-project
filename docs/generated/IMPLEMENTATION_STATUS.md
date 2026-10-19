@@ -1,6 +1,6 @@
-# Implementation status — through Milestone 4B and local configuration
+# Implementation status — through Milestone 5
 
-Milestone 4A HubManagement and Milestone 4B ContentManagement are implemented through MongoDB-backed sync-engine gateways. ContentManagement is selected only by the local setup assembly; the reader assembly has no `/setup/*` routes. Fixture seeding, reader progress and reading compositions, HTTP serving, and the Vue reader flow remain for later milestones.
+Milestone 4A HubManagement and Milestone 4B ContentManagement are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through those gateways. ContentManagement is selected only by the local setup assembly; the reader assembly has no `/setup/*` routes. Reader progress and reading compositions, HTTP serving, and the Vue reader flow remain for later milestones.
 
 ContentManagement creates a required, scope-unique document title plus ordered TEXT and IMAGE blocks. It checks hub existence before creation; checks document or block ownership before tagging and untagging; and validates every requirement token against the hub's checkpoint sequence. Tagging replaces the full rule. An explicit empty rule permits eligibility without checkpoint requirements; removing a rule makes the item ineligible. NotStarted is a valid checkpoint token.
 
@@ -85,3 +85,29 @@ Ignored `.env`, `.env.test.local`, and `.env.production.local` share generated M
 - Select separate production, development, and test databases with profile-specific env files and scripts.
 - Reject database/profile mismatches before MongoDB connection or index creation; cover the guard in tests.
 - Purge the obsolete Wikiplotter database and container while preserving the current MongoDB server.
+
+## Milestone 5 — local demonstration fixture
+
+`bun run seed` populated `wikiplotter_dev` with **2 hubs**, each with NotStarted and three ordered ordinary checkpoints; **5 titled documents** with **12 ordered TEXT/IMAGE blocks**, including one image-only document; and **17 explicit requirement rules**. Public documents and blocks use empty rules. Later checkpoint rules reveal both whole documents and independent blocks progressively. Images use self-contained SVG data URLs.
+
+| File | Change |
+| --- | --- |
+| `scripts/seed.ts` | Define the fixture, create hubs/checkpoints/documents and tag items only through the local setup gateway; use read-only MongoDB lookups to reuse matching IDs, fill missing rules, and refuse conflicting existing fixture data. Require the development profile and database. |
+| `docs/generated/IMPLEMENTATION_STATUS.md` | Record seeded data, verification, and remaining limits. |
+
+The script does not reset data or seed test/production. A failure can leave a partial fixture; rerunning fills missing matching data, while changed checkpoint labels, document blocks, or rules require manual review. No global dataset validator, ReaderProgress, or Reading workflow was added.
+
+### Verification
+
+- First `bun run seed`: **2 hubs, 6 ordinary checkpoints, 5 documents, 17 rules created**. Second run: **0 created** in every category.
+- Read-only sanity check: confirmed two ordered NotStarted sequences, five titled documents, one image-only document, 17 rules, and progressive eligibility at selected checkpoints.
+- Direct test and production profile invocations refused before connecting. The 38-test MongoDB suite, backend/frontend type checks, design form check, and standalone seed-script type check passed.
+- Framework/artifact checks remain subject to the 28 previously reported unfinished ReaderProgress/Reading and unused Contributor issues; they were not rerun for this fixture-only change.
+
+### Suggested commit message
+
+`feat(alpha): seed local demonstration hubs and spoiler rules`
+
+- Add two hubs with ordered checkpoints and five titled demo documents.
+- Tag documents and blocks through the setup gateway for public and progressive visibility.
+- Make the development seed rerunnable without resetting or duplicating matching data.
