@@ -1,9 +1,11 @@
+import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 import { describe, expect, test } from 'bun:test';
 import { DocumentingConcept, type BlockInput } from '@/concepts/Documenting.ts';
 
 describe('Documenting', () => {
+  const mongo = useMongoTestDb();
   test('stores blocks in input order with distinct stable IDs', async () => {
-    const c = new DocumentingConcept();
+    const c = new DocumentingConcept(mongo.db());
     const inputs: BlockInput[] = [
       { kind: 'TITLE', body: 'Title', alt: '' },
       { kind: 'TEXT', body: 'Plot summary', alt: '' },
@@ -19,7 +21,7 @@ describe('Documenting', () => {
   });
 
   test('permits titleless, image-only, and empty documents', async () => {
-    const c = new DocumentingConcept();
+    const c = new DocumentingConcept(mongo.db());
     const image = await c.create({ scope: 'hub1', blocks: [{ kind: 'IMAGE', body: '/map', alt: 'Map' }] });
     const empty = await c.create({ scope: 'hub1', blocks: [] });
     expect((await c._blocks({ scope: 'hub1', document: image.document }))[0]?.kind).toBe('IMAGE');
@@ -28,7 +30,7 @@ describe('Documenting', () => {
   });
 
   test('enforces scope isolation and returns defensive block copies', async () => {
-    const c = new DocumentingConcept();
+    const c = new DocumentingConcept(mongo.db());
     const inputs: BlockInput[] = [{ kind: 'TEXT', body: 'original', alt: '' }];
     const { document } = await c.create({ scope: 'hub1', blocks: inputs });
     inputs[0]!.body = 'mutated input';

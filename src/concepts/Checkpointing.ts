@@ -1,68 +1,87 @@
-/** Ordered scoped checkpoints. */
+import { MongoServerError, type Db } from 'mongodb';
+
 export class SequenceNotFound extends Error {}
 export class CheckpointLabelRequired extends Error {}
 export class CheckpointNotFound extends Error {}
 export class CheckpointRenameLabelRequired extends Error {}
 
 type Checkpoint = { checkpoint: string; label: string };
-type Sequence = { sequence: string; scope: string; checkpoints: Checkpoint[] };
+type Sequence = { _id: string; scope: string; checkpoints: Checkpoint[] };
 
+/** Ordered scoped checkpoints. */
 export class CheckpointingConcept {
-  private readonly byScope = new Map<string, Sequence>();
-  private readonly byId = new Map<string, Sequence>();
+  private readonly sequences;
+
+  constructor(db: Db) {
+    this.sequences = db.collection<Sequence>('sequences');
+  }
 
   async create({ scope }: { scope: string }): Promise<{ sequence: string }> {
-    let seq = this.byScope.get(scope);
-    if (!seq) {
-      seq = { sequence: crypto.randomUUID(), scope, checkpoints: [] };
-      this.byScope.set(scope, seq);
-      this.byId.set(seq.sequence, seq);
+    const sequence = crypto.randomUUID();
+    try {
+      await this.sequences.updateOne(
+        { scope },
+        { $setOnInsert: { _id: sequence, scope, checkpoints: [] } },
+        { upsert: true },
+      );
+    } catch (error) {
+      // A concurrent initializer can win the unique scope index.
+      if (!(error instanceof MongoServerError && error.code === 11000)) throw error;
     }
-    return { sequence: seq.sequence };
+    const stored = await this.sequences.findOne({ scope });
+    if (!stored) throw new Error('Sequence initialization did not produce a sequence.');
+    return { sequence: stored._id };
   }
 
   async append({ sequence, label }: { sequence: string; label: string }): Promise<{ checkpoint: string }> {
-    const seq = this.byId.get(sequence);
-    if (!seq) throw new SequenceNotFound();
+    if (!(await this.sequences.findOne({ _id: sequence }, { projection: { _id: 1 } }))) {
+      throw new SequenceNotFound();
+    }
     const trimmed = label.trim();
     if (!trimmed) throw new CheckpointLabelRequired();
     const checkpoint = crypto.randomUUID();
-    seq.checkpoints.push({ checkpoint, label: trimmed });
+    const result = await this.sequences.updateOne(
+      { _id: sequence },
+      { $push: { checkpoints: { checkpoint, label: trimmed } } },
+    );
+    if (!result.matchedCount) throw new SequenceNotFound();
     return { checkpoint };
   }
 
   async relabel({ scope, checkpoint, label }: {
     scope: string; checkpoint: string; label: string;
   }): Promise<{ checkpoint: string }> {
-    const match = this.byScope.get(scope)?.checkpoints.find((c) => c.checkpoint === checkpoint);
-    if (!match) throw new CheckpointNotFound();
+    const filter = { scope, 'checkpoints.checkpoint': checkpoint };
+    if (!(await this.sequences.findOne(filter, { projection: { _id: 1 } }))) {
+      throw new CheckpointNotFound();
+    }
     const trimmed = label.trim();
     if (!trimmed) throw new CheckpointRenameLabelRequired();
-    match.label = trimmed;
+    const result = await this.sequences.updateOne(
+      filter, { $set: { 'checkpoints.$.label': trimmed } },
+    );
+    if (!result.matchedCount) throw new CheckpointNotFound();
     return { checkpoint };
   }
 
   async _sequences({ scope }: { scope: string }): Promise<{ sequence: string }[]> {
-    const seq = this.byScope.get(scope);
-    return seq ? [{ sequence: seq.sequence }] : [];
+    const seq = await this.sequences.findOne({ scope });
+    return seq ? [{ sequence: seq._id }] : [];
   }
 
   async _checkpoints({ scope, sequence }: {
     scope: string; sequence: string;
   }): Promise<{ checkpoint: string; label: string; position: number }[]> {
-    const seq = this.byId.get(sequence);
-    if (!seq || seq.scope !== scope) return [];
-    return seq.checkpoints.map((c, index) => ({ ...c, position: index + 1 }));
+    const seq = await this.sequences.findOne({ scope, _id: sequence });
+    return seq ? seq.checkpoints.map((c, i) => ({ ...c, position: i + 1 })) : [];
   }
 
   async _prefix({ scope, sequence, checkpoint }: {
     scope: string; sequence: string; checkpoint: string;
   }): Promise<{ completed: string[] }[]> {
-    const seq = this.byId.get(sequence);
-    if (!seq || seq.scope !== scope) return [];
-    const index = seq.checkpoints.findIndex((c) => c.checkpoint === checkpoint);
-    if (index === -1) return [];
-    return [{ completed: seq.checkpoints.slice(0, index + 1).map((c) => c.checkpoint) }];
+    const seq = await this.sequences.findOne({ scope, _id: sequence });
+    if (!seq) return [];
+    const i = seq.checkpoints.findIndex((c) => c.checkpoint === checkpoint);
+    return i === -1 ? [] : [{ completed: seq.checkpoints.slice(0, i + 1).map((c) => c.checkpoint) }];
   }
 }
-

@@ -1,3 +1,4 @@
+import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 import { describe, expect, test } from 'bun:test';
 import {
   HubCataloguingConcept, HubNameRequired, HubNameTaken, HubNotFound,
@@ -5,8 +6,9 @@ import {
 } from '@/concepts/HubCataloguing.ts';
 
 describe('HubCataloguing', () => {
+  const mongo = useMongoTestDb();
   test('creates trimmed names and keeps stable hub IDs through rename', async () => {
-    const c = new HubCataloguingConcept();
+    const c = new HubCataloguingConcept(mongo.db());
     const { hub } = await c.create({ name: '  Arcadia  ' });
     expect(await c._hub({ hub })).toEqual([{ name: 'Arcadia' }]);
     expect(await c.rename({ hub, name: '  Arcadia II ' })).toEqual({ hub });
@@ -14,7 +16,7 @@ describe('HubCataloguing', () => {
   });
 
   test('rejects blank and duplicate names without changing state', async () => {
-    const c = new HubCataloguingConcept();
+    const c = new HubCataloguingConcept(mongo.db());
     await expect(c.create({ name: '  ' })).rejects.toBeInstanceOf(HubNameRequired);
     const first = await c.create({ name: 'Arcadia' });
     await expect(c.create({ name: ' Arcadia ' })).rejects.toBeInstanceOf(HubNameTaken);
@@ -28,7 +30,7 @@ describe('HubCataloguing', () => {
   });
 
   test('names compare case-sensitively and queries return defensive records', async () => {
-    const c = new HubCataloguingConcept();
+    const c = new HubCataloguingConcept(mongo.db());
     await c.create({ name: 'Hub' });
     await c.create({ name: 'hub' });
     const rows = await c._hubs();

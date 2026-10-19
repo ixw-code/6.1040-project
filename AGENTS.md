@@ -29,3 +29,4 @@
 - Run relevant design checks, type checks and tests. Test concepts independently, compositions through the gateway, and persistence against MongoDB when storage changes.
 - After frontend changes, verify the affected Vue reader flow.
 - Report what changed, which checks actually ran, and any remaining failure or blocker. Keep explanations concise.
+- Generate detailed commits with a concise summary and bullets with specific, important changes.

@@ -1,11 +1,13 @@
+import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 import { describe, expect, test } from 'bun:test';
 import {
   RequirementTaggingConcept, RequirementRuleNotFound,
 } from '@/concepts/RequirementTagging.ts';
 
 describe('RequirementTagging', () => {
+  const mongo = useMongoTestDb();
   test('missing rules deny, but an explicit empty rule permits', async () => {
-    const c = new RequirementTaggingConcept();
+    const c = new RequirementTaggingConcept(mongo.db());
     expect(await c._rule({ item: 'doc' })).toEqual([]);
     expect(await c._eligible({ item: 'doc', tokens: [] })).toEqual({ eligible: false });
     await c.tag({ item: 'doc', required: [] });
@@ -15,7 +17,7 @@ describe('RequirementTagging', () => {
   });
 
   test('requires all tokens, disregarding order and duplicates', async () => {
-    const c = new RequirementTaggingConcept();
+    const c = new RequirementTaggingConcept(mongo.db());
     await c.tag({ item: 'block', required: ['B', 'A', 'A'] });
     expect(await c._rule({ item: 'block' })).toEqual([{ required: ['A', 'B'] }]);
     expect(await c._eligible({ item: 'block', tokens: ['A'] })).toEqual({ eligible: false });
@@ -23,7 +25,7 @@ describe('RequirementTagging', () => {
   });
 
   test('replacing and removing rules change eligibility; items are independent', async () => {
-    const c = new RequirementTaggingConcept();
+    const c = new RequirementTaggingConcept(mongo.db());
     await c.tag({ item: 'doc', required: ['first'] });
     await c.tag({ item: 'block', required: [] });
     await c.tag({ item: 'doc', required: ['second'] });
@@ -36,7 +38,7 @@ describe('RequirementTagging', () => {
   });
 
   test('neither caller input nor query output can mutate stored requirements', async () => {
-    const c = new RequirementTaggingConcept();
+    const c = new RequirementTaggingConcept(mongo.db());
     const required = ['one'];
     await c.tag({ item: 'doc', required });
     required.push('two');

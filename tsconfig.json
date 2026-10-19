@@ -12,9 +12,8 @@
       "bun"
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": [ "./src/*" ],
+      "@tests/*": [ "./tests/*" ]
     },
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

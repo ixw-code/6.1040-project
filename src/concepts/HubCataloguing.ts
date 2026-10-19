@@ -1,46 +1,64 @@
-/** Unique Hub scopes. */
+import { MongoServerError, type Db } from 'mongodb';
+
 export class HubNameRequired extends Error {}
 export class HubNameTaken extends Error {}
 export class HubNotFound extends Error {}
 export class HubRenameNameRequired extends Error {}
 export class HubRenameNameTaken extends Error {}
 
-type Hub = { hub: string; name: string };
+type Hub = { _id: string; name: string };
 
+function duplicateKey(error: unknown): boolean {
+  return error instanceof MongoServerError && error.code === 11000;
+}
+
+/** Unique hub scopes catalogued. */
 export class HubCataloguingConcept {
-  private readonly hubs = new Map<string, Hub>();
+  private readonly hubs;
+
+  constructor(db: Db) {
+    this.hubs = db.collection<Hub>('hubs');
+  }
 
   async create({ name }: { name: string }): Promise<{ hub: string }> {
     const trimmed = name.trim();
     if (!trimmed) throw new HubNameRequired();
-    if ([...this.hubs.values()].some((hub) => hub.name === trimmed)) {
-      throw new HubNameTaken();
-    }
+
     const hub = crypto.randomUUID();
-    this.hubs.set(hub, { hub, name: trimmed });
+    try {
+      await this.hubs.insertOne({ _id: hub, name: trimmed });
+    } catch (error) {
+      if (duplicateKey(error)) throw new HubNameTaken();
+      throw error;
+    }
     return { hub };
   }
 
   async rename({ hub, name }: { hub: string; name: string }): Promise<{ hub: string }> {
-    const found = this.hubs.get(hub);
-    if (!found) throw new HubNotFound();
+    // Preserve the contract's missing-hub priority over invalid replacement names.
+    if (!(await this.hubs.findOne({ _id: hub }, { projection: { _id: 1 } }))) {
+      throw new HubNotFound();
+    }
     const trimmed = name.trim();
     if (!trimmed) throw new HubRenameNameRequired();
-    if ([...this.hubs.values()].some((other) => other.hub !== hub && other.name === trimmed)) {
-      throw new HubRenameNameTaken();
+    try {
+      const result = await this.hubs.updateOne({ _id: hub }, { $set: { name: trimmed } });
+      if (!result.matchedCount) throw new HubNotFound();
+    } catch (error) {
+      if (duplicateKey(error)) throw new HubRenameNameTaken();
+      throw error;
     }
-    found.name = trimmed;
     return { hub };
   }
 
   async _hub({ hub }: { hub: string }): Promise<{ name: string }[]> {
-    const found = this.hubs.get(hub);
+    const found = await this.hubs.findOne({ _id: hub });
     return found ? [{ name: found.name }] : [];
   }
 
-  async _hubs(_input: Record<string, never> = {}): Promise<Hub[]> {
-    return [...this.hubs.values()]
-      .map(({ hub, name }) => ({ hub, name }))
-      .sort((a, b) => a.hub < b.hub ? -1 : a.hub > b.hub ? 1 : 0);
+  async _hubs(_input: Record<string, never> = {}): Promise<{ hub: string; name: string }[]> {
+    const rows = await this.hubs.find({}, { projection: { _id: 1, name: 1 } })
+      .sort({ _id: 1 }).toArray();
+    return rows.map(({ _id, name }) => ({ hub: _id, name }));
   }
 }

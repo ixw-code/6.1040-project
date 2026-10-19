@@ -1,3 +1,4 @@
+import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 import { describe, expect, test } from 'bun:test';
 import {
   CheckpointingConcept, SequenceNotFound, CheckpointLabelRequired,
@@ -5,8 +6,9 @@ import {
 } from '@/concepts/Checkpointing.ts';
 
 describe('Checkpointing', () => {
+  const mongo = useMongoTestDb();
   test('initialization is idempotent and creates no synthetic start', async () => {
-    const c = new CheckpointingConcept();
+    const c = new CheckpointingConcept(mongo.db());
     const { sequence } = await c.create({ scope: 'one' });
     expect(await c.create({ scope: 'one' })).toEqual({ sequence });
     expect(await c._sequences({ scope: 'one' })).toEqual([{ sequence }]);
@@ -14,7 +16,7 @@ describe('Checkpointing', () => {
   });
 
   test('prefixes are inclusive and the first checkpoint has a one-element prefix', async () => {
-    const c = new CheckpointingConcept();
+    const c = new CheckpointingConcept(mongo.db());
     const { sequence } = await c.create({ scope: 'one' });
     const { checkpoint: a } = await c.append({ sequence, label: '  Chapter 1 ' });
     const { checkpoint: b } = await c.append({ sequence, label: 'Chapter 2' });
@@ -27,7 +29,7 @@ describe('Checkpointing', () => {
   });
 
   test('relabel preserves checkpoint IDs, sequence order, and prefixes', async () => {
-    const c = new CheckpointingConcept();
+    const c = new CheckpointingConcept(mongo.db());
     const { sequence } = await c.create({ scope: 'one' });
     const { checkpoint: a } = await c.append({ sequence, label: 'A' });
     const { checkpoint: b } = await c.append({ sequence, label: 'B' });
@@ -37,7 +39,7 @@ describe('Checkpointing', () => {
   });
 
   test('wrong scopes and unknown checkpoints return no rows; invalid mutations refuse', async () => {
-    const c = new CheckpointingConcept();
+    const c = new CheckpointingConcept(mongo.db());
     const { sequence } = await c.create({ scope: 'one' });
     const { checkpoint } = await c.append({ sequence, label: 'A' });
     expect(await c._sequences({ scope: 'other' })).toEqual([]);

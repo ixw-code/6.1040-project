@@ -1,17 +1,23 @@
-/** Documents with raw block data. */
+import type { Db } from 'mongodb';
+
 export type BlockKind = 'TITLE' | 'TEXT' | 'IMAGE';
 export type BlockInput = { kind: BlockKind; body: string; alt: string };
 export type DocumentBlock = BlockInput & { block: string };
 
-type DocumentRecord = { document: string; scope: string; blocks: DocumentBlock[] };
+type DocumentRecord = { _id: string; scope: string; blocks: DocumentBlock[] };
 
+/** Documents of raw content blocks. */
 export class DocumentingConcept {
-  private readonly documents = new Map<string, DocumentRecord>();
+  private readonly documents;
+
+  constructor(db: Db) {
+    this.documents = db.collection<DocumentRecord>('documents');
+  }
 
   async create({ scope, blocks }: { scope: string; blocks: BlockInput[] }): Promise<{ document: string }> {
     const document = crypto.randomUUID();
-    this.documents.set(document, {
-      document,
+    await this.documents.insertOne({
+      _id: document,
       scope,
       blocks: blocks.map(({ kind, body, alt }) => ({
         block: crypto.randomUUID(), kind, body, alt,
@@ -21,17 +27,15 @@ export class DocumentingConcept {
   }
 
   async _documents({ scope }: { scope: string }): Promise<{ document: string }[]> {
-    return [...this.documents.values()]
-      .filter((doc) => doc.scope === scope)
-      .map(({ document }) => ({ document }))
-      .sort((a, b) => a.document < b.document ? -1 : a.document > b.document ? 1 : 0);
+    const rows = await this.documents.find({ scope }, { projection: { _id: 1 } })
+      .sort({ _id: 1 }).toArray();
+    return rows.map(({ _id }) => ({ document: _id }));
   }
 
   async _blocks({ scope, document }: {
     scope: string; document: string;
   }): Promise<DocumentBlock[]> {
-    const doc = this.documents.get(document);
-    if (!doc || doc.scope !== scope) return [];
-    return doc.blocks.map((block) => ({ ...block }));
+    const doc = await this.documents.findOne({ _id: document, scope });
+    return doc ? doc.blocks.map((block) => ({ ...block })) : [];
   }
 }
