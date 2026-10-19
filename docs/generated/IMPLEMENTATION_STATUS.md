@@ -1,6 +1,6 @@
-# Implementation status — through Milestone 5
+# Implementation status — through Milestone 6A
 
-Milestone 4A HubManagement and Milestone 4B ContentManagement are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through those gateways. ContentManagement is selected only by the local setup assembly; the reader assembly has no `/setup/*` routes. Reader progress and reading compositions, HTTP serving, and the Vue reader flow remain for later milestones.
+Milestone 4A HubManagement, Milestone 4B ContentManagement, and Milestone 6A ReaderProgress are implemented through MongoDB-backed sync-engine gateways. Milestone 5 seeds a local demonstration fixture through the setup gateway. ContentManagement is selected only by the local setup assembly; the reader assembly has no `/setup/*` routes. Reading, HTTP serving, and the Vue reader flow remain for later milestones.
 
 ContentManagement creates a required, scope-unique document title plus ordered TEXT and IMAGE blocks. It checks hub existence before creation; checks document or block ownership before tagging and untagging; and validates every requirement token against the hub's checkpoint sequence. Tagging replaces the full rule. An explicit empty rule permits eligibility without checkpoint requirements; removing a rule makes the item ineligible. NotStarted is a valid checkpoint token.
 
@@ -111,3 +111,31 @@ The script does not reset data or seed test/production. A failure can leave a pa
 - Add two hubs with ordered checkpoints and five titled demo documents.
 - Tag documents and blocks through the setup gateway for public and progressive visibility.
 - Make the development seed rerunnable without resetting or duplicating matching data.
+
+## Milestone 6A — reader progress
+
+ReaderProgress provides `/progress/get`, `/progress/record`, and `/progress/clear` through both local assemblies. It checks hub IDs against HubCataloguing._hubs and record selections against that hub's checkpoint sequence before writing. Missing progress returns `{ checkpoint: null }`; NotStarted remains a selectable checkpoint. Clear reports whether a record existed.
+
+| File | Change |
+| --- | --- |
+| `src/compositions/ReaderProgress.ts` | Add hub and selection views, nullable progress result, and guarded get/record/clear workflows with input validation. |
+| `src/assembly.ts` | Register ReaderProgress in reader and setup assemblies; add no HTTP host or route. |
+| `design/compositions/ReaderProgress.md` | Correct the name-query drift and document the selected nullable-result view. |
+| `tests/compositions/ReaderProgress.test.ts` | Cover gateway success, NotStarted, backward progress, clearing, invalid inputs/references, and reader/hub isolation. |
+| `docs/generated/IMPLEMENTATION_STATUS.md` | Record this milestone and verification. |
+
+The nullable result uses a small many-row view around ProgressRecording._checkpoint so the former can yield a scalar or null in the framework's supported form operation. No concept contract, schema, or HTTP surface changed.
+
+### Verification
+
+- Focused ReaderProgress gateway tests: **3 passed, 0 failed**. Full MongoDB-backed suite: **41 passed, 0 failed**.
+- Backend/frontend type checks, design form check for 10 files, and `git diff --check`: passed.
+- Framework and artifact checks now report **17 existing issues**: unresolved Reading declarations and unused Contributor. The baseline before ReaderProgress was 28 issues; no ReaderProgress issue remains.
+
+### Suggested commit message
+
+`feat(alpha): implement ReaderProgress gateway workflows`
+
+- Validate hub and scoped checkpoint selection before recording reader progress.
+- Preserve missing versus NotStarted progress, backward movement, isolation, and idempotent clearing.
+- Add focused MongoDB-backed gateway tests and register progress in local assemblies.

@@ -2,6 +2,7 @@ import { assemble } from '@mit-sdg/sync-engine/assembly';
 import { MongoClient, type Db } from 'mongodb';
 import { composition as hubManagement } from '@/compositions/HubManagement.ts';
 import { composition as contentManagement } from '@/compositions/ContentManagement.ts';
+import { composition as readerProgress } from '@/compositions/ReaderProgress.ts';
 import { applicationConceptSet } from '@/concepts.ts';
 import { createMongoConceptInstances } from '@/concept-instances.ts';
 
@@ -14,8 +15,8 @@ function assembleWith(db: Db | undefined, setup: boolean) {
     conceptSet: applicationConceptSet,
     instances: createMongoConceptInstances(handle),
     composition: setup
-      ? { HubManagement: hubManagement, ContentManagement: contentManagement }
-      : { HubManagement: hubManagement },
+      ? { HubManagement: hubManagement, ContentManagement: contentManagement, ReaderProgress: readerProgress }
+      : { HubManagement: hubManagement, ReaderProgress: readerProgress },
   });
 }
 

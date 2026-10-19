@@ -2,7 +2,7 @@
 
 Handle the recording of progress per reader and hub. Without UserAuthentication, ProgressRecording accepts reader identities from browser local storage and stores progress on the backend. 
 
-**Retrieve progress.** The [get-progress endpoint](reaction:ReaderProgress.GetProgress) accepts `{ hub, reader }`. The [existing-hub view](view:ReaderProgress.ExistingHub) checks HubCataloguing._hub. The [progress-result former](former:ReaderProgress.ProgressResult) queries ProgressRecording._checkpoint with `scope = hub` and returns `{ checkpoint }`, preserving an absent selection as `{ checkpoint: null }`.
+**Retrieve progress.** The [get-progress endpoint](reaction:ReaderProgress.GetProgress) accepts `{ hub, reader }`. The [existing-hub view](view:ReaderProgress.ExistingHub) checks hub ID membership through HubCataloguing._hubs. The [stored-progress view](view:ReaderProgress.StoredProgress) reads ProgressRecording._checkpoint with `scope = hub`; the [progress-result former](former:ReaderProgress.ProgressResult) supplies the nullable checkpoint for the response `{ checkpoint }`, preserving an absent selection as `{ checkpoint: null }`.
 
 ```endpoints
 ReaderProgress.GetProgress at /progress/get
