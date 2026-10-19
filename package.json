@@ -13,7 +13,7 @@
         "@types/bun": "^1.4.3",
         "@types/node": "^26.6.5",
         "@vitejs/plugin-vue": "^6.0.10",
-        "typescript": "^7.0.2",
+        "typescript": "^6",
         "vite": "^8.3.4",
         "vue-tsc": "^3.3.13"
     },
@@ -21,15 +21,12 @@
         "dev": "bun run db:up && bun run --parallel dev:backend dev:frontend",
         "dev:backend": "HOST=127.0.0.1 PORT=3000 bun --watch src/main.ts",
         "dev:frontend": "vite --config frontend/vite.config.ts",
-
         "start": "bun run --parallel start:backend start:frontend",
         "start:backend": "HOST=127.0.0.1 PORT=3000 bun src/main.ts",
         "start:frontend": "vite --config frontend/vite.config.ts",
         "build:frontend": "vite build --config frontend/vite.config.ts",
-
         "seed": "bun scripts/seed.ts",
         "generate": "sync-engine artifacts pin",
-
         "check": "bun run check:design && bun run check:framework && bun run check:artifacts && bun run typecheck && bun run build:frontend && bun run test",
         "test": "bun test",
         "check:design": "sync-engine check-design design/concepts/*.md design/types.md design/compositions/*.md",
@@ -38,7 +35,6 @@
         "typecheck": "bun run typecheck:backend && bun run typecheck:frontend",
         "typecheck:backend": "tsc -p tsconfig.json --noEmit",
         "typecheck:frontend": "vue-tsc -p frontend/tsconfig.json --noEmit",
-
         "db:up": "podman compose -p wikiplotter-alpha-complete up -d mongo",
         "db:down": "podman compose -p wikiplotter-alpha-complete stop mongo",
         "db:logs": "podman compose -p wikiplotter-alpha-complete logs -f mongo",

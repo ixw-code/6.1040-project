@@ -1,4 +1,4 @@
-# Hub Cataloguing
+# HubCataloguing
 
 ## Purpose
 

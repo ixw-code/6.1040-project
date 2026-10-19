@@ -1,5 +1,24 @@
 {
   "extends": "../tsconfig.json",
-  "compilerOptions": { "types": ["vite/client", "bun"], "lib": ["ESNext", "DOM"] },
-  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts", "../src/text.d.ts"]
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "types": [
+      "vite/client",
+      "bun"
+    ],
+    "lib": [
+      "ESNext",
+      "DOM"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "vite.config.ts",
+    "../src/text.d.ts"
+  ]
 }

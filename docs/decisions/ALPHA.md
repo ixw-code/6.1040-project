@@ -169,10 +169,10 @@ The implementation for the Alpha will happen in the following incremental steps:
 
 1.  Formalize the concept specifications, contracts, and bindings. 
 2.  Implement and test concepts individually, starting with in-memory repositories.
+5.  Replace in-memory state with MongoDB operations and test persistence.
 3.  Implement and test the setup composition for Hub and Content.
-4.  Implement and test composition for ReaderProgress and Reading. 
-5.  Setup and connect MongoDB to the backend and test for data persistence.
 6.  Invoke the local composition gateways to create premade fixture data for demonstration purposes. 
+4.  Implement and test composition for ReaderProgress and Reading. 
 7.  Expose the application's reader-facing API via HTTP.
 8.  Build a minimal UI to serve reader endpoints and content.
 9.  Run acceptance checks and validate the Alpha user journey. 

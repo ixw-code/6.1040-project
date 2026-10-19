@@ -1,4 +1,4 @@
-# Progress Recording
+# ProgressRecording
 
 ## Purpose
 

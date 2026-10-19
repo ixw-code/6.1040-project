@@ -1,0 +1,41 @@
+import { describe, expect, test } from 'bun:test';
+import {
+  HubCataloguingConcept, HubNameRequired, HubNameTaken, HubNotFound,
+  HubRenameNameRequired, HubRenameNameTaken,
+} from '@/concepts/HubCataloguing.ts';
+
+describe('HubCataloguing', () => {
+  test('creates trimmed names and keeps stable hub IDs through rename', async () => {
+    const c = new HubCataloguingConcept();
+    const { hub } = await c.create({ name: '  Arcadia  ' });
+    expect(await c._hub({ hub })).toEqual([{ name: 'Arcadia' }]);
+    expect(await c.rename({ hub, name: '  Arcadia II ' })).toEqual({ hub });
+    expect(await c._hub({ hub })).toEqual([{ name: 'Arcadia II' }]);
+  });
+
+  test('rejects blank and duplicate names without changing state', async () => {
+    const c = new HubCataloguingConcept();
+    await expect(c.create({ name: '  ' })).rejects.toBeInstanceOf(HubNameRequired);
+    const first = await c.create({ name: 'Arcadia' });
+    await expect(c.create({ name: ' Arcadia ' })).rejects.toBeInstanceOf(HubNameTaken);
+    const second = await c.create({ name: 'Other' });
+    await expect(c.rename({ hub: second.hub, name: 'Arcadia' })).rejects.toBeInstanceOf(HubRenameNameTaken);
+    await expect(c.rename({ hub: second.hub, name: '' })).rejects.toBeInstanceOf(HubRenameNameRequired);
+    await expect(c.rename({ hub: 'missing', name: 'New' })).rejects.toBeInstanceOf(HubNotFound);
+    expect(await c._hubs()).toHaveLength(2);
+    expect(await c._hub({ hub: first.hub })).toEqual([{ name: 'Arcadia' }]);
+    expect(await c._hub({ hub: second.hub })).toEqual([{ name: 'Other' }]);
+  });
+
+  test('names compare case-sensitively and queries return defensive records', async () => {
+    const c = new HubCataloguingConcept();
+    await c.create({ name: 'Hub' });
+    await c.create({ name: 'hub' });
+    const rows = await c._hubs();
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.hub)).toEqual([...rows.map((r) => r.hub)].sort());
+    rows[0]!.name = 'changed-outside';
+    expect((await c._hubs()).some((r) => r.name === 'changed-outside')).toBe(false);
+    expect(await c._hub({ hub: 'missing' })).toEqual([]);
+  });
+});

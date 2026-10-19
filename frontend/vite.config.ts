@@ -4,6 +4,11 @@ import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
   plugins: [vue()],
   server: {
     host: "127.0.0.1",
