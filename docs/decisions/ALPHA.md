@@ -185,8 +185,6 @@ The remaining functionality to be implemented in the complete Beta app are as fo
 
 1. UI and application interface polishing
 2. Polished template document rendering.
-3. Navigation and article search
-4. Complete reader progress support 
 5. Application deployment
 
 ### Potential Future Expansions

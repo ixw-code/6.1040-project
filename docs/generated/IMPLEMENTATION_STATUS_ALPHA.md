@@ -1,63 +1,36 @@
-# Wikiplotter Alpha — implementation and acceptance status
+# Wikiplotter Alpha — implementation status
 
-Alpha implements five MongoDB-backed concepts, four compositions, a reader-only sync-engine HTTP API, a local fixture seeder, and a minimal Vue interface. ContentManagement is available only through the local setup gateway. This document replaces the incremental milestone log with the committed history and the final acceptance evidence.
+Alpha provides five MongoDB-backed concepts, four compositions, a reader-only HTTP API, local demonstration fixtures, and a minimal Vue site. Document setup and requirement tagging remain local-only. The milestones below summarize the important implementation and design decisions; `docs/decisions/ALPHA.md` and `design/` hold the detailed contracts.
 
-## Commit history
+## Milestone summary
 
-| Commit | Change |
+| Milestone | Implementation and design decisions |
 | --- | --- |
-| `0e8ca7b` | Created the initial README. |
-| `918303c` | Continued the initial README draft. |
-| `0e06ab2` | Added the project problem statement. |
-| `37d948c` | Added the project pitch. |
-| `b09c608` | Added initial concept design prose. |
-| `f66572d` | Added the user journey and website sketches. |
-| `d15a4d6` | Corrected README formatting. |
-| `bc3b241` | Bootstrapped Bun, sync-engine, initial concepts, design files, and tests. |
-| `8afd1e1` | Wrote the Alpha scope and decision document. |
-| `2ad9479` | Installed the project sync-engine skill. |
-| `575dbaa` | Defined Alpha concepts, compositions, bindings, and repository guidance. |
-| `0aa02f6` | Created backend/frontend scaffolds and initial test files. |
-| `1f9c9bb` | Implemented and tested the five concepts. |
-| `4e28c9a` | Moved concept state to MongoDB and added persistence tests. |
-| `8a325cd` | Aligned document titles and NotStarted checkpoint semantics with accepted contracts. |
-| `55d5da0` | Implemented HubManagement setup workflows and gateway tests. |
-| `d24341e` | Implemented local-only ContentManagement workflows and tests. |
-| `e31f08d` | Separated environment profiles, guarded MongoDB targets, and aligned Compose/Vite configuration. |
-| `ce80474` | Added idempotent development fixture seeding through setup compositions. |
-| `32c88e3` | Implemented ReaderProgress workflows and gateway tests. |
-| `242cc63` | Implemented spoiler-filtered Reading workflows and gateway tests. |
-| `84fcaa3` | Fixed framework action results and pinned complete setup artifacts. |
-| `11ba113` | Exposed reader compositions under `/api` and kept ContentManagement off HTTP. |
-| `99fa857` | Added the Vue directory, hub, document, progress, and management interface. |
+| **1 — Design** | Defined HubCataloguing, Documenting, Checkpointing, ProgressRecording, and RequirementTagging as independent state owners, connected by HubManagement, ContentManagement, ReaderProgress, and Reading. Hub IDs are stable scopes; documents have required titles in document state and ordered TEXT/IMAGE blocks. Missing requirements deny access, while explicit empty rules permit it. |
+| **2 — Concepts** | Implemented and independently tested the five concepts. Checkpointing gives each sequence a stable NotStarted checkpoint and returns inclusive prefixes; progress remains distinct when no selection exists. |
+| **3 — MongoDB** | Persisted concept state and added unique indexes and reconnection tests. Concept operations retain stable identities and scoped invariants across process reconstruction and concurrent writes. |
+| **4A — HubManagement** | Composed hub creation with sequence initialization and the first labeled checkpoint. Added rename, sequence/checkpoint listing, append, and relabel workflows; checkpoint order and IDs remain stable. |
+| **4B — ContentManagement** | Added local gateway workflows for scoped document creation and requirement replacement/removal. Validates hub, ownership, and checkpoint-token membership across concepts. TITLE blocks were removed from Alpha; required titles live on documents, including image-only documents. |
+| **Environment isolation** | Split development, test, and production database profiles. `src/db.ts` rejects a database name outside its active profile before connecting; tests use disposable `wikiplotter_test_*` databases. Compose and Vite use configured ports. |
+| **5 — Fixtures** | Seeded two hubs with ordered checkpoints, public and checkpoint-restricted documents, progressive block rules, and an image-only document through the local setup gateway. The script checks existing records and avoids destructive resets. |
+| **6A — ReaderProgress** | Added get, record, and clear workflows. Composition validates hub and checkpoint membership; readers may move forward or backward without affecting another reader or hub. |
+| **6B — Reading** | Derives inclusive checkpoint tokens from saved progress on the backend. Browse and read responses omit ineligible documents and blocks entirely, including their titles, bodies, image URLs, alt text, and IDs. |
+| **7 — HTTP** | Served HubManagement, ReaderProgress, and Reading through the sync-engine HTTP adapter under `/api`, with a reader-only generated wire and mapped refusal categories. ContentManagement has no HTTP route. |
+| **8 — Vue** | Added hub directory, hub and document pages, progress controls, and hub settings using the generated reader client. A browser-stored dummy reader ID survives reloads; navigation and mutations clear visible content and discard stale responses. |
+| **9 — Acceptance** | Added an HTTP journey test that checks spoiler secrecy, scope isolation, refusals, and state after MongoDB/HTTP reconnection. Exercised the seeded reader journey and delayed-response navigation in headless Chrome. |
 
-## Milestone 9 changes
+## Final Alpha progress report
 
-| File | Change |
-| --- | --- |
-| `tests/acceptance/AlphaJourney.test.ts` | Added a disposable-database HTTP journey covering hub management, reader and hub isolation, inclusive checkpoint behavior, public/restricted/untagged content, hidden metadata, image-only content, refusals, and state after MongoDB reconnection. |
-| `docs/generated/IMPLEMENTATION_STATUS_ALPHA.md` | Replaced the accumulated milestone notes with commit summaries, acceptance evidence, and the readiness assessment. |
+**Local demonstration readiness: verified.** `bun run check` passed design, framework, artifact, backend/frontend type, frontend build, and **49 tests across 14 files** with no failures. The acceptance test covers public, restricted, and untagged content; NotStarted and missing progress; forward and backward visibility; image-only output; cross-reader and cross-hub isolation; and persistence after reconnection. HTTP tests also verify that ContentManagement routes return 404.
 
-## Acceptance evidence
+Headless Chrome rendered the seeded Vue site and verified reader identity across reload, progress changes, document reading, retreat revocation, hub switching, the settings view, and a visible duplicate-hub refusal. Delaying a document response by 600 ms did not restore content after a hub switch; no browser exceptions were observed. Hub/checkpoint mutations were verified through HTTP tests, while the browser run only inspected the settings controls.
 
-- `bun run check` passed: design form checks for 10 files, setup and reader framework checks, pinned artifact checks, backend and Vue type checks, frontend build, and **49 tests across 14 files, 0 failures, 350 assertions**. Plain `tsc -p frontend/tsconfig.json --noEmit` also passed.
-- Concept, composition, HTTP, persistence, and profile-guard tests passed. The new HTTP acceptance test uses local setup composition calls to install documents, then verifies public responses contain no restricted title, body, image URL, alt text, block ID, or untagged content. It confirms image-only output, checkpoint advance and retreat, distinct missing progress and NotStarted, cross-reader/hub isolation, and preserved hub/progress/content after closing and reopening the MongoDB client and HTTP listener.
-- A headless Chrome run against Vite and the seeded development database rendered the Vue directory and exercised a saved reader identity across reload, progress selection, document reading, retreat revocation, hub switching, settings rendering, and a visible duplicate-hub refusal. Chrome request interception delayed a document response by 600 ms; switching hubs before it completed did not restore the previous title or body. No browser exceptions were observed. Temporary reader progress was cleared after the run.
-- The local environment selects `wikiplotter_dev` for development and `wikiplotter_test_local` for tests. Profile-guard tests reject cross-profile database names before connection. The production template selects `wikiplotter` with the production profile; no production database connection or write was attempted.
+**Remaining limits:**
 
-## Readiness and limitations
+- No `.env.production.local` is currently present. The development and test environments are currently live, but a live production startup or database connection was not tested.
+- `docs/decisions/ALPHA.md` mentions refusing startup when stored data fails dataset validation. That workflow has no matching accepted composition contract or implementation and needs a separate design decision.
+- Framework checks report 21 setup and 17 reader nonfatal advisories. Vite reports nonfatal Node built-in externalization warnings; its built client worked in headless Chrome.
 
-**Ready for a local Alpha reader demonstration on the current development data.** The critical reader flow and HTTP secrecy boundary passed automated and real-browser checks. Hub/checkpoint mutations and refusal categories passed HTTP integration tests; the headless browser verified the management view and a refusal, but did not submit a hub-management mutation through Vue.
+## Potential Beta direction
 
-The following limits prevent an unconditional production sign-off:
-
-- `bun run seed` refused because the existing Red Planet Journal checkpoint at position 3 is now `Sol 8`, while the fixture expects `Sol 7`. The script correctly preserved existing data; the current seeded hubs still served the reader journey. The origin of this data change was not established.
-- `.env.production.local` is absent. The production template and profile guard were checked, but production startup and production database isolation were not exercised against a live production database.
-- `docs/decisions/ALPHA.md` describes dataset validation that refuses startup on invalid stored data. No such startup workflow appears in the accepted composition contract or implementation. Resolving that contract discrepancy would add cross-concept startup behavior and needs a separate design decision.
-- Framework checks retain 21 setup and 17 reader nonfatal advisories. Vite emitted nonfatal Node built-in externalization warnings while bundling the framework client; the built client rendered and worked in headless Chrome.
-
-Suggested commit message: `test(alpha): validate end-to-end reader journey`
-
-- Assert HTTP spoiler secrecy, isolation, refusals, and persistence through reconnection.
-- Verify the seeded Vue journey and stale-response protection in headless Chrome.
-- Consolidate Alpha history, evidence, and remaining readiness limits.
+Resolve the startup-validation contract and production configuration before deployment. Beta can then move in the direction for any of authenticated ownership and contribution controls, document editing/version history, navigation and search, media management, richer rendering, and UI polish. These are future design choices; none is part of the verified Alpha implementation.

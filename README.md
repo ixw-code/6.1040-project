@@ -6,13 +6,16 @@ Wikiplotter is a spoiler-aware wiki for narrative fiction. Each series has a hub
 
 The project is being built incrementally with TypeScript, Bun, sync-engine **1.1.0**, and MongoDB. The features above describe the target application; the current Alpha frontend supports hub discovery and management, reader progress, and spoiler-filtered reading.
 
-## Alpha scope
+## Alpha
 
 Readers can create and rename hubs, view checkpoint sequences, and append or relabel checkpoints without authentication. These changes affect shared hub data.
 
 Document content and its requirement tags are preloaded through a local fixture workflow. Alpha does not include document uploading, public editing, version history, accounts, or contributor permissions.
 
-The browser retains a dummy reader ID. MongoDB stores that reader's progress for each hub. No saved progress is distinct from selecting the first checkpoint.
+The browser retains a dummy reader ID. MongoDB stores that reader's progress for each hub, and readers can update or clear their saved progress while reading, this data being persistent upon reload. The site reloads upon updates, and the page only serves the tagged information appropriate for the reader's progress.
+
+### Demo 
+![Wikiplotter Alpha Demo](docs/assets/demo-alpha.gif)
 
 ## Concepts and composition
 
@@ -122,5 +125,7 @@ Populate demonstration content using the local fixture workflow before serving r
 | `generated.config.ts`, `generated.reader.config.ts`, `generated/` | Setup and reader design-check configurations and generated contracts. |
 
 ---
+
+## Disclaimer
 
 **AI assistance:** This README and portions of the project design were generated or revised with AI assistance. Generated material requires review and testing; this documentation is not evidence that the application has been fully implemented or verified.
