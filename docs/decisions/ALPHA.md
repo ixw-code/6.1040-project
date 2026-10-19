@@ -7,7 +7,7 @@ For the Alpha, the **minimum required functionality** for the design is:
 
 1. Record, retrieve, change, and clear readers' progress within a hub.
 2. Define an ordered checkpoint sequence for each hub.
-3. Create scoped documents containing ordered title, text, and image blocks.
+3. Create scoped documents with required titles and ordered text and image blocks.
 4. Assign requirements to documents and blocks before readers can see them.
 5. Establish and discover named spaces (wiki hubs) as the shared scope.
 6. Browse eligible article titles and read only eligible content.
@@ -47,10 +47,11 @@ The concept changes from INITIAL → ALPHA are:
 - a set of Blocks (w/ a kind BlockType, a body Content, and alt String)
 
 **actions**  
-- create(scope, name, blocks): (document)
+- create(scope, title, blocks): (document)
 
 **queries**  
 - _documents(scope): many (document)
+- _title(scope, document): optional (title)
 - _blocks(scope, document): many (block, kind, body, alt)
 
 Documenting manages the state of documents stored within a scope on Wikiplotter, and keeps track of that document-to-scope relationship. It is independent from hub or requirement logic, and document views are served via composition that checks for scope and reader eligibility.
@@ -156,11 +157,11 @@ More complicated eligibility requirements are deferred for later iterations, whi
 | `HubManagement` | Establish a hub | HubCataloguing.create → Checkpointing.create for its ID. Return the hub only after sequence initialization succeeds. Retry initialization idempotently after a partial failure. |
 | `HubManagement` | Manage checkpoints | Resolve an existing hub/sequence before append or relabel. Keep this in trusted setup for Alpha. |
 | `ContentManagement` | Create a document | Validate hub existence → Documenting.create with the entire ordered content array. No CollectionGrouping.assign step. |
-| `ContentManagement` | Classify an item | Resolve the document/block with Documenting._item → validate every required token is an ordinary checkpoint in that hub → RequirementTagging.tag. |
+| `ContentManagement` | Classify an item | Resolve the document or block through Documenting._documents and _blocks → validate every required token against the hub's full checkpoint list, including NotStarted → RequirementTagging.tag. |
 | `ContentManagement` | Validate the dataset | Require a sequence for every hub, valid scope for every document, explicit rules for every document/block, same-hub tokens, and safe title/document thresholds. Refuse startup on invalid data. |
 | `ReaderProgress` | Get/select/reset progress | Validate hub and reader; for record, validate the checkpoint with _prefix before ProgressRecording.record. Return null for missing progress; clear restores that state. |
-| `Reading` | Browse a hub | Resolve stored progress → derive completed prefix → list scoped documents → check document and title eligibility → form eligible document/title links. |
-| `Reading` | Read a document | Resolve stored progress → derive completed prefix → validate document scope → check document/title eligibility → form only eligible body blocks in original order. |
+| `Reading` | Browse a hub | Resolve stored progress → derive inclusive prefix → list scoped documents → check document eligibility → read eligible document titles from document state. |
+| `Reading` | Read a document | Resolve stored progress → derive inclusive prefix → validate document scope and eligibility → form eligible text and image blocks in original order. |
 
 
 

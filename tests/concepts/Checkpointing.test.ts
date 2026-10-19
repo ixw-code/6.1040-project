@@ -54,6 +54,18 @@ describe('Checkpointing', () => {
     expect((await c._checkpoints({ scope: 'one', sequence }))[1]?.label).toBe('Start');
   });
 
+  test('validates all checkpoint tokens within one scoped sequence', async () => {
+    const c = new CheckpointingConcept(mongo.db());
+    const { sequence } = await c.create({ scope: 'one', label: 'Main' });
+    const start = (await c._checkpoints({ scope: 'one', sequence }))[0]!.checkpoint;
+    const { checkpoint } = await c.append({ sequence, label: 'Chapter 1' });
+    expect(await c._contains({ scope: 'one', sequence, tokens: [] })).toEqual({ valid: true });
+    expect(await c._contains({ scope: 'one', sequence, tokens: [start, checkpoint] })).toEqual({ valid: true });
+    expect(await c._contains({ scope: 'one', sequence, tokens: [checkpoint, 'unknown'] })).toEqual({ valid: false });
+    expect(await c._contains({ scope: 'other', sequence, tokens: [] })).toEqual({ valid: false });
+    expect(await c._contains({ scope: 'one', sequence: 'missing', tokens: [] })).toEqual({ valid: false });
+  });
+
   test('wrong scopes and unknown checkpoints return no rows; invalid mutations refuse', async () => {
     const c = new CheckpointingConcept(mongo.db());
     const { sequence } = await c.create({ scope: 'one', label: 'Main' });

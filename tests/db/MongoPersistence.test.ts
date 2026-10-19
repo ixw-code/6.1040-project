@@ -29,7 +29,7 @@ describe('MongoDB persistence and concurrent invariants', () => {
         { kind: 'TEXT', body: 'Secret twist', alt: '' },
       ],
     });
-    const block = (await documents._blocks({ scope: hub, document }))[1]!.block;
+    const block = (await documents._blocks({ scope: hub, document }))[0]!.block;
     await progress.record({ scope: hub, reader: 'reader1', checkpoint: second });
     await requirements.tag({ item: document, required: [] });
     await requirements.tag({ item: block, required: [second] });
@@ -50,10 +50,10 @@ describe('MongoDB persistence and concurrent invariants', () => {
         { checkpoint: first }, { checkpoint: second },
       ]);
     expect(await documentsAfter._blocks({ scope: hub, document })).toEqual([
-      expect.objectContaining({ kind: 'TITLE', body: 'Chronicles', alt: '' }),
       { block, kind: 'IMAGE', body: '/scene.png', alt: 'Scene' },
       expect.objectContaining({ kind: 'TEXT', body: 'Secret twist', alt: '' }),
     ]);
+    expect(await documentsAfter._title({ scope: hub, document })).toEqual([{ title: 'Chronicles' }]);
     expect(await progressAfter._checkpoint({ scope: hub, reader: 'reader1' }))
       .toEqual([{ checkpoint: second }]);
     expect(await requirementsAfter._rule({ item: document })).toEqual([{ required: [] }]);

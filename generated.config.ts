@@ -1,7 +1,7 @@
-import { assembleWikiplotter } from "./src/assembly.ts";
+import { assembleSetupWikiplotter } from "@/assembly.ts";
 
 export default {
-    assemble: assembleWikiplotter,
+    assemble: assembleSetupWikiplotter,
     title: "Wikiplotter",
     directory: new URL("./generated/reader/", import.meta.url),
 

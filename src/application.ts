@@ -1,9 +1,9 @@
 import { createGateway } from '@mit-sdg/sync-engine/boundary';
 import type { Db } from 'mongodb';
-import { assembleWikiplotter } from './assembly.ts';
+import { assembleSetupWikiplotter } from '@/assembly.ts';
 
 export function createApplication(db: Db) {
-  const application = assembleWikiplotter(db);
+  const application = assembleSetupWikiplotter(db);
   const gateway = createGateway({ application });
   return { application, gateway };
 }

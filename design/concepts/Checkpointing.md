@@ -13,6 +13,9 @@ An organizer initializes a sequence, then appends two checkpoints. Selecting the
 ```types
 external Scope
   The context in which progress positions are ordered.
+
+opaque TokenSet
+  An array of checkpoint identities to validate within one sequence.
 ```
 
 ## State
@@ -94,4 +97,8 @@ _prefix(scope: Scope, sequence: Sequence, checkpoint: Checkpoint) : many (checkp
   answers every checkpoint from the beginning of the Sequence, through to the supplied Checkpoint, inclusive
   orders rows by ascending position
   answers no rows for an unknown sequence, wrong scope, or checkpoint outside the sequence.
+
+_contains(scope: Scope, sequence: Sequence, tokens: TokenSet) : one (valid: Flag)
+  answers true exactly when the sequence belongs to the scope and every supplied token is one of its checkpoints, including NotStarted
+  answers false for an unknown sequence, wrong scope, or any unknown token
 ```

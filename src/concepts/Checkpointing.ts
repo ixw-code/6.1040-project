@@ -98,4 +98,13 @@ export class CheckpointingConcept {
     const i = seq.checkpoints.findIndex((c) => c.checkpoint === checkpoint);
     return i === -1 ? [] : [start, ...seq.checkpoints.slice(0, i + 1).map(({ checkpoint }) => ({ checkpoint }))];
   }
+
+  async _contains({ scope, sequence, tokens }: {
+    scope: string; sequence: string; tokens: string[];
+  }): Promise<{ valid: boolean }> {
+    const rows = await this._checkpoints({ scope, sequence });
+    if (!rows.length) return { valid: false };
+    const known = new Set(rows.map(({ checkpoint }) => checkpoint));
+    return { valid: tokens.every((token) => known.has(token)) };
+  }
 }

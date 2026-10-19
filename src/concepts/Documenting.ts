@@ -4,11 +4,12 @@ export class DocumentNameRequired extends Error {}
 export class DocumentNameTaken extends Error {}
 export class InvalidDocumentBlocks extends Error {}
 
-export type BlockKind = 'TITLE' | 'TEXT' | 'IMAGE';
+export type BlockKind = 'TEXT' | 'IMAGE';
 export type BlockInput = { kind: BlockKind; body: string; alt: string };
 export type DocumentBlock = BlockInput & { block: string };
 
-type DocumentRecord = { _id: string; scope: string; title?: string; blocks: DocumentBlock[] };
+type StoredBlock = Omit<DocumentBlock, 'kind'> & { kind: BlockKind | 'TITLE' };
+type DocumentRecord = { _id: string; scope: string; title?: string; blocks: StoredBlock[] };
 
 /** Documents of raw content blocks. */
 export class DocumentingConcept {
@@ -38,12 +39,9 @@ export class DocumentingConcept {
         _id: document,
         scope,
         title: trimmed,
-        blocks: [
-          { block: `block:${crypto.randomUUID()}`, kind: 'TITLE', body: trimmed, alt: '' },
-          ...blocks.map(({ kind, body, alt }) => ({
-            block: `block:${crypto.randomUUID()}`, kind, body, alt,
-          })),
-        ],
+        blocks: blocks.map(({ kind, body, alt }) => ({
+          block: `block:${crypto.randomUUID()}`, kind, body, alt,
+        })),
       });
     } catch (error) {
       if (error instanceof MongoServerError && error.code === 11000) throw new DocumentNameTaken();
@@ -58,10 +56,16 @@ export class DocumentingConcept {
     return rows.map(({ _id }) => ({ document: _id }));
   }
 
+  async _title({ scope, document }: { scope: string; document: string }): Promise<{ title: string }[]> {
+    const doc = await this.documents.findOne({ _id: document, scope }, { projection: { title: 1 } });
+    return doc?.title === undefined ? [] : [{ title: doc.title }];
+  }
+
   async _blocks({ scope, document }: {
     scope: string; document: string;
   }): Promise<DocumentBlock[]> {
     const doc = await this.documents.findOne({ _id: document, scope });
-    return doc ? doc.blocks.map((block) => ({ ...block })) : [];
+    return doc ? doc.blocks.filter((block): block is DocumentBlock => block.kind !== 'TITLE')
+      .map((block) => ({ ...block })) : [];
   }
 }

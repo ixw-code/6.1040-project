@@ -14,7 +14,7 @@ A maintainer creates a document containing a title, text and an image. Retrievin
 external Scope
   The context to which a document belongs.
 
-BlockType is TITLE or TEXT or IMAGE
+BlockType is TEXT or IMAGE
   The supported content forms.
 
 opaque Content
@@ -38,7 +38,6 @@ a set of Blocks with
 
 Rule: Each Block occurs exactly once in exactly one Document's block sequence.
 Rule: Each Block with a BlockType IMAGE must have alt text.
-Rule: Each Document has exactly one TITLE block at the beginning of its block sequence.
 Rule: Document titles are trimmed and unique within their scope, with exact case-sensitive comparison.
 Rule: Every document is created complete and immutable.
 ```
@@ -53,15 +52,14 @@ create(scope: Scope, title: String, blocks: BlockInputs) : returns (document: Do
   where name is nonblank and a Document in scope has the trimmed name
   then
     refuses DOCUMENT_NAME_TAKEN "This document name is already used in the scope."
-  where name is nonblank and unused in scope, and any of blocks is not a valid block or has BlockType TITLE
+  where name is nonblank and unused in scope, and any of blocks is not a valid text or image block
   then
-    refuses INVALID_DOCUMENT_BLOCKS "Provide valid text or image blocks, without including title blocks."
+    refuses INVALID_DOCUMENT_BLOCKS "Provide valid text or image blocks."
   where name is nonblank and unused in scope, and blocks is a complete valid ordered document
   then
     create a new document identity with scope and trimmed title
-    create a block with BlockType TITLE, title as body, empty alt string
     create a new block identity for every input entry in blocks with their kind, body, and alt
-    add document with the TITLE block first in sequence, followed by the block identities in input order
+    add document with the block identities in input order
     returns document
 ```
 
@@ -71,6 +69,10 @@ create(scope: Scope, title: String, blocks: BlockInputs) : returns (document: Do
 _documents(scope: Scope) : many (document: Document)
   answers the Scope's documents 
   answers no rows for an unknown scope or a scope with no documents
+
+_title(scope: Scope, document: Document) : optional (title: String)
+  answers the Document's title within the supplied scope
+  answers no row for an unknown scope, unknown document, or legacy document without a title
 
 _blocks(scope: Scope, document: Document) : many (block: Block, kind: BlockType, body: Content, alt: String)
   answers the Document's blocks with their kind, body, and alt
