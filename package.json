@@ -5,32 +5,44 @@
     "dependencies": {
         "@mit-sdg/sync-engine": "1.1.0",
         "@mit-sdg/sync-engine-http": "1.1.0",
-        "mongodb": "^7.7.0"
+        "mongodb": "^7.7.0",
+        "vue": "^3.5.44"
     },
     "devDependencies": {
         "@mit-sdg/sync-engine-skill": "1.1.0",
-        "@types/bun": "^1.4.0",
-        "@types/node": "^24.0.0",
-        "typescript": ">=6 <7"
+        "@types/bun": "^1.4.3",
+        "@types/node": "^26.6.5",
+        "@vitejs/plugin-vue": "^6.0.10",
+        "typescript": "^7.0.2",
+        "vite": "^8.3.4",
+        "vue-tsc": "^3.3.13"
     },
     "scripts": {
-        "generate": "sync-engine artifacts pin",
-        "check": "sync-engine check && sync-engine artifacts check && tsc --noEmit",
-        "start": "bun run --parallel start:backend start:frontend",
-        "start:backend": "HOST=127.0.0.1 PORT=4000 bun src/main.ts",
-        "start:frontend": "HOST=0.0.0.0 BACKEND_URL=http://127.0.0.1:4000 bun web/server.ts",
-        "check:design": "sync-engine check-design design/concepts/*.md design/types.md design/compositions/*.md",
         "dev": "bun run db:up && bun run --parallel dev:backend dev:frontend",
-        "dev:backend": "bun --watch src/main.ts",
-        "dev:frontend": "bun --watch web/server.ts",
-        "up": "podman compose up -d --build && bun scripts/check-api.ts http://127.0.0.1:8080 --wait",
-        "down": "podman compose down",
-        "logs": "podman compose logs backend frontend",
-        "db:up": "podman compose up -d mongo",
-        "db:shell": "podman compose exec mongo mongosh -u dev -p dev",
-        "db:logs": "podman compose logs mongo",
-        "db:down": "podman compose down",
-        "db:reset": "podman compose down -v && podman compose up -d mongo"
+        "dev:backend": "HOST=127.0.0.1 PORT=3000 bun --watch src/main.ts",
+        "dev:frontend": "vite --config frontend/vite.config.ts",
+
+        "start": "bun run --parallel start:backend start:frontend",
+        "start:backend": "HOST=127.0.0.1 PORT=3000 bun src/main.ts",
+        "start:frontend": "vite --config frontend/vite.config.ts",
+        "build:frontend": "vite build --config frontend/vite.config.ts",
+
+        "seed": "bun scripts/seed.ts",
+        "generate": "sync-engine artifacts pin",
+
+        "check": "bun run check:design && bun run check:framework && bun run check:artifacts && bun run typecheck && bun run build:frontend && bun run test",
+        "test": "bun test",
+        "check:design": "sync-engine check-design design/concepts/*.md design/types.md design/compositions/*.md",
+        "check:framework": "sync-engine check",
+        "check:artifacts": "sync-engine artifacts check",
+        "typecheck": "bun run typecheck:backend && bun run typecheck:frontend",
+        "typecheck:backend": "tsc -p tsconfig.json --noEmit",
+        "typecheck:frontend": "vue-tsc -p frontend/tsconfig.json --noEmit",
+
+        "db:up": "podman compose -p wikiplotter-alpha-complete up -d mongo",
+        "db:down": "podman compose -p wikiplotter-alpha-complete stop mongo",
+        "db:logs": "podman compose -p wikiplotter-alpha-complete logs -f mongo",
+        "db:shell": "podman compose -p wikiplotter-alpha-complete exec mongo mongosh -u dev -p dev --authenticationDatabase admin"
     },
     "overrides": {
         "bson": "7.2.0"
