@@ -23,6 +23,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.local
 !.env.example
 
+# test tmp files 
+tests/.sync-engine-discovery-*/
+tests/.sync-engine-diff-*/
+
 # caches
 .eslintcache
 .cache

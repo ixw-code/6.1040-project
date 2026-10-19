@@ -44,15 +44,14 @@ The concept changes from INITIAL → ALPHA are:
 
 **state**  
 - a set of Documents (w/ a unique name and scope, and a seq of Blocks)  
-- a set of Blocks (w/ a BlockType and a body Content)
+- a set of Blocks (w/ a kind BlockType, a body Content, and alt String)
 
 **actions**  
 - create(scope, name, blocks): (document)
 
 **queries**  
 - _documents(scope): many (document)
-- _document(scope, document): optional (name, blocks)  
-- _blocks(scope, document): many (block)
+- _blocks(scope, document): many (block, kind, body, alt)
 
 Documenting manages the state of documents stored within a scope on Wikiplotter, and keeps track of that document-to-scope relationship. It is independent from hub or requirement logic, and document views are served via composition that checks for scope and reader eligibility.
 
@@ -69,7 +68,7 @@ Documenting manages the state of documents stored within a scope on Wikiplotter,
 - rename(hub, name): (hub) - update the name of an existing hub without changing its identity.
 
 **Queries:**
-- _hub(hub): optional (name) - resolve an existing hub.
+- _hub(name): optional (hub) - resolve an existing hub.
 - _hubs(): many (hub, name) - list hubs in deterministic identity order.
 
 HubCataloguing supplies scope identities. Establishing a usable hub also initializes Checkpointing through composition. Hub deletion is outside Alpha and Beta because it would require policies for all scoped state.
@@ -99,17 +98,17 @@ Composition validates hub and checkpoint existence before recording. Missing pro
 **Principle:** after checkpoints are appended to a scope's sequence, selecting one yields that checkpoint and every earlier checkpoint as a deterministic completed prefix
 
 **State:**
-- a set of Sequences (w/ a scope, seq of Checkpoints) 
-- a set of Checkpoints (w/ a label)
+- a set of Sequences (w/ a scope, a label, seq of Checkpoints) 
+- a set of Checkpoints (w/ a label and position in sequence)
 
 **Actions:**
-- create(scope): (sequence)
+- create(scope, label): (sequence)
 - append(sequence, label): (checkpoint) - create a checkpoint at the end of the sequence
 - relabel(scope, checkpoint, label): (checkpoint) - change an ordinary checkpoint's label without changing identity or order
 
 **Queries:**
 - _sequences(scope): many (sequence)
-- _checkpoints(scope, sequence): seq (checkpoint) 
+- _checkpoints(scope, sequence): many (checkpoint, label, position) 
 - _prefix(scope, sequence, checkpoint): optional (completed) - return a prefix of all completed checkpoints
 
 Checkpoint labels must be spoiler-neutral, and sequences must have at least one label representing a status of 'Not Started'. Appending new checkpoints does not change what existing checkpoint selections mean.
@@ -154,14 +153,15 @@ More complicated eligibility requirements are deferred for later iterations, whi
 
 | Composition module | Feature / flow | Required coordination |
 | --- | --- | --- |
-| `HubSetup` | Establish a hub | HubCataloguing.create → Checkpointing.create for its ID. Return the hub only after sequence initialization succeeds. Retry initialization idempotently after a partial failure. |
-| `HubSetup` | Manage checkpoints | Resolve an existing hub/sequence before append or relabel. Keep this in trusted setup for Alpha. |
-| `ContentSetup` | Create a document | Validate hub existence → Documenting.create with the entire ordered content array. No CollectionGrouping.assign step. |
-| `ContentSetup` | Classify an item | Resolve the document/block with Documenting._item → validate every required token is an ordinary checkpoint in that hub → RequirementTagging.tag. |
-| `ContentSetup` | Validate the dataset | Require a sequence for every hub, valid scope for every document, explicit rules for every document/block, same-hub tokens, and safe title/document thresholds. Refuse startup on invalid data. |
+| `HubManagement` | Establish a hub | HubCataloguing.create → Checkpointing.create for its ID. Return the hub only after sequence initialization succeeds. Retry initialization idempotently after a partial failure. |
+| `HubManagement` | Manage checkpoints | Resolve an existing hub/sequence before append or relabel. Keep this in trusted setup for Alpha. |
+| `ContentManagement` | Create a document | Validate hub existence → Documenting.create with the entire ordered content array. No CollectionGrouping.assign step. |
+| `ContentManagement` | Classify an item | Resolve the document/block with Documenting._item → validate every required token is an ordinary checkpoint in that hub → RequirementTagging.tag. |
+| `ContentManagement` | Validate the dataset | Require a sequence for every hub, valid scope for every document, explicit rules for every document/block, same-hub tokens, and safe title/document thresholds. Refuse startup on invalid data. |
 | `ReaderProgress` | Get/select/reset progress | Validate hub and reader; for record, validate the checkpoint with _prefix before ProgressRecording.record. Return null for missing progress; clear restores that state. |
 | `Reading` | Browse a hub | Resolve stored progress → derive completed prefix → list scoped documents → check document and title eligibility → form eligible document/title links. |
-| `Reading` | Read an article | Resolve stored progress → derive completed prefix → validate document scope → check document/title eligibility → form only eligible body blocks in original order. |
+| `Reading` | Read a document | Resolve stored progress → derive completed prefix → validate document scope → check document/title eligibility → form only eligible body blocks in original order. |
+
 
 
 ## Implementation Plan 
@@ -182,9 +182,10 @@ The implementation for the Alpha will happen in the following incremental steps:
 The remaining functionality to be implemented in the complete Beta app are as follows: 
 
 1. UI and application interface polishing
-2. Navigation and article search
-3. Complete reader progress support 
-4. Application deployment
+2. Polished template document rendering.
+3. Navigation and article search
+4. Complete reader progress support 
+5. Application deployment
 
 ### Potential Future Expansions
 
