@@ -10,9 +10,10 @@ describe('HubCataloguing', () => {
   test('creates trimmed names and keeps stable hub IDs through rename', async () => {
     const c = new HubCataloguingConcept(mongo.db());
     const { hub } = await c.create({ name: '  Arcadia  ' });
-    expect(await c._hub({ hub })).toEqual([{ name: 'Arcadia' }]);
+    expect(await c._hub({ name: 'Arcadia' })).toEqual([{ hub }]);
     expect(await c.rename({ hub, name: '  Arcadia II ' })).toEqual({ hub });
-    expect(await c._hub({ hub })).toEqual([{ name: 'Arcadia II' }]);
+    expect(await c._hub({ name: 'Arcadia II' })).toEqual([{ hub }]);
+    expect(await c._hub({ name: 'Arcadia' })).toEqual([]);
   });
 
   test('rejects blank and duplicate names without changing state', async () => {
@@ -25,8 +26,8 @@ describe('HubCataloguing', () => {
     await expect(c.rename({ hub: second.hub, name: '' })).rejects.toBeInstanceOf(HubRenameNameRequired);
     await expect(c.rename({ hub: 'missing', name: 'New' })).rejects.toBeInstanceOf(HubNotFound);
     expect(await c._hubs()).toHaveLength(2);
-    expect(await c._hub({ hub: first.hub })).toEqual([{ name: 'Arcadia' }]);
-    expect(await c._hub({ hub: second.hub })).toEqual([{ name: 'Other' }]);
+    expect(await c._hub({ name: 'Arcadia' })).toEqual([{ hub: first.hub }]);
+    expect(await c._hub({ name: 'Other' })).toEqual([{ hub: second.hub }]);
   });
 
   test('names compare case-sensitively and queries return defensive records', async () => {
@@ -38,6 +39,6 @@ describe('HubCataloguing', () => {
     expect(rows.map((r) => r.hub)).toEqual([...rows.map((r) => r.hub)].sort());
     rows[0]!.name = 'changed-outside';
     expect((await c._hubs()).some((r) => r.name === 'changed-outside')).toBe(false);
-    expect(await c._hub({ hub: 'missing' })).toEqual([]);
+    expect(await c._hub({ name: 'missing' })).toEqual([]);
   });
 });

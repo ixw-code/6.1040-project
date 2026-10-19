@@ -1,4 +1,31 @@
-# Implementation status — concept contract alignment
+# Implementation status — Milestone 4A HubManagement
+
+HubManagement is implemented through the local sync-engine gateway. It creates and renames hubs; creates a checkpoint sequence and first ordinary checkpoint with a new hub; lists sequences and ordered checkpoints; and appends and relabels checkpoints. Gateway checks reject missing or cross-hub references. A nonblank create label is validated before hub creation so that input cannot leave a partial hub.
+
+The assembly now selects all five MongoDB-backed concepts and the HubManagement composition. `createApplication(db)` returns the assembly and gateway for local callers. The no-argument assembly form builds unconnected MongoDB handles for design tooling; it does not start a listener or connect to the database.
+
+`HubCataloguing._hub(name)` now resolves a name to a hub ID, matching its concept contract. HubManagement checks ID membership through `_hubs`. `Checkpointing._prefix` now includes NotStarted and every checkpoint through the selected one. The affected concept and composition specifications and tests reflect these rules.
+
+Verification on this increment:
+
+- Focused gateway, concept, and MongoDB persistence tests: 16 passed, 0 failed.
+- Design form check: passed for 10 files.
+- Backend and frontend type checks: passed.
+- Framework check: 41 unresolved declarations remain for ContentManagement, ReaderProgress, and Reading, plus the unused future Contributor type. It reports no HubManagement or unselected-instance issue.
+- `git diff --check`: passed.
+
+ContentManagement and later milestones remain unimplemented. Hub creation is a multi-action flow, not a database transaction; an infrastructure failure after hub insertion can leave partial state. The sync-engine skill work bootstrap could not start because the analysis and catalog packages are installed locally but are absent from the declared development dependencies. Public framework guidance and examples matching version 1.1.0 were used directly.
+
+Suggested commit message:
+
+`feat(alpha): implement HubManagement gateway workflows`
+
+- Register MongoDB concepts and assemble HubManagement for local gateway calls.
+- Create, list, append, rename, and relabel scoped hubs and checkpoints.
+- Align hub lookup and inclusive checkpoint prefixes with concept contracts.
+- Cover success and refusal paths through MongoDB-backed gateway tests.
+
+## Previous status — concept contract alignment
 
 ## Files changed
 

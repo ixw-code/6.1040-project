@@ -13,6 +13,7 @@
     ],
     "paths": {
       "@/*": [ "./src/*" ],
+      "@design/*": [ "./design/*" ],
       "@tests/*": [ "./tests/*" ]
     },
     "moduleResolution": "bundler",

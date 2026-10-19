@@ -51,9 +51,9 @@ export class HubCataloguingConcept {
     return { hub };
   }
 
-  async _hub({ hub }: { hub: string }): Promise<{ name: string }[]> {
-    const found = await this.hubs.findOne({ _id: hub });
-    return found ? [{ name: found.name }] : [];
+  async _hub({ name }: { name: string }): Promise<{ hub: string }[]> {
+    const found = await this.hubs.findOne({ name });
+    return found ? [{ hub: found._id }] : [];
   }
 
   async _hubs(_input: Record<string, never> = {}): Promise<{ hub: string; name: string }[]> {

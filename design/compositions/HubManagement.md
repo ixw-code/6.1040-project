@@ -11,13 +11,13 @@ HubManagement.CreateHub at /hubs/create
 HubManagement.RenameHub at /hubs/rename
 ```
 
-**List sequences.** The [sequence-list endpoint](reaction:HubManagement.GetSequences) accepts `{ hub }`. The [existing-hub view](view:HubManagement.ExistingHub) checks HubCataloguing._hub. The [sequence-list former](former:HubManagement.SequenceList) queries Checkpointing._sequences with `scope = hub` and returns `{ sequences: [{ sequence }] }`.
+**List sequences.** The [sequence-list endpoint](reaction:HubManagement.GetSequences) accepts `{ hub }`. The [existing-hub view](view:HubManagement.ExistingHub) checks membership through HubCataloguing._hubs. The [sequence-list former](former:HubManagement.SequenceList) collects Checkpointing._sequences rows with `scope = hub`; the endpoint returns `{ sequences: [{ sequence }] }`.
 
 ```endpoints
 HubManagement.GetSequences at /hubs/sequences
 ```
 
-**List checkpoints.** The [checkpoint-list endpoint](reaction:HubManagement.ListCheckpoints) accepts `{ hub }`. The [hub-sequence view](view:HubManagement.HubSequence) relates the [existing hub](view:HubManagement.ExistingHub) to its sequence through Checkpointing._sequences; Alpha uses one sequence per hub. The [checkpoint-list former](former:HubManagement.CheckpointChoices) queries Checkpointing._checkpoints and returns `{ sequence, checkpoints: [{ checkpoint, label, position }] }` in checkpoint order. This supplies both the progress picker and checkpoint-management controls.
+**List checkpoints.** The [checkpoint-list endpoint](reaction:HubManagement.ListCheckpoints) accepts `{ hub }`. The [hub-sequence view](view:HubManagement.HubSequence) relates the [existing hub](view:HubManagement.ExistingHub) to its sequence through Checkpointing._sequences; Alpha uses one sequence per hub. The [checkpoint-list former](former:HubManagement.CheckpointChoices) collects Checkpointing._checkpoints rows in checkpoint order; the endpoint returns `{ sequence, checkpoints: [{ checkpoint, label, position }] }`. This supplies both the progress picker and checkpoint-management controls.
 
 **Append a checkpoint.** The [append endpoint](reaction:HubManagement.AppendCheckpoint) accepts `{ hub, sequence, label }`. The [hub-sequence view](view:HubManagement.HubSequence) checks that the sequence belongs to the hub. The endpoint invokes Checkpointing.append and returns `{ checkpoint }`.
 

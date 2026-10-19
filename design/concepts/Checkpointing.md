@@ -6,7 +6,7 @@ Define stable, ordered progress positions within a scope and identify which posi
 
 ## Principle
 
-An organizer initializes a sequence, then appends two checkpoints. Selecting the second yields both ordinary checkpoints as completed. Selecting NotStarted yields none. Relabeling a checkpoint changes its label without changing its identity or its completed prefix.
+An organizer initializes a sequence, then appends two checkpoints. Selecting the second yields NotStarted and both ordinary checkpoints in its prefix. Selecting NotStarted yields its own token. Relabeling a checkpoint changes its label without changing its identity or its prefix.
 
 ## Types
 

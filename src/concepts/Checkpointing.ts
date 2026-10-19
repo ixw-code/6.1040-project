@@ -93,8 +93,9 @@ export class CheckpointingConcept {
   }): Promise<{ checkpoint: string }[]> {
     const seq = await this.sequences.findOne({ scope, _id: sequence });
     if (!seq) return [];
-    if (checkpoint === startOf(seq)) return [];
+    const start = { checkpoint: startOf(seq) };
+    if (checkpoint === start.checkpoint) return [start];
     const i = seq.checkpoints.findIndex((c) => c.checkpoint === checkpoint);
-    return i === -1 ? [] : seq.checkpoints.slice(0, i + 1).map(({ checkpoint }) => ({ checkpoint }));
+    return i === -1 ? [] : [start, ...seq.checkpoints.slice(0, i + 1).map(({ checkpoint }) => ({ checkpoint }))];
   }
 }

@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { HubCataloguingConcept, HubNameTaken } from '../../src/concepts/HubCataloguing.ts';
-import { CheckpointingConcept } from '../../src/concepts/Checkpointing.ts';
-import { DocumentingConcept, DocumentNameTaken } from '../../src/concepts/Documenting.ts';
-import { ProgressRecordingConcept } from '../../src/concepts/ProgressRecording.ts';
-import { RequirementTaggingConcept } from '../../src/concepts/RequirementTagging.ts';
+import { HubCataloguingConcept, HubNameTaken } from '@/concepts/HubCataloguing.ts';
+import { CheckpointingConcept } from '@/concepts/Checkpointing.ts';
+import { DocumentingConcept, DocumentNameTaken } from '@/concepts/Documenting.ts';
+import { ProgressRecordingConcept } from '@/concepts/ProgressRecording.ts';
+import { RequirementTaggingConcept } from '@/concepts/RequirementTagging.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 
 describe('MongoDB persistence and concurrent invariants', () => {
@@ -42,10 +42,13 @@ describe('MongoDB persistence and concurrent invariants', () => {
     const progressAfter = new ProgressRecordingConcept(db);
     const requirementsAfter = new RequirementTaggingConcept(db);
 
-    expect(await hubsAfter._hub({ hub })).toEqual([{ name: 'Chronicles' }]);
+    expect(await hubsAfter._hub({ name: 'Chronicles' })).toEqual([{ hub }]);
     expect(await checkpointsAfter.create({ scope: hub, label: 'Main' })).toEqual({ sequence });
     expect(await checkpointsAfter._prefix({ scope: hub, sequence, checkpoint: second }))
-      .toEqual([{ checkpoint: first }, { checkpoint: second }]);
+      .toEqual([
+        { checkpoint: (await checkpointsAfter._checkpoints({ scope: hub, sequence }))[0]!.checkpoint },
+        { checkpoint: first }, { checkpoint: second },
+      ]);
     expect(await documentsAfter._blocks({ scope: hub, document })).toEqual([
       expect.objectContaining({ kind: 'TITLE', body: 'Chronicles', alt: '' }),
       { block, kind: 'IMAGE', body: '/scene.png', alt: 'Scene' },
@@ -103,7 +106,7 @@ describe('MongoDB persistence and concurrent invariants', () => {
     expect(await checkpoints._checkpoints({ scope: 'hub', sequence: 'existing-sequence' }))
       .toEqual(rows);
     expect(await checkpoints._prefix({ scope: 'hub', sequence: 'existing-sequence', checkpoint: 'chapter-1' }))
-      .toEqual([{ checkpoint: 'chapter-1' }]);
+      .toEqual([{ checkpoint: 'start:existing-sequence' }, { checkpoint: 'chapter-1' }]);
   });
 
   test('concurrent progress writes still store one checkpoint per reader and hub', async () => {

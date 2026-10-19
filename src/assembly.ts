@@ -1,9 +1,15 @@
-import { assemble } from "@mit-sdg/sync-engine/assembly";
-import { applicationConceptSet } from "./concepts.ts";
+import { assemble } from '@mit-sdg/sync-engine/assembly';
+import { MongoClient, type Db } from 'mongodb';
+import { composition as hubManagement } from '@/compositions/HubManagement.ts';
+import { applicationConceptSet } from './concepts.ts';
+import { createMongoConceptInstances } from './concept-instances.ts';
 
-export function assembleWikiplotter() {
+/** The no-argument form supports design tooling without opening a connection. */
+export function assembleWikiplotter(db?: Db) {
+  const handle = db ?? new MongoClient('mongodb://127.0.0.1:27017/wikiplotter_alpha_tooling').db();
   return assemble({
     conceptSet: applicationConceptSet,
-    composition: {},
+    instances: createMongoConceptInstances(handle),
+    composition: { HubManagement: hubManagement },
   });
 }

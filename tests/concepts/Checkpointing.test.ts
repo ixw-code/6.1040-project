@@ -15,24 +15,29 @@ describe('Checkpointing', () => {
     expect(await c._sequences({ scope: 'one' })).toEqual([{ sequence }]);
     expect(await c._checkpoints({ scope: 'one', sequence })).toEqual([start]);
     expect(start).toEqual({ checkpoint: expect.any(String), label: 'NotStarted', position: 0 });
-    expect(await c._prefix({ scope: 'one', sequence, checkpoint: start.checkpoint })).toEqual([]);
+    expect(await c._prefix({ scope: 'one', sequence, checkpoint: start.checkpoint })).toEqual([
+      { checkpoint: start.checkpoint },
+    ]);
     await expect(c.relabel({ scope: 'one', checkpoint: start.checkpoint, label: 'Other' }))
       .rejects.toBeInstanceOf(StartLabelFixed);
   });
 
-  test('prefixes are inclusive and the first checkpoint has a one-element prefix', async () => {
+  test('prefixes include NotStarted and the selected checkpoint', async () => {
     const c = new CheckpointingConcept(mongo.db());
     const { sequence } = await c.create({ scope: 'one', label: 'Main' });
     const { checkpoint: a } = await c.append({ sequence, label: '  Chapter 1 ' });
     const { checkpoint: b } = await c.append({ sequence, label: 'Chapter 2' });
+    const start = (await c._checkpoints({ scope: 'one', sequence }))[0]!.checkpoint;
     expect(await c._checkpoints({ scope: 'one', sequence })).toEqual([
       { checkpoint: expect.any(String), label: 'NotStarted', position: 0 },
       { checkpoint: a, label: 'Chapter 1', position: 1 },
       { checkpoint: b, label: 'Chapter 2', position: 2 },
     ]);
-    expect(await c._prefix({ scope: 'one', sequence, checkpoint: a })).toEqual([{ checkpoint: a }]);
+    expect(await c._prefix({ scope: 'one', sequence, checkpoint: a })).toEqual([
+      { checkpoint: start }, { checkpoint: a },
+    ]);
     expect(await c._prefix({ scope: 'one', sequence, checkpoint: b })).toEqual([
-      { checkpoint: a }, { checkpoint: b },
+      { checkpoint: start }, { checkpoint: a }, { checkpoint: b },
     ]);
   });
 
@@ -41,9 +46,10 @@ describe('Checkpointing', () => {
     const { sequence } = await c.create({ scope: 'one', label: 'Main' });
     const { checkpoint: a } = await c.append({ sequence, label: 'A' });
     const { checkpoint: b } = await c.append({ sequence, label: 'B' });
+    const start = (await c._checkpoints({ scope: 'one', sequence }))[0]!.checkpoint;
     await c.relabel({ scope: 'one', checkpoint: a, label: 'Start' });
     expect(await c._prefix({ scope: 'one', sequence, checkpoint: b })).toEqual([
-      { checkpoint: a }, { checkpoint: b },
+      { checkpoint: start }, { checkpoint: a }, { checkpoint: b },
     ]);
     expect((await c._checkpoints({ scope: 'one', sequence }))[1]?.label).toBe('Start');
   });
