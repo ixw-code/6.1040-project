@@ -15,7 +15,13 @@ Document content and its requirement tags are preloaded through a local fixture 
 The browser retains a dummy reader ID. MongoDB stores that reader's progress for each hub, and readers can update or clear their saved progress while reading, this data being persistent upon reload. The site reloads upon updates, and the page only serves the tagged information appropriate for the reader's progress.
 
 ### Demo 
-![Wikiplotter Alpha Demo](docs/assets/demo-alpha.gif)
+**Click the thumbnail below!**
+<p align="center">
+  <a href="https://drive.google.com/file/d/1YOJrL5zgmGN7S9tEPsCWyqzui64yi_4r/view" target="_blank" rel="noopener noreferrer">
+    <img src="./docs/assets/thumbnails/alpha-demo.png" alt="Wikiplotter Alpha Demo">
+  </a>
+</p>
+
 
 ## Concepts and composition
 

@@ -209,7 +209,7 @@ function relabelCheckpoint(checkpoint: string) {
         <template v-if="page.kind === 'home'">
           <div class="intro">
             <h1>Wikiplotter</h1>
-            <p>Explore a story wiki at your own reading checkpoint.</p>
+            <p>Explore your favorite stories, spoiler-free.</p>
           </div>
           <div class="directory-layout">
             <section>
