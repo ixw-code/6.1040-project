@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { HubCataloguingConcept, HubNameTaken } from '../../src/concepts/HubCataloguing.ts';
 import { CheckpointingConcept } from '../../src/concepts/Checkpointing.ts';
-import { DocumentingConcept } from '../../src/concepts/Documenting.ts';
+import { DocumentingConcept, DocumentNameTaken } from '../../src/concepts/Documenting.ts';
 import { ProgressRecordingConcept } from '../../src/concepts/ProgressRecording.ts';
 import { RequirementTaggingConcept } from '../../src/concepts/RequirementTagging.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
@@ -18,17 +18,18 @@ describe('MongoDB persistence and concurrent invariants', () => {
     const requirements = new RequirementTaggingConcept(db);
 
     const { hub } = await hubs.create({ name: 'Chronicles' });
-    const { sequence } = await checkpoints.create({ scope: hub });
+    const { sequence } = await checkpoints.create({ scope: hub, label: 'Main' });
     const { checkpoint: first } = await checkpoints.append({ sequence, label: 'Part I' });
     const { checkpoint: second } = await checkpoints.append({ sequence, label: 'Part II' });
     const { document } = await documents.create({
       scope: hub,
+      title: 'Chronicles',
       blocks: [
         { kind: 'IMAGE', body: '/scene.png', alt: 'Scene' },
         { kind: 'TEXT', body: 'Secret twist', alt: '' },
       ],
     });
-    const block = (await documents._blocks({ scope: hub, document }))[0]!.block;
+    const block = (await documents._blocks({ scope: hub, document }))[1]!.block;
     await progress.record({ scope: hub, reader: 'reader1', checkpoint: second });
     await requirements.tag({ item: document, required: [] });
     await requirements.tag({ item: block, required: [second] });
@@ -42,10 +43,11 @@ describe('MongoDB persistence and concurrent invariants', () => {
     const requirementsAfter = new RequirementTaggingConcept(db);
 
     expect(await hubsAfter._hub({ hub })).toEqual([{ name: 'Chronicles' }]);
-    expect(await checkpointsAfter.create({ scope: hub })).toEqual({ sequence });
+    expect(await checkpointsAfter.create({ scope: hub, label: 'Main' })).toEqual({ sequence });
     expect(await checkpointsAfter._prefix({ scope: hub, sequence, checkpoint: second }))
-      .toEqual([{ completed: [first, second] }]);
+      .toEqual([{ checkpoint: first }, { checkpoint: second }]);
     expect(await documentsAfter._blocks({ scope: hub, document })).toEqual([
+      expect.objectContaining({ kind: 'TITLE', body: 'Chronicles', alt: '' }),
       { block, kind: 'IMAGE', body: '/scene.png', alt: 'Scene' },
       expect.objectContaining({ kind: 'TEXT', body: 'Secret twist', alt: '' }),
     ]);
@@ -71,6 +73,39 @@ describe('MongoDB persistence and concurrent invariants', () => {
     expect(await hubs._hubs()).toHaveLength(1);
   });
 
+  test('a unique index rejects concurrent document titles within a scope', async () => {
+    const documents = new DocumentingConcept(mongo.db());
+    const attempts = await Promise.allSettled([
+      documents.create({ scope: 'hub', title: 'Map', blocks: [] }),
+      documents.create({ scope: 'hub', title: ' Map ', blocks: [] }),
+    ]);
+    expect(attempts.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    const failures = attempts.filter((result) => result.status === 'rejected');
+    expect(failures).toHaveLength(1);
+    expect(failures[0]?.reason).toBeInstanceOf(DocumentNameTaken);
+  });
+
+  test('existing sequences gain a stable NotStarted identity without rewriting stored checkpoints', async () => {
+    await mongo.db().collection<{
+      _id: string;
+      scope: string;
+      checkpoints: { checkpoint: string; label: string }[];
+    }>('sequences').insertOne({
+      _id: 'existing-sequence', scope: 'hub',
+      checkpoints: [{ checkpoint: 'chapter-1', label: 'Chapter 1' }],
+    });
+    const checkpoints = new CheckpointingConcept(mongo.db());
+    const rows = await checkpoints._checkpoints({ scope: 'hub', sequence: 'existing-sequence' });
+    expect(rows).toEqual([
+      { checkpoint: 'start:existing-sequence', label: 'NotStarted', position: 0 },
+      { checkpoint: 'chapter-1', label: 'Chapter 1', position: 1 },
+    ]);
+    expect(await checkpoints._checkpoints({ scope: 'hub', sequence: 'existing-sequence' }))
+      .toEqual(rows);
+    expect(await checkpoints._prefix({ scope: 'hub', sequence: 'existing-sequence', checkpoint: 'chapter-1' }))
+      .toEqual([{ checkpoint: 'chapter-1' }]);
+  });
+
   test('concurrent progress writes still store one checkpoint per reader and hub', async () => {
     const progress = new ProgressRecordingConcept(mongo.db());
     await Promise.all([
@@ -85,16 +120,17 @@ describe('MongoDB persistence and concurrent invariants', () => {
   test('concurrent sequence creation remains idempotent and appends are not lost', async () => {
     const checkpoints = new CheckpointingConcept(mongo.db());
     const created = await Promise.all(
-      Array.from({ length: 5 }, () => checkpoints.create({ scope: 'hub-1' })),
+      Array.from({ length: 5 }, () => checkpoints.create({ scope: 'hub-1', label: 'Main' })),
     );
     const sequence = created[0]!.sequence;
     expect(created.every((c) => c.sequence === sequence)).toBe(true);
     const labels = ['A', 'B', 'C', 'D'];
     const inserted = await Promise.all(labels.map((label) => checkpoints.append({ sequence, label })));
     const rows = await checkpoints._checkpoints({ scope: 'hub-1', sequence });
-    expect(rows).toHaveLength(labels.length);
-    expect(new Set(rows.map((r) => r.checkpoint)))
+    expect(rows).toHaveLength(labels.length + 1);
+    expect(rows[0]).toEqual({ checkpoint: expect.any(String), label: 'NotStarted', position: 0 });
+    expect(new Set(rows.slice(1).map((r) => r.checkpoint)))
       .toEqual(new Set(inserted.map((r) => r.checkpoint)));
-    expect(rows.map((r) => r.position)).toEqual([1, 2, 3, 4]);
+    expect(rows.map((r) => r.position)).toEqual([0, 1, 2, 3, 4]);
   });
 });

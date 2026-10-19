@@ -2,7 +2,7 @@
 
 Content Management composes article creation and validation, and assigns checkpoint requirements to documents and blocks.
 
-**Create a document.** The [create-document endpoint](reaction:ContentManagement.CreateDocument) accepts `{ hub, blocks }`. Runtime input validation checks the block records before creation; each has a supported kind, body, and alt. The [existing-hub view](view:ContentManagement.ExistingHub) checks HubCataloguing._hub, then the endpoint invokes Documenting.create with `scope = hub`. The [created-document former](former:ContentManagement.CreatedDocument) retrieves the new blocks through Documenting._blocks and returns `{ document, blocks }`, where blocks contains their IDs in stored order. A TITLE block is optional, so a document can contain just an image. Documents and blocks remain ineligible until explicitly tagged.
+**Create a document.** The [create-document endpoint](reaction:ContentManagement.CreateDocument) accepts `{ hub, title, blocks }`. Runtime input validation checks the nonblank title and block records before creation; each input block is TEXT or IMAGE with a string body and alt, and IMAGE alt text is nonblank. The [existing-hub view](view:ContentManagement.ExistingHub) checks HubCataloguing._hub, then the endpoint invokes Documenting.create with `scope = hub`. The [created-document former](former:ContentManagement.CreatedDocument) retrieves the new blocks through Documenting._blocks and returns `{ document, blocks }`, where blocks contains their IDs in stored order, including the generated first TITLE block. Documents and blocks remain ineligible until explicitly tagged.
 
 ```endpoints
 ContentManagement.CreateDocument at /setup/documents/create

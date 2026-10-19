@@ -46,33 +46,25 @@ The five selected instances use these bindings:
 
 Use stable string IDs with distinct document/block prefixes so a tagging item is unambiguous. IDs identify records; display names and checkpoint labels do not. In TypeScript, specialize generic concept registrations consistently with these bindings.
 
-`BlockInput` is `{ kind: "TITLE" | "TEXT" | "IMAGE"; body: string; alt: string }`; `BlockInputs` is an ordered array. Empty alt text is represented as `""`. Titles are optional. A document containing one IMAGE block is valid. Video is not yet a supported input kind.
+`BlockInputs` is an ordered array of TEXT or IMAGE records with string body and alt fields. Documenting creates the required first TITLE block from a nonblank, scope-unique title. IMAGE blocks require nonblank alt text. Video is not yet a supported input kind.
 
 A compact MongoDB layout is sufficient:
 
 | Owner / collection | Stored record | Indexes and operations |
 | --- | --- | --- |
 | HubCataloguing / `hubs` | `{ _id, name }` | Unique trimmed name; insert and rename without changing ID. |
-| Checkpointing / `sequences` | `{ _id, scope, checkpoints: [{ checkpoint, label }] }` | Unique scope; append atomically to the array and update labels in place. |
-| Documenting / `documents` | `{ _id, scope, blocks: [{ block, kind, body, alt }] }` | Index scope with ID for scoped listing; create the complete document in one insert. |
+| Checkpointing / `sequences` | `{ _id, scope, label, start, checkpoints: [{ checkpoint, label }] }` | Unique scope; append atomically to the array and update labels in place. |
+| Documenting / `documents` | `{ _id, scope, title, blocks: [{ block, kind, body, alt }] }` | Unique scope/title for new documents; create the complete document in one insert. |
 | ProgressRecording / `progress` | `{ scope, reader, checkpoint }` | Unique compound index on scope and reader; upsert on record, delete on clear. |
 | RequirementTagging / `requirements` | `{ item, required: string[] }` | Unique item; upsert a deduplicated requirement set or delete the rule. |
 
-Embedding blocks and checkpoints is a storage implementation of their ordered relationships. Concept queries still expose the specified rows. Checkpoint positions can be derived from array order, starting at one; no special initial checkpoint is stored. Document listing projects IDs without loading block bodies.
+Embedding blocks and ordinary checkpoints is a storage implementation of their ordered relationships. Concept queries still expose the specified rows. The fixed NotStarted checkpoint has position zero and yields no completed checkpoints; ordinary positions start at one. Document listing projects IDs without loading block bodies.
 
 Sequence initialization is idempotent by scope. Handle concurrent unique-index conflicts by retrieving the existing sequence. Indexes and local concept constraints prevent duplicate state; cross-concept membership checks belong in composition.
 
 Concept methods await their database writes before returning success. Multi-action endpoint chains are not transactions. If hub creation succeeds but initialization fails, the hub remains; do not describe a retry of the entire create endpoint as automatically safe.
 
-### Contract alignment before implementation
-
-The stored Checkpointing and types documents still contain obsolete start-checkpoint, query, and assembly descriptions. Align them with the current flows: uniform checkpoint labels, inclusive row-based `_prefix`, Documenting's `_documents`/`_blocks`, required string alt fields, and one assembly. Remove old `_item`, document-name, block-position, and special-start references.
-
-There is also one unresolved executable detail in the current Reading design: a former constructs a result but does not bind that result as a query variable in a later `where` stage. Do not treat `ProgressTokens` as an imperative function that can be awaited inside a portable endpoint builder.
-
-**Proposed minimal adjustment, not yet applied to the concept/composition files:** keep the row-based `_prefix` and add a Checkpointing query `_tokens(scope, sequence, through?)` returning an optional row `{ tokens }`. With `through`, return the inclusive prefix; without it, return all checkpoints. Unknown scope/sequence/selection returns no row. Use a concept-local opaque CheckpointSet represented in TypeScript by a checkpoint-ID array; it adds no stored state.
-
-With that adjustment, `Reading.ProgressTokens` becomes an optional output view binding the array from `_tokens`, rather than a former. ContentManagement can use the all-checkpoints form for requirement validation. This is the concrete implementation path assumed below; update the corresponding typed links and contracts before config-based checking.
+The Alpha and concept specifications define the intended behavior. Composition implementation must use their declared queries and preserve the fixed start checkpoint and required document title.
 
 ## Composition implementation
 
@@ -101,7 +93,7 @@ The create endpoint already coordinates initialization. Do not install a second 
 
 | Endpoint / local path | Backend execution |
 | --- | --- |
-| CreateDocument — `/setup/documents/create` | Validate `{ hub, blocks }`; require ExistingHub; invoke Documenting.create; then use CreatedDocument to return `{ document, blocks }`, where blocks is the ordered list of generated block IDs. |
+| CreateDocument — `/setup/documents/create` | Validate `{ hub, title, blocks }`; require ExistingHub; invoke Documenting.create; then use CreatedDocument to return `{ document, blocks }`, where blocks is the ordered list of generated block IDs. |
 | TagItem — `/setup/items/tag` | Receive `{ hub, item, required }`; require ScopedItem and AllowedRequirements; invoke RequirementTagging.tag; acknowledge `{ item }` after its empty action result. |
 | UntagItem — `/setup/items/untag` | Receive `{ hub, item }`; require ScopedItem; invoke RequirementTagging.untag; acknowledge `{ item }`. |
 
@@ -111,7 +103,7 @@ The create endpoint already coordinates initialization. Do not install a second 
 
 `CreatedDocument` collects _blocks IDs after creation, preserving input order. It does not return raw content to the fixture script unnecessarily.
 
-Input validators check supported kinds and string body/alt fields before mutation. They do not query MongoDB. A title is not required, and validation is not a separate catalog endpoint. The fixture script invokes these operations locally and verifies its expected results before serving the demo.
+Input validators check the title, supported kinds, and string body/alt fields before mutation. They do not query MongoDB. The fixture script invokes these operations locally and verifies its expected results before serving the demo.
 
 ### ReaderProgress
 
@@ -140,7 +132,7 @@ Implement the helpers as follows:
 | Declaration | Inputs and implementation |
 | --- | --- |
 | ReaderSelection — view | Inputs hub/reader; check hub existence, resolve its sequence, read saved progress once, and verify checkpoint membership. Expose sequence and checkpoint as an optional result. |
-| ProgressTokens — proposed output view | Inputs hub/sequence/checkpoint; bind the token array from the proposed _tokens query. Never accept this array from the browser. |
+| ProgressTokens — former | Inputs hub/sequence/checkpoint; collect completed checkpoint IDs from `_prefix`. Never accept this set from the browser. |
 | ReadableDocument — view | Inputs hub/document/tokens; check document membership through _documents and test _eligible's `eligible: true` result. |
 | EligibleBlock — view | Inputs hub/document/tokens; select _blocks rows and retain those whose _eligible result is true. Expose block, kind, body, and alt as many rows. |
 | HubDirectory — former | Collect _hubs rows in deterministic ID order. Empty selection becomes an empty array. |
@@ -196,7 +188,7 @@ The minimum suite is:
 | --- | --- |
 | `tests/concepts/*.test.ts` | Each concept's actions/queries, refusal behavior, ordered rows, missing records, and independent scope/reader state. |
 | `tests/composition/HubManagement.test.ts` | Hub initialization runs once; append/relabel preserve identity and order; cross-hub references are rejected. |
-| `tests/composition/ContentManagement.test.ts` | Creation returns ordered IDs, image-only documents work, foreign items/tokens are rejected, and tag/untag change eligibility. |
+| `tests/composition/ContentManagement.test.ts` | Creation returns ordered IDs with a generated TITLE block, foreign items/tokens are rejected, and tag/untag change eligibility. |
 | `tests/composition/ReaderProgress.test.ts` | Missing selection, forward/backward replacement, clear twice, and reader isolation. |
 | `tests/composition/Reading.test.ts` | Prefix tokens, missing/empty rules, nullable titles, hidden document/block data absent from payloads, and correct block order. |
 | `tests/http.test.ts` | Real HTTP handler, invalid JSON/input, domain-error projection, public management routes, and blocked setup routes. |

@@ -8,6 +8,10 @@ export async function prepareMongo(db: Db): Promise<void> {
     db.collection('hubs').createIndex({ name: 1 }, { unique: true }),
     db.collection('sequences').createIndex({ scope: 1 }, { unique: true }),
     db.collection('documents').createIndex({ scope: 1, _id: 1 }),
+    db.collection('documents').createIndex(
+      { scope: 1, title: 1 },
+      { unique: true, partialFilterExpression: { title: { $type: 'string' } } },
+    ),
     db.collection('progress').createIndex({ scope: 1, reader: 1 }, { unique: true }),
   ]);
 }

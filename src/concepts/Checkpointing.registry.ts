@@ -5,6 +5,7 @@ import {
   SequenceNotFound,
   CheckpointLabelRequired,
   CheckpointNotFound,
+  StartLabelFixed,
   CheckpointRenameLabelRequired,
 } from "./Checkpointing.ts";
 
@@ -15,6 +16,7 @@ export const registration = registerConcept({
     SEQUENCE_NOT_FOUND: SequenceNotFound,
     CHECKPOINT_LABEL_REQUIRED: CheckpointLabelRequired,
     CHECKPOINT_NOT_FOUND: CheckpointNotFound,
+    START_LABEL_FIXED: StartLabelFixed,
     CHECKPOINT_RENAME_LABEL_REQUIRED: CheckpointRenameLabelRequired,
   },
 });

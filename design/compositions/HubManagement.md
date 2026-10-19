@@ -2,7 +2,7 @@
 
 Users with access to hub management can coordinate their hub cataloguing and checkpoint management. 
 
-**Create a hub.** The [create-hub endpoint](reaction:HubManagement.CreateHub) accepts `{ name, label }`. It invokes HubCataloguing.create, passes the returned hub ID as the scope for Checkpointing [initialization](reaction:HubManagement.AppendCheckpoint), and creates the first checkpoint with the supplied label. Return `{ hub, sequence }` after these actions succeed. This endpoint chain connects the concepts; no separate initialization reaction repeats it. The new hub initially has no documents, and its frontend landing page displays the document list supplied by Reading.
+**Create a hub.** The [create-hub endpoint](reaction:HubManagement.CreateHub) accepts `{ name, label }`. It invokes HubCataloguing.create, passes the returned hub ID and supplied label to Checkpointing.create, then [appends](reaction:HubManagement.AppendCheckpoint) the first ordinary checkpoint with that label. Return `{ hub, sequence }` after these actions succeed. This endpoint chain connects the concepts; no separate initialization reaction repeats it. The new hub initially has no documents, and its frontend landing page displays the document list supplied by Reading.
 
 **Rename a hub.** The [rename-hub endpoint](reaction:HubManagement.RenameHub) accepts `{ hub, name }`, invokes HubCataloguing.rename, and returns `{ hub }`. The hub's identity and scoped data remain unchanged.
 

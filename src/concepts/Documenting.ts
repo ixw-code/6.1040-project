@@ -1,10 +1,14 @@
-import type { Db } from 'mongodb';
+import { MongoServerError, type Db } from 'mongodb';
+
+export class DocumentNameRequired extends Error {}
+export class DocumentNameTaken extends Error {}
+export class InvalidDocumentBlocks extends Error {}
 
 export type BlockKind = 'TITLE' | 'TEXT' | 'IMAGE';
 export type BlockInput = { kind: BlockKind; body: string; alt: string };
 export type DocumentBlock = BlockInput & { block: string };
 
-type DocumentRecord = { _id: string; scope: string; blocks: DocumentBlock[] };
+type DocumentRecord = { _id: string; scope: string; title?: string; blocks: DocumentBlock[] };
 
 /** Documents of raw content blocks. */
 export class DocumentingConcept {
@@ -14,15 +18,37 @@ export class DocumentingConcept {
     this.documents = db.collection<DocumentRecord>('documents');
   }
 
-  async create({ scope, blocks }: { scope: string; blocks: BlockInput[] }): Promise<{ document: string }> {
-    const document = crypto.randomUUID();
-    await this.documents.insertOne({
-      _id: document,
-      scope,
-      blocks: blocks.map(({ kind, body, alt }) => ({
-        block: crypto.randomUUID(), kind, body, alt,
-      })),
-    });
+  async create({ scope, title, blocks }: {
+    scope: string; title: string; blocks: BlockInput[];
+  }): Promise<{ document: string }> {
+    const trimmed = title.trim();
+    if (!trimmed) throw new DocumentNameRequired();
+    if (await this.documents.findOne({ scope, title: trimmed }, { projection: { _id: 1 } })) {
+      throw new DocumentNameTaken();
+    }
+    if (!Array.isArray(blocks) || blocks.some((block) =>
+      !block || (block.kind !== 'TEXT' && block.kind !== 'IMAGE') ||
+      typeof block.body !== 'string' || typeof block.alt !== 'string' ||
+      (block.kind === 'IMAGE' && !block.alt.trim())
+    )) throw new InvalidDocumentBlocks();
+
+    const document = `document:${crypto.randomUUID()}`;
+    try {
+      await this.documents.insertOne({
+        _id: document,
+        scope,
+        title: trimmed,
+        blocks: [
+          { block: `block:${crypto.randomUUID()}`, kind: 'TITLE', body: trimmed, alt: '' },
+          ...blocks.map(({ kind, body, alt }) => ({
+            block: `block:${crypto.randomUUID()}`, kind, body, alt,
+          })),
+        ],
+      });
+    } catch (error) {
+      if (error instanceof MongoServerError && error.code === 11000) throw new DocumentNameTaken();
+      throw error;
+    }
     return { document };
   }
 
