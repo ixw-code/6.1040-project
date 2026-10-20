@@ -3,7 +3,7 @@
 ## Context
 
 - Stack: Bun, TypeScript, MIT sync-engine, MongoDB, Vue.js with TypeScript.
-- Read the current ALPHA.md, ALPHA-TECHNICAL.md and relevant files under design/ before changing behavior. Follow the repository's existing paths.
+- Read the current ALPHA.md, BETA.md and relevant files under design/ before changing behavior. Follow the repository's existing paths.
 - Use the installed sync-engine skill and its linked workflow for framework work. If unavailable, report that and consult the public documentation matching the installed version. Do not guess framework APIs.
 
 ## Alpha scope

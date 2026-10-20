@@ -3,7 +3,8 @@ import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, fileURLToPath(new URL("../", import.meta.url)), "");
+  const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+  const env = loadEnv(mode, projectRoot, "");
   const backendHost = env.HOST;
   const backendPort = Number(env.PORT);
   const frontendHost = env.FRONTEND_HOST;
@@ -16,6 +17,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     root: fileURLToPath(new URL(".", import.meta.url)),
+    envDir: projectRoot,
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),

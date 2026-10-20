@@ -19,26 +19,31 @@
     },
     "scripts": {
         "dev": "bun run db:up && bun run --parallel dev:backend dev:frontend",
-        "dev:backend": "bun --env-file=.env --watch src/main.ts",
-        "dev:frontend": "bun --env-file=.env x vite --mode development --config frontend/vite.config.ts",
+        "dev:backend": "bun --env-file=.env.development.local --watch src/main.ts",
+        "dev:frontend": "bun --env-file=.env.development.local x vite --mode development --config frontend/vite.config.ts",
+
         "start": "bun run --parallel start:backend start:frontend",
-        "start:backend": "bun --env-file=.env.production.local src/main.ts",
-        "start:frontend": "bun --env-file=.env.production.local x vite --mode production --config frontend/vite.config.ts",
-        "build:frontend": "bun --env-file=.env.production.local x vite build --mode production --config frontend/vite.config.ts",
-        "seed": "bun --env-file=.env scripts/seed.ts",
+        "start:backend": "bun src/main.ts",
+        "start:frontend": "bun x vite --mode production --config frontend/vite.config.ts",
+        "build:frontend": "bun x vite build --mode production --config frontend/vite.config.ts",
+
+        "seed": "bun --env-file=.env.development.local scripts/seed.ts",
         "generate": "sync-engine artifacts pin && sync-engine artifacts pin --config generated.reader.config.ts",
-        "check": "bun run check:design && bun run check:framework && bun run check:artifacts && bun run typecheck && bun run build:frontend && bun run test",
+
         "test": "bun --env-file=.env.test.local test",
+
+        "check": "bun run check:design && bun run check:framework && bun run check:artifacts && bun run typecheck && bun run build:frontend && bun run test",
         "check:design": "sync-engine check-design design/concepts/*.md design/types.md design/compositions/*.md",
         "check:framework": "sync-engine check && sync-engine check --config generated.reader.config.ts",
         "check:artifacts": "sync-engine artifacts check && sync-engine artifacts check --config generated.reader.config.ts",
         "typecheck": "bun run typecheck:backend && bun run typecheck:frontend",
         "typecheck:backend": "tsc -p tsconfig.json --noEmit",
         "typecheck:frontend": "vue-tsc -p frontend/tsconfig.json --noEmit",
-        "db:up": "podman compose --env-file .env -p wikiplotter-alpha-complete up -d mongo",
-        "db:down": "podman compose --env-file .env -p wikiplotter-alpha-complete stop mongo",
-        "db:logs": "podman compose --env-file .env -p wikiplotter-alpha-complete logs -f mongo",
-        "db:shell": "podman compose --env-file .env -p wikiplotter-alpha-complete exec mongo mongosh -u \"$MONGO_INITDB_ROOT_USERNAME\" -p \"$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin"
+
+        "db:up": "podman compose --env-file .env.development.local -p wikiplotter-dev up -d mongo",
+        "db:down": "podman compose --env-file .env.development.local -p wikiplotter-dev stop mongo",
+        "db:logs": "podman compose --env-file .env.development.local -p wikiplotter-dev logs -f mongo",
+        "db:shell": "podman compose --env-file .env.development.local -p wikiplotter-dev exec mongo mongosh -u \"$MONGO_INITDB_ROOT_USERNAME\" -p \"$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin"
     },
     "overrides": {
         "bson": "7.2.0"
