@@ -7,6 +7,8 @@ import {
   HubNotFound,
   HubRenameNameRequired,
   HubRenameNameTaken,
+  InvalidHubSlug,
+  HubSlugTaken,
 } from "./HubCataloguing.ts";
 
 export const registration = registerConcept({
@@ -18,5 +20,7 @@ export const registration = registerConcept({
     HUB_NOT_FOUND: HubNotFound,
     HUB_RENAME_NAME_REQUIRED: HubRenameNameRequired,
     HUB_RENAME_NAME_TAKEN: HubRenameNameTaken,
+    INVALID_HUB_SLUG: InvalidHubSlug,
+    HUB_SLUG_TAKEN: HubSlugTaken,
   },
 });

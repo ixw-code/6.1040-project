@@ -15,8 +15,11 @@ describe('reader HTTP adapter', () => {
 
   async function post(server: ReturnType<typeof listen>, path: string, input: unknown) {
     const reader = input && typeof input === 'object' && 'reader' in input ? input.reader : undefined;
-    const session = typeof reader === 'string'
-      ? (await new SessioningConcept(mongo.db()).start({ user: reader })).session : undefined;
+    const managed = ['/api/hubs/create', '/api/hubs/rename', '/api/hubs/slug', '/api/hubs/delete',
+      '/api/checkpoints/append', '/api/checkpoints/relabel'].includes(path);
+    const user = managed ? 'test-owner' : reader;
+    const session = typeof user === 'string'
+      ? (await new SessioningConcept(mongo.db()).start({ user })).session : undefined;
     const response = await fetch(`http://127.0.0.1:${server.port}${path}`, {
       method: 'POST', headers: { 'content-type': 'application/json', origin: 'http://localhost:3000',
         ...(session ? { cookie: `__Host-wikiplotter_session=${session}` } : {}) }, body: JSON.stringify(input),

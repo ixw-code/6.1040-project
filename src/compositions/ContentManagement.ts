@@ -35,7 +35,7 @@ const CreatedDocument = former('created document blocks', ({ hub, document }, { 
 const CreateDocument = endpoint('/setup/documents/create', ({ hub, title, blocks, document }) =>
   receive({ hub, title, blocks }).then(
     where(ExistingHub({ hub }))
-      .then(Documenting.create({ scope: hub, title, blocks }).responds({ document }))
+      .then(Documenting.create({ scope: hub, author: 'legacy-setup', title, blocks }).responds({ document }))
       .then(respond({ document, blocks: CreatedDocument({ hub, document }) })).named('existing-hub'),
     where(no(ExistingHub({ hub })))
       .then(respond({ error: 'HUB_NOT_FOUND' })).named('missing-hub'),

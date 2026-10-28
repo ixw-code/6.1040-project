@@ -40,7 +40,7 @@
         "typecheck:backend": "tsc -p tsconfig.json --noEmit",
         "typecheck:frontend": "vue-tsc -p frontend/tsconfig.json --noEmit",
 
-        "db:up": "podman compose --env-file .env.development.local -p wikiplotter-dev up -d mongo",
+        "db:up": "podman compose --env-file .env.development.local -p wikiplotter-dev up -d mongo && bun --env-file=.env.development.local scripts/init-mongo-replica.ts",
         "db:down": "podman compose --env-file .env.development.local -p wikiplotter-dev stop mongo",
         "db:logs": "podman compose --env-file .env.development.local -p wikiplotter-dev logs -f mongo",
         "db:shell": "podman compose --env-file .env.development.local -p wikiplotter-dev exec mongo mongosh -u \"$MONGO_INITDB_ROOT_USERNAME\" -p \"$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin"

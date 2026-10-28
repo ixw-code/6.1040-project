@@ -86,4 +86,14 @@ describe('Checkpointing', () => {
     await expect(c.relabel({ scope: 'one', checkpoint, label: '' })).rejects.toBeInstanceOf(CheckpointRenameLabelRequired);
     expect(await c._checkpoints({ scope: 'one', sequence })).toHaveLength(2);
   });
+
+  test('deletes a complete sequence only within its scope', async () => {
+    const c = new CheckpointingConcept(mongo.db());
+    const { sequence } = await c.create({ scope: 'one', label: 'Main' });
+    await c.append({ sequence, label: 'A' });
+    await expect(c.delete({ scope: 'two', sequence })).rejects.toBeInstanceOf(SequenceNotFound);
+    expect(await c.delete({ scope: 'one', sequence })).toEqual({ sequence });
+    expect(await c._sequences({ scope: 'one' })).toEqual([]);
+    expect(await c._checkpoints({ scope: 'one', sequence })).toEqual([]);
+  });
 });

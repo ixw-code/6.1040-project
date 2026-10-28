@@ -15,7 +15,9 @@ describe('Alpha reader journey over HTTP', () => {
     let server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: createReaderHttpHandler(mongo.db(), options) });
     const post = async (path: string, input: object) => {
       const reader = 'reader' in input ? input.reader : undefined;
-      const cookie = reader === 'alice' ? `__Host-wikiplotter_session=${alice}` :
+      const managed = ['/hubs/create', '/hubs/rename', '/hubs/slug', '/hubs/delete',
+        '/checkpoints/append', '/checkpoints/relabel'].includes(path);
+      const cookie = (managed || reader === 'alice') ? `__Host-wikiplotter_session=${alice}` :
         reader === 'bob' ? `__Host-wikiplotter_session=${bob}` : '';
       const response = await fetch(`http://127.0.0.1:${server.port}/api${path}`, {
         method: 'POST', headers: { 'content-type': 'application/json', origin: options.origin, cookie },

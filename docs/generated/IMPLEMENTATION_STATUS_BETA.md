@@ -1,116 +1,72 @@
 # Wikiplotter Beta — implementation status
 
-Milestones 1–2 established the Beta contracts and identity concepts. Milestone 3 adds the account gateway, verified Google and MIT SDG Commons sign-in, and a minimal registration UI. Existing reader and authoring flows still use the Alpha assembly.
+Milestone 5 implements protected hub management and a transaction-capable local MongoDB. No commit has been made.
 
-## Milestone 1 file summary
+## Completed history
 
-### Beta contracts
-
-| Files | Decision and purpose |
+| Milestone | Significant decisions and verification |
 | --- | --- |
-| `design/types.md`; `design/concepts/{Registering,Sessioning,HubCataloguing,Documenting,Checkpointing,ProgressRecording,RequirementTagging,MediaAssetManaging}.md` | Bind registered Users, sessions, anonymous cookie progress, articles, and uploader-owned assets to independent concept state. Keep hub and article edits/deletions direct; only uploads retain PENDING/READY. |
-| `design/compositions/{Accounts,Articles,Hubs,MediaAssets,ReaderProgress,Reading}.md` | Specify authenticated ownership, article-facing APIs, anonymous progress import, coordinated deletion, transactional article saves, and spoiler-safe snapshot reads. |
+| 1 — contracts | Accepted concepts keep accounts, sessions, anonymous cookie progress, articles, and assets separate. Hub and article changes use direct actions; no general deletion lifecycle. Initial design, framework, artifact, type, and 49 regression checks passed. Obsolete Alpha design references were later removed at the user's request. |
+| 2 — identity | Registering persists unique usernames and provider subjects. Sessioning stores verifier hashes, checks fixed seven-day expiry, and revokes sessions. Full check passed with 55 tests. |
+| 3 — authentication | Google OIDC and MIT SDG Commons use verified adapters; new users register only after Create account. Secure HttpOnly cookies, Origin checks, and protected routes were tested with provider mocks. Full check then passed with 61 tests. Live provider credentials and MIT SDG Commons deployment permission remain external requirements. Accounts.md still says “Wikimedia Commons”; the implemented provider is MIT SDG Commons. Account deletion remains disabled pending ownership cleanup. |
+| 4 — reader | Anonymous progress uses signed, expiring cookies; authenticated progress uses Sessioning and ProgressRecording. Login import preserves account choices. Spoiler filtering stays server-side; missing progress differs from NotStarted. The behavior passed 64 tests before obsolete design references were removed. That removal left generated configuration and wire imports stale. |
 
-### Alpha compatibility and checks
+## Milestone 5 files changed
 
-| Files | Decision and purpose |
+| File | Change |
 | --- | --- |
-| `design/alpha/{types.md,concepts/*.md,compositions/*.md}`; five Alpha concept registries; `generated*.config.ts` | Preserve specifications matching the five implemented Alpha concepts and assemblies until Beta replaces them. |
-| `generated/{setup,reader}/*`; three corrected Alpha tests | Regenerate existing artifacts and correct stale DOCUMENT_TITLE refusal names. |
+| compose.yaml | Runs the existing MongoDB service as one authenticated replica-set member on the same port inside and outside the container. Creates a keyfile in the existing volume only when absent. |
+| .env.development.example | Documents the local replica-set URI and direct host connection. |
+| .env.test.example | Documents the same replica set with a separate test database. |
+| package.json | Makes db:up wait for replica initialization and primary readiness. |
+| scripts/init-mongo-replica.ts | Validates loopback configuration, initializes only an uninitialized member, and waits for primary election; repeated starts preserve data. |
+| scripts/seed.ts | Corrects the moved application import so fixtures remain usable. |
+| src/db.ts | Keeps database profile guards, connects Bun directly to the local replica member, and adds the unique partial slug index. |
+| src/concepts/HubCataloguing/HubCataloguing.ts | Stores creator and derived slug; adds slug update, deletion, ownership queries, duplicate validation, and optional transaction session. |
+| src/concepts/HubCataloguing/registry.ts | Maps accepted slug refusals. |
+| src/concepts/Checkpointing/Checkpointing.ts | Adds scoped whole-sequence deletion and optional transaction session. |
+| src/concepts/Documenting/Documenting.ts | Adds author and accepted edit/delete/query methods so the Beta registration loads and hub deletion invokes Documenting's own action. |
+| src/concepts/Documenting/registry.ts | Maps the accepted missing-document refusal. |
+| src/concepts/RequirementTagging/RequirementTagging.ts | Adds accepted batch/token queries and transaction session support for rule cleanup. |
+| src/concepts/ProgressRecording/ProgressRecording.ts | Adds transaction session support for scope cleanup. |
+| src/assembly/concept-instances.ts | Passes a shared MongoDB session to concept instances for transactions and snapshots. |
+| src/compositions/Hubs.ts | Declares framework endpoints and creator views for create, rename, slug, sequence listing, append, and relabel. Explicit denials prevent unmatched requests from hanging. |
+| src/assembly/hubs.ts | Runs fixed framework workflows and iterative dependent cleanup in transactions, using each concept's own actions. Assets remain uploader-owned. |
+| src/http/hubs.ts | Protects hub mutations with Sessioning cookies and Origin checks; ignores client user IDs and maps refusals to HTTP. |
+| src/http/edge.ts | Routes protected hub endpoints and gives authenticated browse/read responses MongoDB snapshots. |
+| src/http/reader.ts | Gives guest spoiler-filtered browse/read responses MongoDB snapshots. |
+| src/assembly/assembly.ts | Removes old public HubManagement mutation routes while retaining local fixture setup; accepts a read session. |
+| src/assembly/guest-reader.ts | Passes a read session through guest composition gateway. |
+| src/compositions/HubManagement.ts | Supplies a local fixture creator for existing setup flows; no longer public. |
+| src/compositions/ContentManagement.ts | Supplies a local fixture author for existing setup flows. |
+| tests/concepts/HubCataloguing.test.ts | Covers creator and slug persistence, rename independence, deletion, invalid and concurrent duplicate slugs. |
+| tests/concepts/Checkpointing.test.ts | Covers whole-sequence deletion and wrong-scope refusal. |
+| tests/concepts/Documenting.test.ts | Supplies author inputs required by the accepted Beta contract. |
+| tests/db/MongoPersistence.test.ts | Supplies creator/author inputs while retaining persistence and concurrency assertions. |
+| tests/db/MongoReplica.test.ts | Proves primary readiness and transaction commit/rollback. |
+| tests/mongo-test-db.ts | Exposes the disposable test connection's client for transaction tests. |
+| tests/compositions/Hubs.test.ts | Covers transactional creation, creator-only changes, and cleanup of documents, rules, progress, and checkpoints. |
+| tests/http/HubsHttp.test.ts | Covers session and CSRF protection, trusted ownership, slug updates, and deletion. |
+| tests/compositions/ContentManagement.test.ts | Updates reader assembly route assertion after protected mutations move to the HTTP boundary. |
+| tests/http/ReaderHttp.test.ts | Uses authenticated hub setup while retaining reader response and validation regression coverage. |
+| tests/acceptance/AlphaJourney.test.ts | Uses an authenticated hub creator while retaining spoiler and reconnection regression coverage. |
 
-Milestone 1 passed design, framework, artifact, backend/frontend type checks, and 49 regression tests. An independent design review resolved seven contract concerns. The five Alpha concepts were subsequently grouped under `src/concepts/<Name>/` with their registries; their behavior was unchanged.
+## Decisions and verification
 
-## Milestone 2 file summary
+The existing wikiplotter-dev_mongo-secure-data volume was kept. Before conversion, wikiplotter_dev contained two hubs; after a container restart and an idempotent db:up, the replica set was primary and the same two hubs remained. Development and test databases still share one service but have separately guarded names. The new transaction test proves commit and rollback. MongoDB authentication stays enabled, with its keyfile only in the existing volume.
 
-| File | Change and purpose |
-| --- | --- |
-| `src/concepts/Registering/Registering.ts` | Implements MongoDB-backed registration, exact 3–20 ASCII alphanumeric usernames, provider association lookup, username updates, and unregister. Unique indexes enforce username and provider/subject exclusivity under concurrent writes. |
-| `src/concepts/Registering/registry.ts` | Registers the accepted Beta specification and its four refusal classes without adding Registering to the Alpha assembly. |
-| `src/concepts/Sessioning/Sessioning.ts` | Issues random 256-bit bearer secrets, persists only SHA-256 verifier hashes, checks fixed seven-day expiry on every lookup, and supports single-session and per-user revocation. An injectable clock makes the expiry boundary testable. |
-| `src/concepts/Sessioning/registry.ts` | Registers the accepted Beta specification and SESSION_INVALID refusal without adding Sessioning to the Alpha assembly. |
-| `tests/concepts/Registering.test.ts` | Tests persistence across reconnection, exact and concurrent uniqueness, invalid usernames, updates, and unregister. |
-| `tests/concepts/Sessioning.test.ts` | Tests hash-only persistence, invalid credentials, exact expiration without renewal, and single/per-user revocation. |
-| `docs/generated/IMPLEMENTATION_STATUS_BETA.md` | Condenses completed history and records Milestone 2 decisions, verification, and next work. |
+Hub creation and deletion use MongoDB transactions, without beginDelete or lifecycle status. Deletion collects article and block identities, removes their requirement rules, then deletes documents, progress, sequence, and hub atomically. Reader content responses use snapshot transactions. The sync-engine endpoint DSL handles fixed workflows; the dynamic deletion loop is application composition code. Database writes remain concept-owned.
 
-Milestone 2 passed the full check with 55 tests across 16 files. Sessioning stores only verifier hashes and checks expiry on every lookup; Registering owns exact username and provider identity uniqueness. Neither concept was added to the Alpha assembly.
+The full test suite passed: **71 tests across 23 files, 540 assertions**. Design syntax passed for 15 files. The frontend build passed with HOST, PORT, FRONTEND_HOST, and FRONTEND_PORT set. Backend and frontend typechecks still fail because generated/reader/wire.ts imports removed src/concepts.ts. Framework and artifact checks still fail because generated configuration points to that removed module. These generated-artifact failures preceded Milestone 5; generated files were not hand-edited. The initial frontend build without required host/port settings failed as configured.
 
-## Milestone 3 file summary
+Existing hubs from before Beta have no registered creator or slug. They remain readable but cannot be creator-managed until an explicit ownership migration decision; no owner was invented or data overwritten. Local fixture routes remain available to tests and seed data, but not through public reader HTTP. Article editing and asset management remain later milestones.
 
-| File | Change and purpose |
-| --- | --- |
-| `src/account-concepts.ts` | Selects Registering and Sessioning for the local account composition without exposing trusted identity inputs through reader HTTP. |
-| `src/compositions/Accounts.ts` | Coordinates returning-user login, explicit registration, current account, logout, and username changes through concept actions and queries. Progress import remains deferred. |
-| `src/accounts.ts` | Assembles the local Accounts gateway with Mongo instances and occurrence-field redaction for session and provider values. |
-| `src/auth/providers.ts` | Implements Google authorization-code OIDC with ID-token signature, issuer, audience, expiry, and nonce checks; implements MIT SDG Commons' documented connect/redeem exchange with S256 code binding. |
-| `src/auth/sealed-cookie.ts` | Encrypts and authenticates short-lived OAuth attempt and pending-registration cookies with AES-256-GCM. |
-| `src/auth/http.ts` | Handles provider callbacks and account HTTP routes; enforces state, Secure HttpOnly SameSite cookies, Origin checks on mutations, session rotation, expiry, logout, and trusted server-side identity. Account deletion fails closed until ownership checks exist. |
-| `src/edge.ts` | Dispatches only account and callback paths to the trusted account boundary; preserves the sync-engine HTTP adapter for existing reader routes. |
-| `frontend/src/App.vue` | Adds minimal `/login` and `/register` pages with an explicit Create account action and current-account/logout controls. |
-| `frontend/vite.config.ts` | Proxies `/auth` callbacks to the backend during local development. |
-| `frontend/index.html` | Prevents provider callback details from leaking through referrer headers. |
-| `.env.example` | Documents production origin, cookie key, Google client credentials, and Commons origin requirements. |
-| `.env.development.example` | Documents corresponding local development settings; actual secrets remain uncommitted. |
-| `tests/compositions/Accounts.test.ts` | Tests explicit registration, returning login, current identity, rename, and logout through the local gateway. |
-| `tests/http/AccountsHttp.test.ts` | Tests pending registration, trusted identity, cookie attributes, CSRF rejection, rotation, logout, expiry, and fail-closed deletion using a provider mock. |
-| `tests/http/AuthProviders.test.ts` | Tests Commons request shape and Google signed-token validation, including nonce, audience, expiry, and signature rejection. |
-| `docs/generated/IMPLEMENTATION_STATUS_BETA.md` | Records Milestone 3 files, verified behavior, and deployment blockers while retaining the established report structure. |
+## Suggested commit message
 
-## Proposed API names
+    feat(beta): add transactional creator-managed hubs
 
-These accepted Beta composition names guide ongoing work. The Accounts names are now implemented in a local composition; Alpha reader HTTP paths are unchanged. Article is the public noun, while Documenting remains the internal state owner.
-
-| API family | Naming reason |
-| --- | --- |
-| Accounts.Login and Accounts.Register | Distinguish returning provider identities from explicit first-time registration. |
-| Hubs.CreateHub, RenameHub, UpdateSlug, DeleteHub | Name creator-controlled hub changes directly. |
-| Articles.CreateArticle, GetArticleForEditing, SaveArticle, DeleteArticle | Use the reader-facing noun; editing is author-only and save replaces the full blocks-and-rules set. |
-| Articles.TagItem and UntagItem | Item covers either an article or a block. |
-| Reading.BrowseHub and ReadArticle | Read returns spoiler-filtered content, separate from author editing. |
-| MediaAssets.StartUpload, FinishUpload, MyAssets, ReadAsset | Distinguish upload validation, the uploader library, and reader-eligible retrieval. |
-| ReaderProgress.GetProgress, RecordProgress, ClearProgress, ImportAnonymousProgress | Name selection operations; import remains local-only. |
-
-## Verification and remaining work
-
-With `HOST=127.0.0.1 PORT=3000 FRONTEND_HOST=127.0.0.1 FRONTEND_PORT=5173`, `bun run check` passed: design, Alpha framework/artifact checks, backend/frontend typechecks, frontend build, and **61 tests across 19 files**. Six focused Milestone 3 tests passed; Alpha regressions remain green. Framework assembly checks retain 21 setup and 17 reader advisories. The separate Accounts assembly is verified through its gateway and HTTP tests, not yet pinned as a generated artifact. Intermediate composition and test assertions were corrected before the final passing run.
-
-Live Google sign-in needs a Google OAuth web client ID/secret and an exact `PUBLIC_ORIGIN/auth/google/callback` redirect registration. Live MIT SDG Commons needs a configured `COMMONS_ORIGIN` and confirmation that the deployed app origin is allowed; its public service was unavailable for live verification. `AUTH_COOKIE_KEY` must be a stable random 32-byte base64url key. No provider credentials or key are committed. The protocol follows [Google OIDC documentation](https://developers.google.com/identity/openid-connect/openid-connect) and [ConceptBox's MIT SDG Commons provider](https://github.com/mit-sdg/conceptbox/blob/main/src/concepts/Federating/provider.ts); both provider adapters were tested with mocks.
-
-`Accounts.md` calls the provider “Wikimedia Commons,” while the explicit Milestone 3 requirement specifies MIT SDG Commons. The implementation uses MIT SDG Commons and retains the `COMMONS` concept value; the accepted contract text was not changed. This terminology needs a contract correction. `Accounts.DeleteAccount` remains unavailable and returns 501 because ownership checks for hubs, articles, and assets do not yet exist. Progress importing remains Milestone 4. Alpha's existing creation routes remain as implemented until their Beta ownership milestones; the new account identity is not yet used to protect them. Later milestones must implement coordinated transactions and spoiler-safe snapshot reads.
-
-## Proposed commit message
-
-```text
-feat(beta): add verified account sign-in and explicit registration
-
-- Add local Accounts composition backed by Registering and Sessioning
-- Verify Google OIDC and MIT SDG Commons callbacks before issuing encrypted-flow and session cookies
-- Add explicit pending registration, current account, logout, and protected username changes
-- Cover provider validation, CSRF, session rotation, expiry, and Alpha regression behavior
-- Record provider setup requirements and fail-closed account deletion blocker
-```
-
-## Milestone 4 files changed
-
-| Files | Change |
-| --- | --- |
-| `src/concepts/ProgressRecording/ProgressRecording.ts`, `registry.ts` | Add atomic `recordIfAbsent`, scope cleanup, and reader scope lookup; point registration at the accepted Beta concept contract. |
-| `src/concepts.ts`, `src/concept-instances.ts`, `src/accounts.ts`, `src/compositions/Accounts.ts` | Use one application concept set for the seven implemented concepts and all local gateways; remove `src/account-concepts.ts`. |
-| `src/compositions/ReaderProgress.ts`, `Reading.ts`, `src/guest-reader.ts` | Validate guest selections, import valid selections without overwriting account progress, and filter guest reading through local compositions. |
-| `src/auth/progress-cookie.ts`, `reader-http.ts`, `http.ts`, `src/edge.ts` | Issue expiring authenticated progress cookies, resolve sessions server-side, ignore client reader IDs, and import guest progress on login or explicit registration. |
-| `frontend/src/api.ts`, `App.vue` | Use cookie-backed reader requests; remove unused `frontend/src/reader.ts` and its test. |
-| `tests/http/ReaderIdentityHttp.test.ts`, `ProgressImportHttp.test.ts`, `ReaderHttp.test.ts`; `tests/concepts/ProgressRecording.test.ts`; `tests/acceptance/AlphaJourney.test.ts` | Cover guest cookies, tampering, expiry, account isolation, atomic import, and spoiler regression through authenticated HTTP. |
-| `src/concepts/{HubCataloguing,Checkpointing,Documenting,RequirementTagging}/registry.ts`, `generated*.config.ts`, `design/alpha/**`, `generated/{reader,setup}/wikiplotter*.md` | Remove old design references and point registries at accepted Beta specs. This leaves framework registration failing until later Beta concept implementations match those specs; generated prose artifacts referencing removed files were removed. |
-
-Milestone 4 behavior passed **64 tests across 20 files** with 491 assertions before the final design-reference removal. After that requested removal, `bun run check:design` and backend/frontend typechecks pass, but runtime tests stop at `registerConcept(HubCataloguingConcept)` because accepted Beta actions `updateSlug` and `delete` are not implemented yet. Framework and artifact checks also fail because the configs now contain no authored documents. These are current failures; the earlier green test run is not a current pass. The user explicitly accepted leaving design checks failing to remove old references. No commit was made.
-
-## Suggested Milestone 4 commit message
-
-```text
-feat(beta): integrate cookie-backed reader progress and session identity
-
-- Store anonymous progress in expiring authenticated cookies and resolve account readers through Sessioning
-- Import validated guest selections only where account progress is absent
-- Keep spoiler filtering in compositions and reject client-supplied reader identities
-- Remove split concept sets and obsolete design references
-- Record framework registration and artifact check failures pending later Beta concept work
-```
+    - Run local MongoDB as an authenticated single-node replica set without replacing its data volume
+    - Add creator ownership, unique slugs, sequence deletion, and protected Hubs operations
+    - Delete hub documents, rules, progress, and checkpoints in one transaction
+    - Read spoiler-filtered content from consistent MongoDB snapshots
+    - Cover concept persistence, ownership, HTTP protection, cleanup, and transaction behavior

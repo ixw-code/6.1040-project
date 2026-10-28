@@ -86,8 +86,14 @@ export function createReaderIdentityHttpHandler(db: Db, options: Options,
       return response({ cleared: !!selected }, 200, headers);
     }
     if (!selected) return response({ error: 'INVALID_REQUEST' }, 400);
-    const result = await guest.invoke(path === '/api/hubs/browse' ? '/internal/guest/browse' : '/internal/guest/read',
-      { hub, checkpoint: selected, document: input.document });
+    const snapshot = db.client.startSession();
+    let result;
+    try {
+      result = await snapshot.withTransaction(() => createGuestReader(db, snapshot).invoke(
+        path === '/api/hubs/browse' ? '/internal/guest/browse' : '/internal/guest/read',
+        { hub, checkpoint: selected, document: input.document },
+      ), { readConcern: { level: 'snapshot' } });
+    } finally { await snapshot.endSession(); }
     if (!result.ok) return response({ error: 'INVALID_REQUEST' }, 400);
     const value = result.value as Record<string, unknown>;
     if (value.error === 'HUB_NOT_FOUND') return response({ error: 'NOT_FOUND' }, 404);

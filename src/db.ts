@@ -16,6 +16,7 @@ export async function prepareMongo(db: Db): Promise<void> {
   assertMongoTarget(db.databaseName);
   await Promise.all([
     db.collection('hubs').createIndex({ name: 1 }, { unique: true }),
+    db.collection('hubs').createIndex({ slug: 1 }, { unique: true, partialFilterExpression: { slug: { $type: 'string' } } }),
     db.collection('sequences').createIndex({ scope: 1 }, { unique: true }),
     db.collection('documents').createIndex({ scope: 1, _id: 1 }),
     db.collection('documents').createIndex(
@@ -33,7 +34,15 @@ export async function connectMongo(url = process.env.MONGODB_URL): Promise<Mongo
   if (!database) throw new Error('MONGODB_URL must include a database name.');
   assertMongoTarget(database);
 
-  const client = new MongoClient(url, { serverSelectionTimeoutMS: 5_000 });
+  const parsed = new URL(url);
+  if ((process.env.WIKIPLOTTER_ENV === 'development' || process.env.WIKIPLOTTER_ENV === 'test') &&
+    parsed.hostname === '127.0.0.1') {
+    // The advertised member is localhost inside the container at the same port.
+    // Direct mode keeps the host-side Bun client on its configured loopback address.
+    parsed.searchParams.set('replicaSet', 'wikiplotter-rs');
+    parsed.searchParams.set('directConnection', 'true');
+  }
+  const client = new MongoClient(parsed.toString(), { serverSelectionTimeoutMS: 5_000 });
   try {
     await client.connect();
     const db = client.db(database);

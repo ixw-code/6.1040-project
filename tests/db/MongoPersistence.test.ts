@@ -17,11 +17,12 @@ describe('MongoDB persistence and concurrent invariants', () => {
     const progress = new ProgressRecordingConcept(db);
     const requirements = new RequirementTaggingConcept(db);
 
-    const { hub } = await hubs.create({ name: 'Chronicles' });
+    const { hub } = await hubs.create({ creator: "test-user", name: 'Chronicles' });
     const { sequence } = await checkpoints.create({ scope: hub, label: 'Main' });
     const { checkpoint: first } = await checkpoints.append({ sequence, label: 'Part I' });
     const { checkpoint: second } = await checkpoints.append({ sequence, label: 'Part II' });
     const { document } = await documents.create({
+      author: 'test-user',
       scope: hub,
       title: 'Chronicles',
       blocks: [
@@ -66,8 +67,8 @@ describe('MongoDB persistence and concurrent invariants', () => {
   test('a unique index rejects concurrent hub creations with the same name', async () => {
     const hubs = new HubCataloguingConcept(mongo.db());
     const attempts = await Promise.allSettled([
-      hubs.create({ name: 'Same' }),
-      hubs.create({ name: ' Same ' }),
+      hubs.create({ creator: "test-user", name: 'Same' }),
+      hubs.create({ creator: "test-user", name: ' Same ' }),
     ]);
     expect(attempts.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     const failures = attempts.filter((r) => r.status === 'rejected');
@@ -79,8 +80,8 @@ describe('MongoDB persistence and concurrent invariants', () => {
   test('a unique index rejects concurrent document titles within a scope', async () => {
     const documents = new DocumentingConcept(mongo.db());
     const attempts = await Promise.allSettled([
-      documents.create({ scope: 'hub', title: 'Map', blocks: [] }),
-      documents.create({ scope: 'hub', title: ' Map ', blocks: [] }),
+      documents.create({ author: "test-user", scope: 'hub', title: 'Map', blocks: [] }),
+      documents.create({ author: "test-user", scope: 'hub', title: ' Map ', blocks: [] }),
     ]);
     expect(attempts.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
     const failures = attempts.filter((result) => result.status === 'rejected');

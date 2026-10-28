@@ -1,5 +1,5 @@
 import { afterEach, beforeEach } from 'bun:test';
-import type { Db } from 'mongodb';
+import type { Db, MongoClient } from 'mongodb';
 import { connectMongo, type MongoConnection } from '@/db.ts';
 
 /** Each test gets an isolated disposable DB; refuses non-test URIs. */
@@ -31,6 +31,10 @@ export function useMongoTestDb() {
   });
 
   return {
+    client(): MongoClient {
+      if (!connection) throw new Error('Mongo test database not initialized.');
+      return connection.client;
+    },
     db(): Db {
       if (!connection) throw new Error('Mongo test database not initialized.');
       return connection.db;

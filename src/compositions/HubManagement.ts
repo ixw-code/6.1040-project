@@ -35,7 +35,7 @@ const CreateHub = endpoint(
   '/hubs/create',
   ({ name, label, hub, sequence, checkpoint }) =>
     receive({ name, label })
-      .then(HubCataloguing.create({ name }).responds({ hub }))
+      .then(HubCataloguing.create({ name, creator: 'legacy-setup' }).responds({ hub }))
       .then(Checkpointing.create({ scope: hub, label }).responds({ sequence }))
       .then(Checkpointing.append({ sequence, label }).responds({ checkpoint }))
       .then(respond({ hub, sequence })),

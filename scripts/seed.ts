@@ -1,5 +1,5 @@
 import type { Db } from 'mongodb';
-import { createApplication } from '@/application.ts';
+import { createApplication } from '@/assembly/application.ts';
 import { connectMongo } from '@/db.ts';
 
 type Gateway = ReturnType<typeof createApplication>['gateway'];
