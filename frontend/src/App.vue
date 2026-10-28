@@ -3,10 +3,13 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { api, type Checkpoint, type DocumentContent, type DocumentSummary, type Hub } from '@/api.ts';
 import { readerIdentity } from '@/reader.ts';
 
-type Page = { kind: 'home' } | { kind: 'hub'; hub: string } | { kind: 'manage'; hub: string } |
+type Page = { kind: 'home' } | { kind: 'login' } | { kind: 'register' } |
+  { kind: 'hub'; hub: string } | { kind: 'manage'; hub: string } |
   { kind: 'document'; hub: string; document: string };
 
 function readPage(): Page {
+  if (location.pathname === '/login') return { kind: 'login' };
+  if (location.pathname === '/register') return { kind: 'register' };
   try {
     const parts = location.hash.slice(1).split('/').filter(Boolean).map(decodeURIComponent);
     if (parts[0] === 'hub' && parts[1] && parts.length === 2) return { kind: 'hub', hub: parts[1] };
@@ -38,20 +41,71 @@ const firstLabel = ref('');
 const renameName = ref('');
 const appendLabel = ref('');
 const relabelDraft = ref<Record<string, string>>({});
+const account = ref<{ user: string; username: string; provider: string } | null>(null);
+const pendingRegistration = ref(false);
+const registrationName = ref('');
 let generation = 0;
 
 const currentHub = computed(() => {
   const destination = page.value;
-  return destination.kind === 'home' ? undefined :
+  return destination.kind !== 'hub' && destination.kind !== 'manage' && destination.kind !== 'document' ? undefined :
     hubs.value.find((entry) => entry.hub === destination.hub);
 });
 const selectedLabel = computed(() => checkpoints.value.find((entry) =>
   entry.checkpoint === savedCheckpoint.value)?.label);
+const homeLink = computed(() => page.value.kind === 'login' || page.value.kind === 'register' ? '/' : '#/');
+const loginLink = computed(() => `/login?${new URLSearchParams({
+  returnTo: `${location.pathname}${location.search}${location.hash}`,
+})}`);
 const hubLink = (hub: string) => `#/hub/${encodeURIComponent(hub)}`;
 const manageLink = (hub: string) => `${hubLink(hub)}/manage`;
 const documentLink = (hub: string, document: string) =>
   `${hubLink(hub)}/document/${encodeURIComponent(document)}`;
 const message = (cause: unknown) => cause instanceof Error ? cause.message : 'Request failed';
+
+async function loadAccount() {
+  try {
+    const response = await fetch('/api/accounts/current', { credentials: 'same-origin' });
+    if (!response.ok) return;
+    const result = await response.json() as {
+      account: { user: string; username: string; provider: string } | null; pending: boolean;
+    };
+    account.value = result.account;
+    pendingRegistration.value = result.pending;
+  } catch { /* Reader pages remain available if account services are unconfigured. */ }
+}
+
+function loginUrl(provider: 'GOOGLE' | 'COMMONS') {
+  const returnTo = new URLSearchParams(location.search).get('returnTo') ?? '/';
+  return `/api/accounts/login?${new URLSearchParams({ provider, returnTo })}`;
+}
+
+async function createAccount() {
+  if (busy.value) return;
+  busy.value = true;
+  actionError.value = '';
+  try {
+    const response = await fetch('/api/accounts/register', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username: registrationName.value }),
+    });
+    const result = await response.json() as { error?: string; redirectTo?: string };
+    if (!response.ok) throw new Error(result.error ?? 'Registration failed');
+    location.href = result.redirectTo ?? '/';
+  } catch (cause) { actionError.value = message(cause); }
+  finally { busy.value = false; }
+}
+
+async function logout() {
+  const response = await fetch('/api/accounts/logout', {
+    method: 'POST', credentials: 'same-origin',
+  });
+  if (response.ok) {
+    account.value = null;
+    pendingRegistration.value = false;
+  }
+}
 
 async function loadPage() {
   const ticket = ++generation;
@@ -64,6 +118,7 @@ async function loadPage() {
   documents.value = [];
   content.value = null;
   try {
+    if (page.value.kind === 'login' || page.value.kind === 'register') return;
     const directory = await api.hubs();
     if (ticket !== generation) return;
     hubs.value = directory.hubs;
@@ -99,11 +154,13 @@ async function loadPage() {
 function routeChanged() {
   page.value = readPage();
   actionError.value = '';
+  void loadAccount();
   void loadPage();
 }
 
 onMounted(() => {
   addEventListener('hashchange', routeChanged);
+  void loadAccount();
   void loadPage();
 });
 onUnmounted(() => {
@@ -146,14 +203,14 @@ async function change(action: () => Promise<unknown>) {
 }
 
 function saveProgress() {
-  if (page.value.kind === 'home' || !chosenCheckpoint.value) return;
+  if (!('hub' in page.value) || !chosenCheckpoint.value) return;
   const hub = page.value.hub;
   const checkpoint = chosenCheckpoint.value;
   void change(() => api.record(hub, reader, checkpoint));
 }
 
 function clearProgress() {
-  if (page.value.kind === 'home') return;
+  if (!('hub' in page.value)) return;
   const hub = page.value.hub;
   void change(() => api.clear(hub, reader));
 }
@@ -186,11 +243,14 @@ function relabelCheckpoint(checkpoint: string) {
 <template>
   <div class="site">
     <header class="topbar">
-      <a class="brand" href="#/">Wikiplotter</a>
+      <a class="brand" :href="homeLink">Wikiplotter</a>
       <nav aria-label="Main navigation">
-        <a href="#/">Hub directory</a>
+        <a :href="homeLink">Hub directory</a>
         <a v-if="currentHub" :href="hubLink(currentHub.hub)">{{ currentHub.name }}</a>
         <a v-if="currentHub" :href="manageLink(currentHub.hub)">Hub settings</a>
+        <span v-if="account">{{ account.username }}</span>
+        <button v-if="account" type="button" @click="logout">Log out</button>
+        <a v-else :href="loginLink">Log in</a>
       </nav>
     </header>
 
@@ -198,7 +258,7 @@ function relabelCheckpoint(checkpoint: string) {
       <aside class="rail" aria-label="Hubs">
         <strong>Hubs</strong>
         <a v-for="entry in hubs" :key="entry.hub" :href="hubLink(entry.hub)">{{ entry.name }}</a>
-        <a href="#/">All hubs</a>
+        <a :href="homeLink">All hubs</a>
       </aside>
 
       <main>
@@ -206,7 +266,29 @@ function relabelCheckpoint(checkpoint: string) {
         <p v-if="actionError" class="notice error" role="alert">{{ actionError }}</p>
         <p v-if="loading" class="notice" role="status">Loading…</p>
 
-        <template v-if="page.kind === 'home'">
+        <template v-if="page.kind === 'login'">
+          <div class="page-column">
+            <h1>Sign in</h1>
+            <p>Choose a provider to continue.</p>
+            <p><a :href="loginUrl('GOOGLE')">Continue with Google</a></p>
+            <p><a :href="loginUrl('COMMONS')">Continue with MIT SDG Commons</a></p>
+            <p><a href="/">Continue as guest</a></p>
+          </div>
+        </template>
+
+        <template v-else-if="page.kind === 'register'">
+          <div class="page-column">
+            <h1>Create account</h1>
+            <p v-if="!pendingRegistration">Your sign-in has expired. <a href="/login">Sign in again</a>.</p>
+            <form v-else @submit.prevent="createAccount">
+              <label>Username <input v-model="registrationName" minlength="3" maxlength="20"
+                pattern="[A-Za-z0-9]+" required autocomplete="username" /></label>
+              <button :disabled="busy">Create account</button>
+            </form>
+          </div>
+        </template>
+
+        <template v-else-if="page.kind === 'home'">
           <div class="intro">
             <h1>Wikiplotter</h1>
             <p>Explore your favorite stories, spoiler-free.</p>

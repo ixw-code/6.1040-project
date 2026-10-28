@@ -32,6 +32,9 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target: `http://${backendHost}:${backendPort}`,
         },
+        "/auth": {
+          target: `http://${backendHost}:${backendPort}`,
+        },
       },
     },
     build: {
