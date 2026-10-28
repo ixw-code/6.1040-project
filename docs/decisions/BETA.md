@@ -24,7 +24,7 @@ In the Beta, the following features will be implemented:
 Deferred features:
 
 - Contribution roles and rules
-    - *Current design*: hard-coded rule: only allow edit access to original creators (e.g. hubs, documents, assets), no rule editing or access granting
+    - *Current design*: no shared roles, rule editing, or access granting. Hub settings and asset management are creator/uploader-only; any authenticated registered user may edit articles, while only the hub creator may delete them.
 - Richer article editing (i.e. markup language and template rendering)
     - *Current design*: no markup language or templates, each block is rendered the same way, line-separated.
 - Article version history
@@ -157,8 +157,8 @@ The following are new compositions to support new features, as well as updated c
 - Provide authorized endpoints for listing uploaded assets and retrieving individual assets for preview.
 
 #### Articles (update)
-- Require the original article author for editing/deletion.
-- Require authentication for creation (any users can create an article within any hub).
+- Require any authenticated account for article creation and editing.
+- Require hub owner for deletion.
 - Create and retrieve for editing, rename, update ordered blocks, and delete articles.
 - Assign, inspect, replace, and remove document/block requirements; validate checkpoint membership.
 - Provide endpoints for uploading assets; check against MediaAssetManaging to prevent duplicate names. 
@@ -261,7 +261,7 @@ The following are ideas for what features the UI/UX design should include, not f
 | Document-level requirements | Rule keyed by document ID |
 | Block-level requirements | Rule keyed by block ID |
 | Documenting.Block, Uploaded assets | Documenting uses asset ID, MediaAssetManaging stores metadata; external storage holds bytes |
-| Authorization | Creator/author/uploader checks in compositions, using verified session identity |
+| Authorization | Verified registered session identity; hub-creator checks for hub management and article deletion; uploader checks for asset management |
 
 ### Reactions and Compositions
 
@@ -271,8 +271,8 @@ The following are ideas for what features the UI/UX design should include, not f
 | `Hubs` | Manage checkpoints | Verify hub creator; resolve hub/sequence before append or relabel. |
 | `Hubs` | **Delete a hub** | Verify creator → make hub inaccessible during cleanup → remove related checkpoints, articles, and assets; clear related progress. Handle partial failure without making hidden content public. |
 | `Articles` (formerly `ContentManagement`) | Create an article | **Verify registered User and hub** → Documenting.create with author and ordered blocks → assign requirements before exposing article. |
-| `Articles` | **Edit article** and classify items | Verify original author → load full document and rules → validate blocks/tokens/assets → save updated content and rules with fail-closed visibility. |
-| `Articles` | **Delete article** | Verify original author → make article inaccessible during deletion → remove associated rules and document, then clean up unreferenced media as permitted. |
+| `Articles` | **Edit article** and classify items | Verify registered User → load full document and rules → validate blocks/tokens/assets → save updated content and rules with fail-closed visibility. |
+| `Articles` | **Delete article** | Verify hub creator → make article inaccessible during deletion → remove associated rules and document, then clean up unreferenced media as permitted. |
 | `Accounts` | **unregistered session** | Register from unregistered session → read secure cookie data → verify provider identity → Registering lookup → Registering.register new user → ReaderProgress.importProgress. |
 | `Accounts` | **Login / registration** | Verify third-party identity → Registering lookup/register → Sessioning.start with registered User → issue authenticated cookie → trigger ReaderProgress import from validated anonymous cookie. |
 | `Accounts` | **Logout / expiration** | Logout → revoke and expire session; clear old cookies and issue new cookie when browsing continues; clean up expired sessions. |

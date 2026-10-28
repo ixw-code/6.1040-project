@@ -43,8 +43,9 @@ describe('Articles composition', () => {
     expect(await articles.EditingView(s.authorSession, s.hub, created.document)).toMatchObject({
       required: [], blocks: [{ block: open!.block, required: [] }, { block: secret!.block, required: [s.first] }],
     });
-    await expect(articles.EditingView(s.otherSession, s.hub, created.document))
-      .rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(await articles.EditingView(s.otherSession, s.hub, created.document)).toMatchObject({
+      document: created.document, title: 'Guide', author: s.author,
+    });
     await new ProgressRecordingConcept(s.db).record({ scope: s.hub, reader: s.other, checkpoint: s.start });
     const reading = createApplication(s.db).gateway;
     expect(await reading.invoke('/articles/read',
@@ -82,23 +83,24 @@ describe('Articles composition', () => {
     });
   });
 
-  test('scopes tagging to the author and removes all rules on deletion', async () => {
+  test('allows authenticated editing and limits deletion to the hub creator', async () => {
     const s = await setup();
     const articles = createArticles(s.db);
     const created = await articles.CreateArticle(s.authorSession, { hub: s.hub, title: 'Guide', required: [],
       blocks: [{ kind: 'TEXT', body: 'Open', alt: '', required: [] }] });
     const block = created.blocks[0]!.block;
-    await expect(articles.TagItem(s.otherSession, s.hub, created.document, block, [s.first]))
-      .rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await articles.TagItem(s.otherSession, s.hub, created.document, block, [s.first]);
+    expect(await new RequirementTaggingConcept(s.db)._rule({ item: block })).toEqual([{ required: [s.first] }]);
     await expect(articles.TagItem(s.authorSession, s.hub, created.document, 'foreign', []))
       .rejects.toMatchObject({ code: 'ITEM_NOT_FOUND' });
-    await articles.TagItem(s.authorSession, s.hub, created.document, block, [s.first]);
+    await articles.TagItem(s.authorSession, s.hub, created.document, block, []);
+    await articles.TagItem(s.otherSession, s.hub, created.document, block, [s.first]);
     expect(await new RequirementTaggingConcept(s.db)._rule({ item: block })).toEqual([{ required: [s.first] }]);
     await articles.UntagItem(s.authorSession, s.hub, created.document, block);
     expect(await new RequirementTaggingConcept(s.db)._rule({ item: block })).toEqual([]);
-    await expect(articles.DeleteArticle(s.otherSession, s.hub, created.document))
+    await expect(articles.DeleteArticle(s.authorSession, s.hub, created.document))
       .rejects.toMatchObject({ code: 'FORBIDDEN' });
-    await articles.DeleteArticle(s.authorSession, s.hub, created.document);
+    await articles.DeleteArticle(s.otherSession, s.hub, created.document);
     expect(await new DocumentingConcept(s.db)._documents({ scope: s.hub })).toEqual([]);
     expect(await new RequirementTaggingConcept(s.db)._rule({ item: created.document })).toEqual([]);
     expect(await new RequirementTaggingConcept(s.db)._rule({ item: block })).toEqual([]);

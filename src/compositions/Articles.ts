@@ -67,11 +67,16 @@ export function createArticles(db: Db, clock?: () => Date) {
     }
   }
 
-  async function authored(hub: string, document: string, user: string, session: ClientSession) {
+  async function article(hub: string, document: string, session: ClientSession) {
     const row = (await new DocumentingConcept(db, session)._documentForEditing({ scope: hub, document }))[0];
     if (!row) throw new ArticleError('ARTICLE_NOT_FOUND');
-    if (row.author !== user) throw new ArticleError('FORBIDDEN');
     return row;
+  }
+
+  async function hubCreator(hub: string, session: ClientSession): Promise<string> {
+    const row = (await new HubCataloguingConcept(db, session)._get({ hub }))[0];
+    if (!row) throw new ArticleError('HUB_NOT_FOUND');
+    return row.creator;
   }
 
   async function createArticle(secret: string, input: ArticleInput) {
@@ -94,24 +99,24 @@ export function createArticles(db: Db, clock?: () => Date) {
   }
 
   async function editingView(secret: string, hub: string, document: string) {
-    const user = await identity(secret);
+    await identity(secret);
     return transact(async (session) => {
-      const article = await authored(hub, document, user, session);
-      const items = [document, ...article.blocks.map(({ block }) => block)];
+      const current = await article(hub, document, session);
+      const items = [document, ...current.blocks.map(({ block }) => block)];
       const found = await new RequirementTaggingConcept(db, session)._rulesForItems({ items });
       const rules = new Map(found.map(({ item, required }) => [item, required]));
-      return { document, title: article.title, author: article.author,
+      return { document, title: current.title, author: current.author,
         required: rules.get(document) ?? null,
-        blocks: article.blocks.map((block) => ({ ...block, required: rules.get(block.block) ?? null })) };
+        blocks: current.blocks.map((block) => ({ ...block, required: rules.get(block.block) ?? null })) };
     });
   }
 
   async function saveArticle(secret: string, input: SaveInput) {
-    const user = await identity(secret);
+    await identity(secret);
     if (typeof input.hub !== 'string' || typeof input.document !== 'string' ||
       (input.title !== undefined && typeof input.title !== 'string')) throw new ArticleError('INVALID_ARTICLE');
     return transact(async (session) => {
-      const current = await authored(input.hub, input.document, user, session);
+      const current = await article(input.hub, input.document, session);
       const sequence = await hubSequence(input.hub, session);
       await validateRules(input.hub, sequence, input.required, input.blocks, session);
       const documents = new DocumentingConcept(db, session);
@@ -133,17 +138,17 @@ export function createArticles(db: Db, clock?: () => Date) {
     });
   }
 
-  async function scopedItem(hub: string, document: string, item: string, user: string, session: ClientSession) {
-    const article = await authored(hub, document, user, session);
-    if (item !== document && !article.blocks.some(({ block }) => block === item)) {
+  async function scopedItem(hub: string, document: string, item: string, session: ClientSession) {
+    const current = await article(hub, document, session);
+    if (item !== document && !current.blocks.some(({ block }) => block === item)) {
       throw new ArticleError('ITEM_NOT_FOUND');
     }
   }
 
   async function tagItem(secret: string, hub: string, document: string, item: string, required: string[]) {
-    const user = await identity(secret);
+    await identity(secret);
     return transact(async (session) => {
-      await scopedItem(hub, document, item, user, session);
+      await scopedItem(hub, document, item, session);
       const sequence = await hubSequence(hub, session);
       if (!validTokens(required) ||
         !(await new CheckpointingConcept(db, session)._contains({ scope: hub, sequence, tokens: required })).valid) {
@@ -155,9 +160,9 @@ export function createArticles(db: Db, clock?: () => Date) {
   }
 
   async function untagItem(secret: string, hub: string, document: string, item: string) {
-    const user = await identity(secret);
+    await identity(secret);
     return transact(async (session) => {
-      await scopedItem(hub, document, item, user, session);
+      await scopedItem(hub, document, item, session);
       await new RequirementTaggingConcept(db, session).untag({ item });
       return { item };
     });
@@ -166,9 +171,10 @@ export function createArticles(db: Db, clock?: () => Date) {
   async function deleteArticle(secret: string, hub: string, document: string) {
     const user = await identity(secret);
     return transact(async (session) => {
-      const article = await authored(hub, document, user, session);
+      if (await hubCreator(hub, session) !== user) throw new ArticleError('FORBIDDEN');
+      const current = await article(hub, document, session);
       const rules = new RequirementTaggingConcept(db, session);
-      for (const item of [document, ...article.blocks.map(({ block }) => block)]) {
+      for (const item of [document, ...current.blocks.map(({ block }) => block)]) {
         if ((await rules._rule({ item })).length) await rules.untag({ item });
       }
       await new DocumentingConcept(db, session).delete({ scope: hub, document });
