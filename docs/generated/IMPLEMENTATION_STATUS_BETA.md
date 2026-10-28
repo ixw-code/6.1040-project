@@ -80,3 +80,44 @@ Design syntax, framework source agreement, generated artifact checks, backend/fr
     - Remove obsolete setup compositions and seed through concept owners
     - Restore typed reader client and protect the local progress import route
     - Preserve hub, article, and spoiler regression coverage
+
+## Milestone 8A files changed
+
+| File | Change |
+| --- | --- |
+| frontend/src/api/Accounts.ts | Adds typed wrappers for current account, provider login URL, registration, logout, and username change. |
+| frontend/src/api/Hubs.ts | Adds typed wrappers for the generated hub directory/browse calls and existing hub, slug, deletion, sequence, and checkpoint routes. |
+| frontend/src/api/Articles.ts | Adds typed generated reading plus existing authenticated create, editing, save/rename, tag, untag, and delete operations. |
+| frontend/src/api/ReaderProgress.ts | Wraps generated progress get, record, and clear operations; cookie reader identity remains boundary supplied. |
+| frontend/src/api/MediaAssets.ts | Adds typed upload, finalize, list, metadata, preview, contextual retrieval, and delete wrappers for existing routes. |
+| frontend/src/api/http.ts; frontend/src/api/readerClient.ts | Shares JSON/binary HTTP helpers and retains the generated sync-engine reader client with typed errors. |
+| frontend/src/api.ts; frontend/src/App.vue | Preserves the current screen API facade and moves account HTTP calls into AccountsApi. |
+
+## Milestone 8A operation inventory and decisions
+
+The API layer mirrors existing routes; it adds no backend endpoints. Generated `ReaderWireHttp` remains the source for hub listing/browsing, article reading, and progress calls. Existing imperative HTTP handlers back protected mutations and media operations.
+
+| Beta operation | Route/status |
+| --- | --- |
+| Account current, provider login/callback, explicit registration, logout, username change | `/api/accounts/current`, `/api/accounts/login`, `/auth/{google,commons}/callback`, `/api/accounts/register`, `/api/accounts/logout`, `/api/accounts/set-username` — implemented. |
+| Account deletion | `/api/accounts/delete` — route intentionally returns `501 ACCOUNT_DELETION_UNAVAILABLE`; no successful API operation is exposed. |
+| Hub directory, sequence/checkpoint listing | Generated `/hubs/list`; `/api/hubs/sequences`, `/api/checkpoints/list` — implemented. |
+| Hub create, rename, slug update, delete; checkpoint append/relabel | `/api/hubs/{create,rename,slug,delete}`, `/api/checkpoints/{append,relabel}` — implemented. |
+| Article read, create, editing view, full save/rename, tag, untag, delete | Generated `/api/articles/read`; `/api/articles/{create,editing,save,tag,untag,delete}` — implemented. |
+| Reader progress get, record, clear; login import | Generated `/api/progress/{get,record,clear}`; internal `/api/internal/progress/import` is blocked from public HTTP and used locally during login — implemented. |
+| Asset upload/finalize, own list/metadata/preview, contextual reader retrieval, delete | `/api/assets/{start,finish,my,get,preview,read,delete}` — implemented. |
+| Account data page: list hubs with progress, authored article listing, account data export/clear | No matching routes — unavailable. |
+| Frontend article editor, hub slug/settings/delete UI, asset library/upload UI, account settings/data UI | Backend operations above exist where listed; frontend screens are not implemented in 8A. |
+
+Response types follow handler payloads, including nullable missing requirements in article editing and binary media responses. Account deletion and data-page operations are recorded as unavailable rather than represented by fabricated successful calls. Existing screen behavior is preserved through `api.ts` compatibility exports.
+
+## Milestone 8A verification and suggested commit message
+
+Frontend typecheck and production build pass. No tests were added or run because this increment only reorganizes the frontend HTTP boundary and the requested checks are typecheck/build.
+
+    refactor(frontend): establish typed beta API modules
+
+    - Split account, hub, article, progress, and media calls into typed modules
+    - Keep reader operations on the generated sync-engine client
+    - Document available and unavailable Beta HTTP operations
+    - Preserve current screen behavior through the existing API facade

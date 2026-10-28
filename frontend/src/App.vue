@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { api, type Checkpoint, type DocumentContent, type DocumentSummary, type Hub } from '@/api.ts';
+import { api, AccountsApi, type Checkpoint, type DocumentContent, type DocumentSummary, type Hub } from '@/api.ts';
 
 type Page = { kind: 'home' } | { kind: 'login' } | { kind: 'register' } |
   { kind: 'hub'; hub: string } | { kind: 'manage'; hub: string } |
@@ -63,11 +63,7 @@ const message = (cause: unknown) => cause instanceof Error ? cause.message : 'Re
 
 async function loadAccount() {
   try {
-    const response = await fetch('/api/accounts/current', { credentials: 'same-origin' });
-    if (!response.ok) return;
-    const result = await response.json() as {
-      account: { user: string; username: string; provider: string } | null; pending: boolean;
-    };
+    const result = await AccountsApi.current();
     account.value = result.account;
     pendingRegistration.value = result.pending;
   } catch { /* Reader pages remain available if account services are unconfigured. */ }
@@ -75,7 +71,7 @@ async function loadAccount() {
 
 function loginUrl(provider: 'GOOGLE' | 'COMMONS') {
   const returnTo = new URLSearchParams(location.search).get('returnTo') ?? '/';
-  return `/api/accounts/login?${new URLSearchParams({ provider, returnTo })}`;
+  return AccountsApi.loginUrl(provider, returnTo);
 }
 
 async function createAccount() {
@@ -83,26 +79,18 @@ async function createAccount() {
   busy.value = true;
   actionError.value = '';
   try {
-    const response = await fetch('/api/accounts/register', {
-      method: 'POST', credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ username: registrationName.value }),
-    });
-    const result = await response.json() as { error?: string; redirectTo?: string };
-    if (!response.ok) throw new Error(result.error ?? 'Registration failed');
+    const result = await AccountsApi.register(registrationName.value);
     location.href = result.redirectTo ?? '/';
   } catch (cause) { actionError.value = message(cause); }
   finally { busy.value = false; }
 }
 
 async function logout() {
-  const response = await fetch('/api/accounts/logout', {
-    method: 'POST', credentials: 'same-origin',
-  });
-  if (response.ok) {
+  try {
+    await AccountsApi.logout();
     account.value = null;
     pendingRegistration.value = false;
-  }
+  } catch (cause) { actionError.value = message(cause); }
 }
 
 async function loadPage() {
