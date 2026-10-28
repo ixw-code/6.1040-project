@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { Db } from 'mongodb';
-import { createAccounts } from '@/accounts.ts';
+import { createAccounts } from '@/assembly/accounts.ts';
 import { createCookieSealer } from '@/auth/sealed-cookie.ts';
 import { CommonsProvider, GoogleProvider, type VerifiedProvider } from '@/auth/providers.ts';
 import type { Provider } from '@/concepts/Registering/Registering.ts';

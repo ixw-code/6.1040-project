@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { createApplication } from '@/application.ts';
-import { assembleWikiplotter } from '@/assembly.ts';
+import { createApplication } from '@/assembly/application.ts';
+import { assembleWikiplotter } from '@/assembly/assembly.ts';
 import { DocumentingConcept } from '@/concepts/Documenting/Documenting.ts';
 import { RequirementTaggingConcept } from '@/concepts/RequirementTagging/RequirementTagging.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { createApplication } from '@/application.ts';
-import { createReaderHttpHandler } from '@/edge.ts';
+import { createApplication } from '@/assembly/application.ts';
+import { createReaderHttpHandler } from '@/http/edge.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 import { SessioningConcept } from '@/concepts/Sessioning/Sessioning.ts';
 

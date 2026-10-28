@@ -4,8 +4,8 @@ import { composition as hubManagement } from '@/compositions/HubManagement.ts';
 import { composition as contentManagement } from '@/compositions/ContentManagement.ts';
 import { composition as readerProgress } from '@/compositions/ReaderProgress.ts';
 import { composition as reading } from '@/compositions/Reading.ts';
-import { applicationConceptSet } from '@/concepts.ts';
-import { createMongoConceptInstances } from '@/concept-instances.ts';
+import { applicationConceptSet } from './concepts.ts';
+import { createMongoConceptInstances } from './concept-instances.ts';
 
 /** The no-argument form supports runtime and design tooling without opening a connection. */
 function assembleWith(db: Db | undefined, setup: boolean) {

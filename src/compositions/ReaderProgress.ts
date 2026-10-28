@@ -1,6 +1,6 @@
 import { endpoint, receive, respond } from '@mit-sdg/sync-engine/boundary';
 import { each, former, no, view, where } from '@mit-sdg/sync-engine/language';
-import { concepts } from '@/concepts.ts';
+import { concepts } from '@/assembly/concepts.ts';
 
 const { HubCataloguing, Checkpointing, ProgressRecording } = concepts;
 

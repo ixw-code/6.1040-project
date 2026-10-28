@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createApplication } from '@/application.ts';
+import { createApplication } from '@/assembly/application.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 
 type Gateway = ReturnType<typeof createApplication>['gateway'];

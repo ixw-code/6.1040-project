@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createReaderHttpHandler } from '@/edge.ts';
+import { createReaderHttpHandler } from '@/http/edge.ts';
 import type { VerifiedProvider } from '@/auth/providers.ts';
 import { RegisteringConcept } from '@/concepts/Registering/Registering.ts';
 import { SessioningConcept } from '@/concepts/Sessioning/Sessioning.ts';

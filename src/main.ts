@@ -1,5 +1,5 @@
 import { connectMongo } from '@/db.ts';
-import { createReaderHttpHandler } from '@/edge.ts';
+import { createReaderHttpHandler } from '@/http/edge.ts';
 
 const hostname = process.env.HOST;
 const port = Number(process.env.PORT);

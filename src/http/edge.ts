@@ -2,10 +2,10 @@ import { createGateway } from '@mit-sdg/sync-engine/boundary';
 import { createHttpHandler } from '@mit-sdg/sync-engine-http/handler';
 import type { Db } from 'mongodb';
 import type { ReaderWire } from '@generated/reader/wire.ts';
-import { assembleWikiplotter } from '@/assembly.ts';
-import { readerHttpPolicy } from '@/http-policy.ts';
-import { authOptionsFromEnvironment, createAuthHttpHandler } from '@/auth/http.ts';
-import { createReaderIdentityHttpHandler } from '@/auth/reader-http.ts';
+import { assembleWikiplotter } from '@/assembly/assembly.ts';
+import { readerHttpPolicy } from '@/http/policy.ts';
+import { authOptionsFromEnvironment, createAuthHttpHandler } from '@/http/accounts.ts';
+import { createReaderIdentityHttpHandler } from '@/http/reader.ts';
 
 export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnvironment()) {
   const application = assembleWikiplotter(db);

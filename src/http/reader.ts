@@ -1,6 +1,6 @@
 import type { Db } from 'mongodb';
 import { SessioningConcept } from '@/concepts/Sessioning/Sessioning.ts';
-import { createGuestReader } from '@/guest-reader.ts';
+import { createGuestReader } from '@/assembly/guest-reader.ts';
 import { issueProgress, progressCookie, verifiedProgress } from '@/auth/progress-cookie.ts';
 
 type Options = { origin: string; cookieKey: Buffer; clock?: () => Date };

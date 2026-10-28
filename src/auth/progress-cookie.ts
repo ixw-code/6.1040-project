@@ -1,6 +1,6 @@
 import type { Db } from 'mongodb';
 import { createCookieSealer } from '@/auth/sealed-cookie.ts';
-import { createGuestReader } from '@/guest-reader.ts';
+import { createGuestReader } from '@/assembly/guest-reader.ts';
 
 export const progressCookieName = '__Host-wikiplotter_progress';
 export const progressLifetime = 30 * 24 * 60 * 60 * 1000;

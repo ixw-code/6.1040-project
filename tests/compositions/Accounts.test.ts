@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createAccounts } from '@/accounts.ts';
+import { createAccounts } from '@/assembly/accounts.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 
 describe('Accounts local composition', () => {
