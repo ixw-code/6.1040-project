@@ -139,7 +139,7 @@ The original Vue typecheck failed because HubSettings called imported API method
 
 Reading design already specified slug-bearing hub directory output, but the composition omitted it. The implementation now obtains slugs through the existing `_get` query, preserving HubCataloguing._hubs() and its accepted signature. The frontend uses internal IDs for API calls and human-readable slugs/titles in visible navigation. The Hubs composition already owned creator checks; `/api/hubs/access` exposes only a boolean so UI controls can reflect the server's decision without leaking creator IDs.
 
-The account data page still cannot list authored articles because no such endpoint exists. A direct title URL can resolve only an article currently returned by the spoiler-filtered directory; a hidden or unclassified article has no safe title-to-ID lookup path. Account deletion remains disabled with HTTP 501. Local development has no provider credentials configured, so live Google/Commons login returns `PROVIDER_UNAVAILABLE`; provider callback, explicit registration, and logout flows are covered by mock-backed HTTP tests.
+The account data page still cannot list authored articles because no such endpoint exists. Account deletion remains disabled with HTTP 501. Local development has no provider credentials configured, so live Google/Commons login returns `PROVIDER_UNAVAILABLE`; provider callback, explicit registration, and logout flows are covered by mock-backed HTTP tests.
 
 ## Frontend integration verification
 
@@ -154,3 +154,30 @@ Live Vite proxy smoke checks passed for homepage serving, hub directory and crea
     - Correct article and media API response types and template handlers
     - Verify reader, management, editing, and media flows through Vite proxy
     - Preserve documented provider and authored-article index blockers
+
+## Milestone 8I files changed
+
+| File | Change |
+| --- | --- |
+| frontend/src/lib/routes.ts; frontend/src/api/Hubs.ts; frontend/src/features/Home/HomePage.vue; frontend/src/App.vue | Build public hub/article paths from API-resolved slugs and article titles, encode title segments, canonicalize legacy ID paths when backend data resolves them, and keep internal IDs for API operations. |
+| src/compositions/Articles.ts; tests/compositions/Articles.test.ts; tests/http/ArticlesHttp.test.ts | Let the existing authenticated editing view resolve an exact title within the supplied hub when the route parameter is not a document ID; return the stable document ID and complete ordered blocks/rules. |
+| frontend/src/features/Article/ArticleEditor.vue; frontend/src/features/Article/ArticleReader.vue; frontend/src/features/Hub/HubHome.vue | Load/edit by stable ID, show the requested hub/article/editing breadcrumb levels, preserve block IDs, and navigate to the canonical title route after save. |
+| frontend/src/lib/confirm.ts; frontend/src/lib/navigation.ts; frontend/src/components/ConfirmationDialog.vue; frontend/src/App.vue | Add reusable confirmation UI and navigation guards for spoiler exposure, unsaved edits, browser Back, refresh/close, and destructive actions. |
+| frontend/src/features/Hub/HubSettings.vue; frontend/src/features/Media/MediaLibrary.vue; frontend/src/features/Article/ArticleEditor.vue; frontend/tests/confirm.test.ts; frontend/tests/routes.test.ts | Confirm hub, asset, article, and block deletion; cover encoded routes, breadcrumbs, dirty-state comparison, confirmation outcomes, and deletion cancellation. |
+| frontend/src/styles/features.css | Style the confirmation dialog using the existing Beta panel and button styles. |
+
+## Milestone 8I decisions and verification
+
+Readable hub routes use only slugs returned by the hub directory; new hub creation refreshes that directory before navigation. Article routes use exact titles from the spoiler-filtered article directory. When that directory cannot resolve an editor route (for example, no reader progress or a hidden article), the existing authenticated `/api/articles/editing` operation now resolves an exact, hub-scoped title through Documenting's current queries and returns the same editing response; saves still use the returned stable document ID. No endpoint, concept, or response shape was added. Reader content remains checkpoint-filtered.
+
+Editor dirty state compares the full title, ordered block records/IDs, and article/block requirement selections against the loaded or last-saved snapshot. Internal links, Cancel, breadcrumbs, logout, and browser Back pass through the discard dialog; `beforeunload` protects refresh and close. SPA route transitions stay in the loading state until API title-to-ID resolution completes, preventing article reads with a title where the backend requires an ID. Canonical URL replacement updates route state without remounting the editor. A successful save resets the baseline before replacing the editor history entry with the canonical article URL. After a canceled browser Back, accepting discard moves back one history entry to the intended route. Destructive actions require a second explicit confirmation, and cancellation does not call the deletion operation.
+
+Backend/frontend typechecks and the production frontend build pass. Frontend tests pass: **10 tests, 36 assertions**. The full MongoDB application suite passes: **83 tests across 28 files, 600 assertions**, including new title-resolution checks at composition and HTTP boundaries. A headless Chrome smoke through Vite dev verified hub-to-article navigation, direct article refresh, the encoded `A/B: Route Guide` title, edit warning and editor content, editor refresh, and both cancel/confirm paths for browser Back. `git diff --check` passes. Build output retains the existing sync-engine `node:crypto`/`node:util` browser externalization advisories.
+
+    feat(frontend): add Beta UI and repair route integration
+
+    - Add the Beta pages and management flows
+    - Resolve readable hub and article routes from backend data
+    - Fix dev navigation timing and authenticated article editing
+    - Confirm spoiler exposure, unsaved navigation, and destructive actions
+    - Verify routes, refresh, editor loading, and confirmation outcomes

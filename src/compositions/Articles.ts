@@ -101,12 +101,27 @@ export function createArticles(db: Db, clock?: () => Date) {
   async function editingView(secret: string, hub: string, document: string) {
     await identity(secret);
     return transact(async (session) => {
-      const current = await article(hub, document, session);
-      const items = [document, ...current.blocks.map(({ block }) => block)];
+      // Public article routes use the title; the authoring API historically used
+      // the stable document ID. Resolve an exact scoped title only when no ID matches.
+      let resolvedDocument = document;
+      let current = await new DocumentingConcept(db, session)
+        ._documentForEditing({ scope: hub, document: resolvedDocument }).then((rows) => rows[0]);
+      if (!current) {
+        const documents = new DocumentingConcept(db, session);
+        for (const row of await documents._documents({ scope: hub })) {
+          if ((await documents._title({ scope: hub, document: row.document }))[0]?.title === document) {
+            resolvedDocument = row.document;
+            current = (await documents._documentForEditing({ scope: hub, document: resolvedDocument }))[0];
+            break;
+          }
+        }
+      }
+      if (!current) throw new ArticleError('ARTICLE_NOT_FOUND');
+      const items = [resolvedDocument, ...current.blocks.map(({ block }) => block)];
       const found = await new RequirementTaggingConcept(db, session)._rulesForItems({ items });
       const rules = new Map(found.map(({ item, required }) => [item, required]));
-      return { document, title: current.title, author: current.author,
-        required: rules.get(document) ?? null,
+      return { document: resolvedDocument, title: current.title, author: current.author,
+        required: rules.get(resolvedDocument) ?? null,
         blocks: current.blocks.map((block) => ({ ...block, required: rules.get(block.block) ?? null })) };
     });
   }

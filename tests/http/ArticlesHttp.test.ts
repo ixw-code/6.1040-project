@@ -40,6 +40,9 @@ describe('Articles HTTP boundary', () => {
     const edit = (await post('editing', { hub, document }, authorSession))!;
     expect(edit.status).toBe(200);
     expect(await edit.json()).toMatchObject({ document, required: [], blocks: [{ block: blocks[0]!.block, required: [] }] });
+    const titleEdit = (await post('editing', { hub, document: 'Guide' }, authorSession))!;
+    expect(titleEdit.status).toBe(200);
+    expect(await titleEdit.json()).toMatchObject({ document, title: 'Guide', blocks: [{ block: blocks[0]!.block }] });
     expect((await post('save', { hub, document, title: 'Updated by another account', required: [], blocks: [
       { block: blocks[0]!.block, kind: 'TEXT', body: 'Updated', alt: '', required: [] },
     ] }, otherSession))!.status)

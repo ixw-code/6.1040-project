@@ -1,16 +1,18 @@
 import { describe, expect, test } from 'bun:test';
 import { hubUrl, welcomeUrl, settingsUrl, articleUrl, editUrl, newArticleUrl, assetUrl,
-  rememberArticleDirectory, rememberHubDirectory, rememberHubSlug } from '../src/lib/routes.ts';
+  rememberArticleDirectory, rememberHubDirectory, rememberHubSlug, routeFromPath, articleBreadcrumbs } from '../src/lib/routes.ts';
 import { legacyMediaSource } from '../src/lib/legacyMedia.ts';
 
 describe('frontend route links', () => {
-  test('encodes hub and document identifiers in stable paths', () => {
-    expect(hubUrl('hub:one')).toBe('/hub%3Aone');
-    expect(welcomeUrl('hub:one')).toBe('/hub%3Aone/welcome');
-    expect(settingsUrl('hub:one')).toBe('/hub%3Aone/settings');
-    expect(articleUrl('hub:one', 'document:two')).toBe('/hub%3Aone/document%3Atwo');
-    expect(editUrl('hub:one', 'document:two')).toBe('/hub%3Aone/document%3Atwo/edit');
-    expect(newArticleUrl('hub:one')).toBe('/hub%3Aone/articles/new');
+  test('encodes only backend-resolved readable slugs and article titles', () => {
+    rememberHubDirectory([{ hub: 'hub:one', slug: 'star-harbor' }]);
+    rememberArticleDirectory('hub:one', [{ document: 'document:two', title: 'A/B: The Long Way' }]);
+    expect(hubUrl('hub:one')).toBe('/star-harbor');
+    expect(welcomeUrl('hub:one')).toBe('/star-harbor/welcome');
+    expect(settingsUrl('hub:one')).toBe('/star-harbor/settings');
+    expect(articleUrl('hub:one', 'document:two')).toBe('/star-harbor/A%2FB%3A%20The%20Long%20Way');
+    expect(editUrl('hub:one', 'document:two')).toBe('/star-harbor/A%2FB%3A%20The%20Long%20Way/edit');
+    expect(newArticleUrl('hub:one')).toBe('/star-harbor/articles/new');
     expect(assetUrl('asset:id')).toBe('/assets/asset%3Aid');
   });
   test('legacy Alpha images remain readable without opening unsafe schemes', () => {
@@ -27,6 +29,14 @@ describe('frontend route links', () => {
     expect(settingsUrl('hub:internal-id')).toBe('/star-harbor/settings');
     rememberHubSlug('hub:internal-id', 'north-star');
     expect(hubUrl('hub:internal-id')).toBe('/north-star');
-    expect(hubUrl('unlisted-hub')).toBe('/unlisted-hub');
+    expect(() => hubUrl('unlisted-hub')).toThrow('No backend-resolved slug');
+  });
+  test('resolves decoded readable route parameters and exact breadcrumb levels', () => {
+    expect(routeFromPath('/star-harbor/A%2FB%3A%20The%20Long%20Way/edit')).toEqual({
+      kind: 'article-edit', hub: 'star-harbor', document: 'A/B: The Long Way',
+    });
+    expect(articleBreadcrumbs('Star Harbor')).toEqual(['Star Harbor']);
+    expect(articleBreadcrumbs('Star Harbor', 'A/B: The Long Way')).toEqual(['Star Harbor', 'A/B: The Long Way']);
+    expect(articleBreadcrumbs('Star Harbor', 'A/B: The Long Way', true)).toEqual(['Star Harbor', 'A/B: The Long Way', 'Editing']);
   });
 });

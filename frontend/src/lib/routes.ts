@@ -19,23 +19,23 @@ export function rememberArticleDirectory(hub: string, documents: { document: str
 export function rememberArticleTitle(hub: string, document: string, title: string) {
   articleTitleById.set(articleMapKey(hub, document), title);
 }
-export const hubUrl = (hub: string) => `/${part(slugByHub.get(hub) ?? hub)}`;
+export const hubUrl = (hub: string) => {
+  const slug = slugByHub.get(hub);
+  if (!slug) throw new Error(`No backend-resolved slug is available for hub ${hub}`);
+  return `/${part(slug)}`;
+};
 export const welcomeUrl = (hub: string) => `${hubUrl(hub)}/welcome`;
 export const settingsUrl = (hub: string) => `${hubUrl(hub)}/settings`;
-export const articleUrl = (hub: string, document: string) =>
-  `${hubUrl(hub)}/${part(articleTitleById.get(articleMapKey(hub, document)) ?? document)}`;
-export const editUrl = (hub: string, document: string) => `${articleUrl(hub, document)}/edit`;
+export const articleUrl = (hub: string, document: string, knownTitle?: string) => {
+  const title = knownTitle ?? articleTitleById.get(articleMapKey(hub, document));
+  if (!title) throw new Error(`No readable title is available for article ${document}`);
+  return `${hubUrl(hub)}/${part(title)}`;
+};
+export const editUrl = (hub: string, document: string, knownTitle?: string) => `${articleUrl(hub, document, knownTitle)}/edit`;
 export const newArticleUrl = (hub: string) => `${hubUrl(hub)}/articles/new`;
 export const assetUrl = (asset: string) => `/assets/${part(asset)}`;
-export function routeFromLocation(): Route {
-  let path = window.location.pathname;
+export function routeFromPath(path: string): Route {
   try {
-    const legacy = window.location.hash.slice(1).split('/').filter(Boolean).map(decodeURIComponent);
-    if (legacy[0] === 'hub' && legacy[1]) {
-      path = legacy[2] === 'document' && legacy[3] ? articleUrl(legacy[1], legacy[3]) :
-        legacy[2] === 'manage' ? settingsUrl(legacy[1]) : hubUrl(legacy[1]);
-      history.replaceState(null, '', path);
-    }
     const segments = path.split('/').filter(Boolean).map(decodeURIComponent);
     if (!segments.length) return { kind: 'home' };
     if (segments.length === 1 && segments[0] === 'login') return { kind: 'login' };
@@ -53,4 +53,20 @@ export function routeFromLocation(): Route {
     if (hub && rest && third === 'edit' && segments.length === 3) return { kind: 'article-edit', hub, document: rest };
   } catch { /* Invalid encoding is not a valid route. */ }
   return { kind: 'not-found' };
+}
+export function routeFromLocation(): Route {
+  const legacy = window.location.hash.slice(1).split('/').filter(Boolean).map((part) => {
+    try { return decodeURIComponent(part); } catch { return ''; }
+  });
+  if (legacy[0] === 'hub' && legacy[1]) {
+    const suffix = legacy[2] === 'document' && legacy[3] ? `/${part(legacy[3])}` :
+      legacy[2] === 'manage' ? '/settings' : '';
+    const path = `/${part(legacy[1])}${suffix}`;
+    history.replaceState(null, '', path);
+    return routeFromPath(path);
+  }
+  return routeFromPath(window.location.pathname);
+}
+export function articleBreadcrumbs(hubName: string, articleName?: string, editing = false): string[] {
+  return [hubName, ...(articleName ? [articleName] : []), ...(editing ? ['Editing'] : [])];
 }

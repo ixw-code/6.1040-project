@@ -5,7 +5,9 @@ import { MediaAssetsApi } from '@/api/MediaAssets.ts';
 import { legacyMediaSource } from '@/lib/legacyMedia.ts';
 import { editUrl, hubUrl, rememberArticleTitle, welcomeUrl } from '@/lib/routes.ts';
 import { mayEditArticle } from '@/lib/permissions.ts';
-const props = defineProps<{ hub: string; document: string; signedIn: boolean; canDelete: boolean }>();
+import { confirmAndRun } from '@/lib/confirm.ts';
+import { navigate } from '@/lib/navigation.ts';
+const props = defineProps<{ hub: string; hubName: string; document: string; signedIn: boolean; canDelete: boolean }>();
 type VisibleBlock = { block: string; kind: string; body: string; alt: string };
 const title = ref(''), blocks = ref<VisibleBlock[]>([]), mediaUrls = ref<Record<string,string>>({});
 const error = ref(''), loading = ref(true), busy = ref(false);
@@ -32,11 +34,14 @@ onMounted(async () => {
  finally { loading.value = false; }
 });
 async function remove() { if (!props.canDelete || busy.value) return;
- if (!confirm('Permanently delete this article?')) return; busy.value = true;
- try { await ArticlesApi.delete(props.hub,props.document); location.href = hubUrl(props.hub); }
- catch(e) { error.value = e instanceof Error ? e.message : 'Could not delete'; } finally { busy.value = false; }}
+ await confirmAndRun({ title: 'Delete article?', message: 'This permanently deletes the article and its checkpoint requirements. This action cannot be undone.', confirmLabel: 'Delete', cancelLabel: 'Cancel' }, async () => {
+  busy.value = true;
+  try { await ArticlesApi.delete(props.hub,props.document); await navigate(hubUrl(props.hub)); }
+  catch(e) { error.value = e instanceof Error ? e.message : 'Could not delete'; } finally { busy.value = false; }
+ }); }
+async function edit() { if (!props.signedIn) return; await navigate(editUrl(props.hub, props.document, title.value)); }
 </script>
-<template><div class="article-layout"><article class="panel article-surface"><div class="breadcrumbs"><a :href="hubUrl(hub)">Hub</a> / Article</div><div class="article-topline"><h1>{{ title || 'Article' }}</h1><div class="article-actions"><button class="text-button" disabled title="Comments are deferred">♧ Discuss</button><a v-if="!loading && !error && mayEditArticle(signedIn)" :href="editUrl(hub,document)">✎ Edit</a><button v-if="!loading && !error && canDelete" class="text-button danger-text" :disabled="busy" @click="remove">Delete</button></div></div>
+<template><div class="article-layout"><article class="panel article-surface"><nav class="breadcrumbs" aria-label="Breadcrumb"><a :href="hubUrl(hub)">{{ hubName }}</a> <span>→</span> {{ title || 'Article' }}</nav><div class="article-topline"><h1>{{ title || 'Article' }}</h1><div class="article-actions"><button class="text-button" disabled title="Comments are deferred">♧ Discuss</button><a v-if="!loading && !error && mayEditArticle(signedIn)" :href="editUrl(hub,document,title)" @click.prevent="edit">✎ Edit</a><button v-if="!loading && !error && canDelete" class="text-button danger-text" :disabled="busy" @click="remove">Delete</button></div></div>
 <p v-if="error" class="error-text">{{ error }}</p><p v-if="loading" class="muted">Loading article…</p>
 <div v-else-if="!error" class="article-body"><div class="spoiler-info">Content is filtered for your saved reading progress.</div>
 <template v-for="block in blocks" :key="block.block"><p v-if="block.kind === 'TEXT'" class="article-paragraph">{{ block.body }}</p>

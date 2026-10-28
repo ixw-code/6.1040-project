@@ -394,3 +394,10 @@
   margin-bottom: 15px;
   max-width: 310px;
 }
+.confirm-backdrop {
+  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center;
+  padding: 1rem; background: rgb(15 23 42 / 55%);
+}
+.confirm-dialog { width: min(100%, 30rem); padding: 1.5rem; box-shadow: 0 1rem 3rem rgb(0 0 0 / 22%); }
+.confirm-dialog h2 { margin-top: 0; }
+.confirm-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.5rem; }

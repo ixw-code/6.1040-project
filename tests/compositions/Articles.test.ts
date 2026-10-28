@@ -43,6 +43,10 @@ describe('Articles composition', () => {
     expect(await articles.EditingView(s.authorSession, s.hub, created.document)).toMatchObject({
       required: [], blocks: [{ block: open!.block, required: [] }, { block: secret!.block, required: [s.first] }],
     });
+    expect(await articles.EditingView(s.authorSession, s.hub, 'Guide')).toMatchObject({
+      document: created.document, title: 'Guide',
+      blocks: [{ block: open!.block, required: [] }, { block: secret!.block, required: [s.first] }],
+    });
     expect(await articles.EditingView(s.otherSession, s.hub, created.document)).toMatchObject({
       document: created.document, title: 'Guide', author: s.author,
     });
