@@ -82,4 +82,31 @@ describe('Documenting', () => {
     expect(await c._blocks({ scope: 'hub1', document: 'document:legacy' }))
       .toEqual([{ block: 'block:text', kind: 'TEXT', body: 'Body', alt: '' }]);
   });
+
+  test('replaces ordered blocks with stable surviving identities across reconnection', async () => {
+    let c = new DocumentingConcept(mongo.db());
+    const { document } = await c.create({ author: 'author', scope: 'hub1', title: 'Guide', blocks: [
+      { kind: 'TEXT', body: 'A', alt: '' }, { kind: 'TEXT', body: 'B', alt: '' },
+    ] });
+    const [a, b] = await c._blocks({ scope: 'hub1', document });
+    const result = await c.update({ scope: 'hub1', document, blocks: [
+      { block: b!.block, kind: 'TEXT', body: 'B revised', alt: '' },
+      { kind: 'TEXT', body: 'C', alt: '' },
+    ] });
+    expect(result.blocks[0]!.block).toBe(b!.block);
+    expect(result.blocks[1]!.block).not.toBe(a!.block);
+    await expect(c.update({ scope: 'hub1', document, blocks: [
+      { block: a!.block, kind: 'TEXT', body: 'A', alt: '' },
+    ] })).rejects.toBeInstanceOf(InvalidDocumentBlocks);
+    await c.rename({ scope: 'hub1', document, title: 'Revised Guide' });
+    c = new DocumentingConcept(await mongo.reconnect());
+    expect(await c._documentForEditing({ scope: 'hub1', document })).toMatchObject([{
+      title: 'Revised Guide', author: 'author', blocks: [
+        { block: b!.block, body: 'B revised' }, { block: result.blocks[1]!.block, body: 'C' },
+      ],
+    }]);
+    expect(await c._authoredBy({ author: 'author' })).toEqual([{ scope: 'hub1', document }]);
+    await c.delete({ scope: 'hub1', document });
+    expect(await c._documentForEditing({ scope: 'hub1', document })).toEqual([]);
+  });
 });

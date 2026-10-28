@@ -1,6 +1,6 @@
 # Wikiplotter Beta — implementation status
 
-Milestone 5 implements protected hub management and a transaction-capable local MongoDB. No commit has been made.
+Milestone 6 adds authenticated article management on top of transactional hubs. No commit was made for Milestone 6.
 
 ## Completed history
 
@@ -59,9 +59,9 @@ Hub creation and deletion use MongoDB transactions, without beginDelete or lifec
 
 The full test suite passed: **71 tests across 23 files, 540 assertions**. Design syntax passed for 15 files. The frontend build passed with HOST, PORT, FRONTEND_HOST, and FRONTEND_PORT set. Backend and frontend typechecks still fail because generated/reader/wire.ts imports removed src/concepts.ts. Framework and artifact checks still fail because generated configuration points to that removed module. These generated-artifact failures preceded Milestone 5; generated files were not hand-edited. The initial frontend build without required host/port settings failed as configured.
 
-Existing hubs from before Beta have no registered creator or slug. They remain readable but cannot be creator-managed until an explicit ownership migration decision; no owner was invented or data overwritten. Local fixture routes remain available to tests and seed data, but not through public reader HTTP. Article editing and asset management remain later milestones.
+Existing hubs from before Beta have no registered creator or slug. They remain readable but cannot be creator-managed until an explicit ownership migration decision; no owner was invented or data overwritten. Local fixture routes remain available to tests and seed data, but not through public reader HTTP. Asset management remains a later milestone.
 
-## Suggested commit message
+## Milestone 5 suggested commit message
 
     feat(beta): add transactional creator-managed hubs
 
@@ -70,3 +70,35 @@ Existing hubs from before Beta have no registered creator or slug. They remain r
     - Delete hub documents, rules, progress, and checkpoints in one transaction
     - Read spoiler-filtered content from consistent MongoDB snapshots
     - Cover concept persistence, ownership, HTTP protection, cleanup, and transaction behavior
+
+## Milestone 6 files changed
+
+| File | Change |
+| --- | --- |
+| src/compositions/Articles.ts | Coordinates registered-user article creation, author-only editing and deletion, full block/rule replacement, scoped tagging, and unfiltered author views. Every multi-concept write uses one MongoDB transaction. |
+| src/http/articles.ts | Exposes the accepted article paths with Sessioning-derived identity, Origin checks on mutations, bounded JSON, and explicit error mapping. Client-supplied author IDs are ignored. |
+| src/http/edge.ts | Routes article requests to the protected boundary and removes a stale backend dependency on the deleted generated reader wire type. |
+| tests/concepts/Documenting.test.ts | Verifies ordered replacement, stable surviving block IDs, author lookup, rename, deletion, and persistence after reconnect. |
+| tests/concepts/RequirementTagging.test.ts | Verifies batch rule lookup, explicit empty rules, token lookup, and removal. |
+| tests/compositions/Articles.test.ts | Covers author ownership, explicit article/block rules, spoiler filtering, obsolete-rule cleanup, deletion, media refusal, and rollback after a duplicate title occurs mid-save. |
+| tests/http/ArticlesHttp.test.ts | Covers authenticated creation, CSRF, forged author IDs, author-only editing, save, tagging, untagging, and deletion. |
+
+## Milestone 6 decisions and verification
+
+Create and save require an explicit rule array for the article and every block. An empty array means visible with no checkpoint requirement; a missing rule is not silently treated as empty. Save preserves supplied block IDs belonging to the article, allocates IDs for new blocks, removes omitted block rules, and commits the title, blocks, and rules together. Tagging, untagging, and deletion are author-only and transactional. Reader responses continue to use the Milestone 5 snapshot boundary.
+
+New IMAGE and VIDEO authoring references fail with ASSET_NOT_READY until Milestone 7 supplies MediaAssetManaging and READY validation. Existing Alpha images remain readable. No media bytes or metadata are created here. No accepted concept signature or state was changed in this milestone.
+
+The dynamic block/rule loop and MongoDB transaction boundary are implemented in local Articles composition code because sync-engine reactions do not provide cross-concept transactions or dynamic action iteration. The accepted article route names and identity bindings are preserved. These article routes are not yet authored as sync-engine endpoint declarations; this is an implementation-level framework alignment issue, not a proposed product contract change.
+
+The full test suite passed: **77 tests across 25 files, 587 assertions**. Design syntax passed for 15 files, backend typecheck passed, and the frontend production build passed with required host/port settings. Frontend typecheck fails because generated/reader/wire.ts was deleted in the existing working tree; framework and artifact checks fail with “The URL must be of scheme file” from modified generated configs. Git diff whitespace check reports a trailing space in generated.config.ts. Those generated files/configs were not edited for Milestone 6. Existing live provider requirements and the legacy-hub ownership migration decision remain outstanding.
+
+## Milestone 6 suggested commit message
+
+    feat(beta): add transactional author-managed articles
+
+    - Add authenticated article creation, editing views, full saves, tagging, and deletion
+    - Preserve block identities and remove obsolete rules in atomic MongoDB transactions
+    - Reject unverified media references until asset management is available
+    - Protect article HTTP routes with session identity and CSRF checks
+    - Cover spoiler-safe rollback, ownership, persistence, and reader regressions

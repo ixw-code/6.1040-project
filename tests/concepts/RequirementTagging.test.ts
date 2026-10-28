@@ -46,4 +46,16 @@ describe('RequirementTagging', () => {
     rules[0]!.required.push('three');
     expect(await c._rule({ item: 'doc' })).toEqual([{ required: ['one'] }]);
   });
+
+  test('finds existing rules and items requiring a token without inventing empty rules', async () => {
+    const c = new RequirementTaggingConcept(mongo.db());
+    await c.tag({ item: 'article', required: [] });
+    await c.tag({ item: 'block', required: ['checkpoint'] });
+    expect(await c._rulesForItems({ items: ['missing', 'block', 'article'] })).toEqual([
+      { item: 'article', required: [] }, { item: 'block', required: ['checkpoint'] },
+    ]);
+    expect(await c._itemsRequiringToken({ token: 'checkpoint' })).toEqual([{ item: 'block' }]);
+    await c.untag({ item: 'block' });
+    expect(await c._itemsRequiringToken({ token: 'checkpoint' })).toEqual([]);
+  });
 });
