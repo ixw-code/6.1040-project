@@ -79,6 +79,15 @@ relabel(scope: Scope, checkpoint: Checkpoint, label: String) : returns (checkpoi
   then
     replace only checkpoint's label with the trimmed label
     returns checkpoint
+
+delete(scope: Scope, sequence: Sequence): returns (sequence: Sequence)
+  where sequence does not belong to scope
+  then
+    refuses SEQUENCE_NOT_FOUND "There is no such checkpoint sequence."
+  where sequence belongs to scope
+  then
+    remove the sequence and its checkpoints
+    returns sequence
 ```
 
 ## Queries

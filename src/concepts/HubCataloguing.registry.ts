@@ -1,5 +1,5 @@
 import { registerConcept } from "@mit-sdg/sync-engine/assembly";
-import spec from "@design/concepts/HubCataloguing.md" with { type: "text" };
+import spec from "@design/alpha/concepts/HubCataloguing.md" with { type: "text" };
 import {
   HubCataloguingConcept,
   HubNameRequired,

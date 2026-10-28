@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { HubCataloguingConcept, HubNameTaken } from '@/concepts/HubCataloguing.ts';
 import { CheckpointingConcept } from '@/concepts/Checkpointing.ts';
-import { DocumentingConcept, DocumentNameTaken } from '@/concepts/Documenting.ts';
+import { DocumentingConcept, DocumentTitleTaken } from '@/concepts/Documenting.ts';
 import { ProgressRecordingConcept } from '@/concepts/ProgressRecording.ts';
 import { RequirementTaggingConcept } from '@/concepts/RequirementTagging.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
@@ -85,7 +85,7 @@ describe('MongoDB persistence and concurrent invariants', () => {
     expect(attempts.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
     const failures = attempts.filter((result) => result.status === 'rejected');
     expect(failures).toHaveLength(1);
-    expect(failures[0]?.reason).toBeInstanceOf(DocumentNameTaken);
+    expect(failures[0]?.reason).toBeInstanceOf(DocumentTitleTaken);
   });
 
   test('existing sequences gain a stable NotStarted identity without rewriting stored checkpoints', async () => {

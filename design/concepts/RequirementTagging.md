@@ -18,6 +18,9 @@ external Token
 
 opaque TokenSet
   An array of Token identities interpreted as a set; duplicates and order do not affect membership.
+
+opaque ItemSet
+  An array of Item identities to inspect as a set.
 ```
 
 ## State
@@ -60,5 +63,15 @@ _rule(item: Item) : optional (required: TokenSet)
 
 _eligible(item: Item, tokens: TokenSet) : one (eligible: Flag)
   answers true exactly when item's rule exists and every required token occurs in tokens, including an empty set of required tokens
-  answers false for an unclassified item
+  answers false for an unclassified item.
+
+_rulesForItems(items: ItemSet): many (item: Item, required: TokenSet)
+  answers existing rules for the supplied item identities, including explicit empty rules
+  orders rows by item identity
+  answers no rows for an empty input or items without rules.
+
+_itemsRequiringToken(token: Token): many (item: Item)
+  answers items whose existing rule requires the token
+  orders rows by item identity
+  answers no rows if no rule requires the token.
 ```

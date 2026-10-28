@@ -167,7 +167,7 @@ export type WikiplotterWire = {
       }[];
       "document": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["create"]>>, ["document"]>>;
     };
-    error: { error: AppWideError | "DOCUMENT_NAME_REQUIRED" | "DOCUMENT_NAME_TAKEN" | "HUB_NOT_FOUND" | "INVALID_DOCUMENT_BLOCKS" | "INVALID_INPUT" };
+    error: { error: AppWideError | "DOCUMENT_TITLE_REQUIRED" | "DOCUMENT_TITLE_TAKEN" | "HUB_NOT_FOUND" | "INVALID_DOCUMENT_BLOCKS" | "INVALID_INPUT" };
   };
   "/setup/items/tag": {
     input: {

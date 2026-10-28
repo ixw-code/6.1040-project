@@ -89,7 +89,7 @@ describe('ContentManagement local gateway', () => {
     const { document, blocks } = northDoc.value as { document: string; blocks: { block: string }[] };
     expect(await gateway.invoke('/setup/documents/create', {
       hub: north.hub, title: ' Same ', blocks: [],
-    })).toMatchObject({ ok: false, error: { kind: 'domain', value: 'DOCUMENT_NAME_TAKEN' } });
+    })).toMatchObject({ ok: false, error: { kind: 'domain', value: 'DOCUMENT_TITLE_TAKEN' } });
     const tagging = new RequirementTaggingConcept(mongo.db());
     for (const item of [document, blocks[0]!.block]) {
       expect(await gateway.invoke('/setup/items/tag', {

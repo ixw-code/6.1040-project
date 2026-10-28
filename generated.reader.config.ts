@@ -10,10 +10,10 @@ export default {
   design: {
     version: 1,
     documents: [
-      new URL("./design/types.md", import.meta.url),
-      new URL("./design/compositions/HubManagement.md", import.meta.url),
-      new URL("./design/compositions/ReaderProgress.md", import.meta.url),
-      new URL("./design/compositions/Reading.md", import.meta.url),
+      new URL("./design/alpha/types.md", import.meta.url),
+      new URL("./design/alpha/compositions/HubManagement.md", import.meta.url),
+      new URL("./design/alpha/compositions/ReaderProgress.md", import.meta.url),
+      new URL("./design/alpha/compositions/Reading.md", import.meta.url),
     ],
   },
   projections: [httpWire({ policy: readerHttpPolicy, name: "ReaderWireHttp" })],

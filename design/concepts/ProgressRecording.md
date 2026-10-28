@@ -42,6 +42,16 @@ record(scope: Scope, reader: Reader, checkpoint: Checkpoint): returns ()
     add a new Record with scope, reader and checkpoint
     returns
 
+recordIfAbsent(scope: Scope, reader: Reader, checkpoint: Checkpoint): returns (recorded: Flag)
+  where a Record with scope and reader exists
+  then
+    leave the Record unchanged and set recorded to false
+    returns recorded
+  where no Record with scope and reader exists
+  then
+    add a Record with scope, reader and checkpoint atomically and set recorded to true
+    returns recorded
+
 clear(scope: Scope, reader: Reader) : returns (cleared: Flag)
   where a Record with scope and reader exists
   then
@@ -51,6 +61,16 @@ clear(scope: Scope, reader: Reader) : returns (cleared: Flag)
   then
     leave state unchanged and set cleared to false
     returns cleared
+
+clearScope(scope: Scope): returns ()
+  where Records belong to scope
+  then
+    remove all Records in scope
+    returns
+  where no Records belong to scope
+  then
+    leave state unchanged
+    returns
 ```
 
 ## Queries
@@ -58,5 +78,10 @@ clear(scope: Scope, reader: Reader) : returns (cleared: Flag)
 ```queries
 _checkpoint(scope: Scope, reader: Reader) : optional (checkpoint: Checkpoint)
   answers the Reader's checkpoint for this scope
-  answers no row for unknown scope or unknown reader in scope
+  answers no row for unknown scope or unknown reader in scope.
+
+_scopesForReader(reader: Reader): many (scope: Scope)
+  answers scopes for which the reader has a stored checkpoint
+  orders rows by scope identity
+  answers no rows when the reader has no records.
 ```

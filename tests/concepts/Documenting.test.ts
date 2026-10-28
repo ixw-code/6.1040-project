@@ -1,7 +1,7 @@
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 import { describe, expect, test } from 'bun:test';
 import {
-  DocumentingConcept, DocumentNameRequired, DocumentNameTaken, InvalidDocumentBlocks,
+  DocumentingConcept, DocumentTitleRequired, DocumentTitleTaken, InvalidDocumentBlocks,
   type BlockInput,
 } from '@/concepts/Documenting.ts';
 
@@ -41,10 +41,10 @@ describe('Documenting', () => {
   test('enforces scoped unique titles and rejects invalid blocks', async () => {
     const c = new DocumentingConcept(mongo.db());
     await expect(c.create({ scope: 'hub1', title: '  ', blocks: [] }))
-      .rejects.toBeInstanceOf(DocumentNameRequired);
+      .rejects.toBeInstanceOf(DocumentTitleRequired);
     await c.create({ scope: 'hub1', title: 'Map', blocks: [] });
     await expect(c.create({ scope: 'hub1', title: ' Map ', blocks: [] }))
-      .rejects.toBeInstanceOf(DocumentNameTaken);
+      .rejects.toBeInstanceOf(DocumentTitleTaken);
     await c.create({ scope: 'hub2', title: 'Map', blocks: [] });
     await c.create({ scope: 'hub1', title: 'map', blocks: [] });
     await expect(c.create({ scope: 'hub1', title: 'Other', blocks: [{ kind: 'TITLE', body: 'Extra', alt: '' }] as never }))
