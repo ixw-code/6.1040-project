@@ -8,7 +8,7 @@ import { CheckpointingConcept } from '@/concepts/Checkpointing/Checkpointing.ts'
 import { DocumentingConcept } from '@/concepts/Documenting/Documenting.ts';
 import { RequirementTaggingConcept } from '@/concepts/RequirementTagging/RequirementTagging.ts';
 import { ProgressRecordingConcept } from '@/concepts/ProgressRecording/ProgressRecording.ts';
-import { createApplication } from '@/assembly/application.ts';
+import { createApplication } from '@tests/fixture-application.ts';
 
 describe('Articles composition', () => {
   const mongo = useMongoTestDb();
@@ -47,7 +47,7 @@ describe('Articles composition', () => {
       .rejects.toMatchObject({ code: 'FORBIDDEN' });
     await new ProgressRecordingConcept(s.db).record({ scope: s.hub, reader: s.other, checkpoint: s.start });
     const reading = createApplication(s.db).gateway;
-    expect(await reading.invoke('/content/documents/read',
+    expect(await reading.invoke('/articles/read',
       { hub: s.hub, reader: s.other, document: created.document }))
       .toMatchObject({ ok: true, value: { content: { blocks: [{ block: open!.block }] } } });
 
@@ -65,7 +65,7 @@ describe('Articles composition', () => {
       title: 'Guide', blocks: [{ block: open!.block, body: 'Open', required: [] },
         { block: secret!.block, body: 'Secret', required: [s.first] }],
     });
-    const afterFailedSave = await reading.invoke('/content/documents/read',
+    const afterFailedSave = await reading.invoke('/articles/read',
       { hub: s.hub, reader: s.other, document: created.document });
     expect(JSON.stringify(afterFailedSave)).not.toContain('Leaked');
 

@@ -10,6 +10,10 @@ export default {
   conceptSet: {
     module: new URL("./src/assembly/concepts.ts", import.meta.url)
   },
-  design: { version: 1, documents: [] },
+  design: { version: 1, documents: [
+    new URL('./design/types.md', import.meta.url),
+    new URL('./design/compositions/ReaderProgress.md', import.meta.url),
+    new URL('./design/compositions/Reading.md', import.meta.url),
+  ] },
   projections: [httpWire({ policy: readerHttpPolicy, name: "ReaderWireHttp" })],
 };

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createApplication } from '@/assembly/application.ts';
+import { createApplication } from '@tests/fixture-application.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 
 type Gateway = ReturnType<typeof createApplication>['gateway'];
@@ -20,13 +20,13 @@ describe('Reading local gateway', () => {
 
   async function createDocument(gateway: Gateway, hub: string, title: string,
     blocks: Omit<Block, 'block'>[]) {
-    const result = await gateway.invoke('/setup/documents/create', { hub, title, blocks });
+    const result = await gateway.invoke('/fixtures/articles/create', { hub, title, blocks });
     if (!result.ok) throw new Error(`Could not create ${title}`);
     return result.value as { document: string; blocks: { block: string }[] };
   }
 
   async function tag(gateway: Gateway, hub: string, item: string, required: string[]) {
-    const result = await gateway.invoke('/setup/items/tag', { hub, item, required });
+    const result = await gateway.invoke('/fixtures/requirements/tag', { hub, item, required });
     if (!result.ok) throw new Error(`Could not tag ${item}`);
   }
 
@@ -50,13 +50,13 @@ describe('Reading local gateway', () => {
     await tag(gateway, north.hub, publicDoc.blocks[0]!.block, []);
     expect(await gateway.invoke('/hubs/browse', { hub: north.hub, reader: 'alice' }))
       .toMatchObject({ ok: false, error: { kind: 'domain', value: 'PROGRESS_NOT_SET' } });
-    expect(await gateway.invoke('/content/documents/read', {
+    expect(await gateway.invoke('/articles/read', {
       hub: north.hub, reader: 'alice', document: publicDoc.document,
     })).toMatchObject({ ok: false, error: { kind: 'domain', value: 'PROGRESS_NOT_SET' } });
     await select(gateway, north.hub, 'alice', north.start);
     expect(await gateway.invoke('/hubs/browse', { hub: north.hub, reader: 'alice' }))
       .toEqual({ ok: true, value: { documents: [{ document: publicDoc.document, title: 'Public map' }] } });
-    expect(await gateway.invoke('/content/documents/read', {
+    expect(await gateway.invoke('/articles/read', {
       hub: north.hub, reader: 'alice', document: publicDoc.document,
     })).toEqual({ ok: true, value: { content: {
       document: publicDoc.document, title: 'Public map', blocks: [
@@ -93,7 +93,7 @@ describe('Reading local gateway', () => {
     await tag(gateway, hub, hiddenDoc.blocks[0]!.block, []);
 
     const browse = () => gateway.invoke('/hubs/browse', { hub, reader: 'alice' });
-    const read = () => gateway.invoke('/content/documents/read', { hub, reader: 'alice', document: publicDoc.document });
+    const read = () => gateway.invoke('/articles/read', { hub, reader: 'alice', document: publicDoc.document });
     await select(gateway, hub, 'alice', start);
     const atStart = await read();
     expect(atStart).toEqual({ ok: true, value: { content: { document: publicDoc.document, title: 'Open guide', blocks: [
@@ -108,9 +108,9 @@ describe('Reading local gateway', () => {
       hiddenDoc.document, untaggedDoc.document,
       publicDoc.blocks[1]!.block, publicDoc.blocks[2]!.block, publicDoc.blocks[3]!.block,
     ]) expect(JSON.stringify({ atStart, directory: await browse() })).not.toContain(secret);
-    expect(await gateway.invoke('/content/documents/read', { hub, reader: 'alice', document: hiddenDoc.document }))
+    expect(await gateway.invoke('/articles/read', { hub, reader: 'alice', document: hiddenDoc.document }))
       .toEqual({ ok: true, value: { content: null } });
-    expect(await gateway.invoke('/content/documents/read', { hub, reader: 'alice', document: untaggedDoc.document }))
+    expect(await gateway.invoke('/articles/read', { hub, reader: 'alice', document: untaggedDoc.document }))
       .toEqual({ ok: true, value: { content: null } });
 
     await select(gateway, hub, 'alice', first);
@@ -153,13 +153,13 @@ describe('Reading local gateway', () => {
     await select(gateway, south.hub, 'alice', south.start);
     expect(await gateway.invoke('/hubs/browse', { hub: south.hub, reader: 'bob' }))
       .toMatchObject({ ok: false, error: { kind: 'domain', value: 'PROGRESS_NOT_SET' } });
-    expect(await gateway.invoke('/content/documents/read', {
+    expect(await gateway.invoke('/articles/read', {
       hub: north.hub, reader: 'alice', document: imageOnly.document,
     })).toEqual({ ok: true, value: { content: null } });
-    expect(await gateway.invoke('/content/documents/read', {
+    expect(await gateway.invoke('/articles/read', {
       hub: south.hub, reader: 'alice', document: 'missing',
     })).toEqual({ ok: true, value: { content: null } });
-    expect(await gateway.invoke('/content/documents/read', {
+    expect(await gateway.invoke('/articles/read', {
       hub: south.hub, reader: 'alice', document: imageOnly.document,
     })).toEqual({ ok: true, value: { content: {
       document: imageOnly.document, title: 'Southern image', blocks: [
@@ -170,12 +170,12 @@ describe('Reading local gateway', () => {
       .toMatchObject({ ok: false, error: { kind: 'domain', value: 'HUB_NOT_FOUND' } });
     expect(await gateway.invoke('/hubs/browse', { hub: 'missing', reader: 'alice' }))
       .toMatchObject({ ok: false, error: { kind: 'domain', value: 'HUB_NOT_FOUND' } });
-    expect(await gateway.invoke('/content/documents/read', {
+    expect(await gateway.invoke('/articles/read', {
       hub: 'missing', reader: 'alice', document: imageOnly.document,
     })).toMatchObject({ ok: false, error: { kind: 'domain', value: 'HUB_NOT_FOUND' } });
     expect(await gateway.invoke('/hubs/browse', { hub: south.hub, reader: ' ' }))
       .toMatchObject({ ok: false, error: { kind: 'framework', code: 'INVALID_INPUT' } });
-    expect(await gateway.invoke('/content/documents/read', {
+    expect(await gateway.invoke('/articles/read', {
       hub: south.hub, reader: 'alice', document: '',
     })).toMatchObject({ ok: false, error: { kind: 'framework', code: 'INVALID_INPUT' } });
   });

@@ -52,7 +52,7 @@ export function createMediaHttpHandler(db: Db, options: AuthOptions,
         return json({ error: 'INVALID_REQUEST' }, 400);
       const headers = new Headers(request.headers);
       headers.set('content-type', 'application/json');
-      const reading = await readArticle(new Request(new URL('/api/content/documents/read', request.url).toString(),
+      const reading = await readArticle(new Request(new URL('/api/articles/read', request.url).toString(),
         { method: 'POST', headers, body: JSON.stringify({ hub, document }) }));
       if (!reading.ok) return json({ error: 'UNAVAILABLE' }, 404);
       const result = await reading.json() as { content?: { blocks?: { block: string; body: string;

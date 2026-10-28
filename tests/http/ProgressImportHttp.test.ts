@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { createReaderHttpHandler } from '@/http/edge.ts';
-import { createApplication } from '@/assembly/application.ts';
+import { createApplication } from '@tests/fixture-application.ts';
 import { createCookieSealer } from '@/auth/sealed-cookie.ts';
 import { RegisteringConcept } from '@/concepts/Registering/Registering.ts';
 import { ProgressRecordingConcept } from '@/concepts/ProgressRecording/ProgressRecording.ts';

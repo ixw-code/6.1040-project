@@ -64,8 +64,6 @@ const ClearProgress = endpoint('/progress/clear', ({ hub, reader, cleared }) =>
   ), { input: { required: ['hub', 'reader'] }, validators: { input: validInput } },
 );
 
-export const composition = { GetProgress, RecordProgress, ClearProgress, ExistingHub, ValidSelection, StoredProgress, ProgressResult };
-
 /** Local-only validation for cookie selections; never writes anonymous progress. */
 const ValidateGuestSelection = endpoint('/internal/progress/validate', ({ hub, checkpoint }) =>
   receive({ hub, checkpoint }).then(
@@ -81,7 +79,7 @@ const GuestHubExists = endpoint('/internal/progress/hub-exists', ({ hub }) =>
   ), { input: { required: ['hub'] } },
 );
 
-const ImportOne = endpoint('/internal/progress/import-one', ({ hub, reader, checkpoint, recorded }) =>
+const ImportAnonymousProgress = endpoint('/internal/progress/import', ({ hub, reader, checkpoint, recorded }) =>
   receive({ hub, reader, checkpoint }).then(
     where(ValidSelection({ hub, checkpoint }))
       .then(ProgressRecording.recordIfAbsent({ scope: hub, reader, checkpoint }).responds({ recorded }))
@@ -91,4 +89,6 @@ const ImportOne = endpoint('/internal/progress/import-one', ({ hub, reader, chec
   ), { input: { required: ['hub', 'reader', 'checkpoint'] } },
 );
 
-export const guestComposition = { ValidateGuestSelection, GuestHubExists, ImportOne, ExistingHub, ValidSelection };
+export const guestComposition = { ValidateGuestSelection, GuestHubExists, ImportAnonymousProgress, ExistingHub, ValidSelection };
+export const composition = { GetProgress, RecordProgress, ClearProgress, ImportAnonymousProgress,
+  ExistingHub, ValidSelection, ProgressResult };

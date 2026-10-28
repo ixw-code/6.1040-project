@@ -13,7 +13,7 @@ export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnv
   const application = assembleWikiplotter(db);
   const gateway = createGateway({ application });
   const reader = createHttpHandler({ application, gateway, policy: readerHttpPolicy });
-  const snapshotPaths = new Set(['/api/hubs/list', '/api/hubs/browse', '/api/content/documents/read']);
+  const snapshotPaths = new Set(['/api/hubs/list', '/api/hubs/browse', '/api/articles/read']);
   const readReader = async (request: Request) => {
     if (!snapshotPaths.has(new URL(request.url).pathname)) return reader(request);
     const session = db.client.startSession();
@@ -33,9 +33,14 @@ export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnv
   const media = authOptions ? createMediaHttpHandler(db, authOptions, async (request) =>
     (await readerIdentity?.(request)) ?? await readReader(request)) : undefined;
   const identityRoutes = new Set(['/api/progress/get', '/api/progress/record', '/api/progress/clear',
-    '/api/hubs/browse', '/api/content/documents/read']);
+    '/api/hubs/browse', '/api/articles/read']);
   return async (request: Request) => {
     const url = new URL(request.url);
+    if (url.pathname.startsWith('/api/internal/')) {
+      return new Response(JSON.stringify({ error: 'NOT_FOUND' }), {
+        status: 404, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+      });
+    }
     if (url.pathname.startsWith('/api/accounts/') || url.pathname.startsWith('/auth/')) {
       return auth ? auth(request, url.pathname, url) :
         new Response(JSON.stringify({ error: 'AUTH_UNCONFIGURED' }), {

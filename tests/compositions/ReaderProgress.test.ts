@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { createGateway } from '@mit-sdg/sync-engine/boundary';
-import { createApplication } from '@/assembly/application.ts';
+import { createApplication } from '@tests/fixture-application.ts';
 import { assembleWikiplotter } from '@/assembly/assembly.ts';
 import { ProgressRecordingConcept } from '@/concepts/ProgressRecording/ProgressRecording.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';

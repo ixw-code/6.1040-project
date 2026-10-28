@@ -5,7 +5,7 @@ import { issueProgress, progressCookie, verifiedProgress } from '@/auth/progress
 
 type Options = { origin: string; cookieKey: Buffer; clock?: () => Date };
 const routes = new Set(['/api/progress/get', '/api/progress/record', '/api/progress/clear',
-  '/api/hubs/browse', '/api/content/documents/read']);
+  '/api/hubs/browse', '/api/articles/read']);
 
 function response(body: unknown, status = 200, headers = new Headers()) {
   headers.set('content-type', 'application/json');
@@ -35,7 +35,7 @@ export function createReaderIdentityHttpHandler(db: Db, options: Options,
     } catch { return response({ error: 'INVALID_REQUEST' }, 400); }
     if (typeof input.hub !== 'string' || !input.hub.trim() ||
       (path === '/api/progress/record' && (typeof input.checkpoint !== 'string' || !input.checkpoint.trim())) ||
-      (path === '/api/content/documents/read' && (typeof input.document !== 'string' || !input.document.trim()))) {
+      (path === '/api/articles/read' && (typeof input.document !== 'string' || !input.document.trim()))) {
       return response({ error: 'INVALID_REQUEST' }, 400);
     }
     if ((path === '/api/progress/record' || path === '/api/progress/clear') &&

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createApplication } from '@/assembly/application.ts';
+import { createApplication } from '@tests/fixture-application.ts';
 import { createReaderHttpHandler } from '@/http/edge.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 import { SessioningConcept } from '@/concepts/Sessioning/Sessioning.ts';
@@ -27,7 +27,7 @@ describe('reader HTTP adapter', () => {
     return { status: response.status, body: await response.json() as Record<string, unknown> };
   }
 
-  test('serves HubManagement, ReaderProgress, and Reading with existing response shapes', async () => {
+  test('serves hub, progress, and reading routes with existing response shapes', async () => {
     const server = listen();
     try {
       const created = await post(server, '/api/hubs/create', { name: 'North', label: 'Chapter 1' });
@@ -65,15 +65,15 @@ describe('reader HTTP adapter', () => {
           { checkpoint: second, label: 'Chapter 2', position: 2 },
         ] } });
       const setup = createApplication(mongo.db()).gateway;
-      const document = await setup.invoke('/setup/documents/create', { hub, title: 'Public map', blocks: [
+      const document = await setup.invoke('/fixtures/articles/create', { hub, title: 'Public map', blocks: [
         { kind: 'IMAGE', body: '/public-map.png', alt: 'Map' },
       ] });
       if (!document.ok) throw new Error('Could not install test document');
       const { document: documentId, blocks } = document.value as { document: string; blocks: { block: string }[] };
       expect(typeof blocks[0]!.block).toBe('string');
-      expect(await setup.invoke('/setup/items/tag', { hub, item: documentId, required: [] }))
+      expect(await setup.invoke('/fixtures/requirements/tag', { hub, item: documentId, required: [] }))
         .toMatchObject({ ok: true });
-      expect(await setup.invoke('/setup/items/tag', { hub, item: blocks[0]!.block, required: [start] }))
+      expect(await setup.invoke('/fixtures/requirements/tag', { hub, item: blocks[0]!.block, required: [start] }))
         .toMatchObject({ ok: true });
       expect(await post(server, '/api/progress/get', { hub, reader: 'alice' }))
         .toEqual({ status: 200, body: { checkpoint: null } });
@@ -83,7 +83,7 @@ describe('reader HTTP adapter', () => {
         .toEqual({ status: 200, body: { checkpoint: start } });
       expect(await post(server, '/api/hubs/browse', { hub, reader: 'alice' }))
         .toEqual({ status: 200, body: { documents: [{ document: documentId, title: 'Public map' }] } });
-      expect(await post(server, '/api/content/documents/read', { hub, reader: 'alice', document: documentId }))
+      expect(await post(server, '/api/articles/read', { hub, reader: 'alice', document: documentId }))
         .toEqual({ status: 200, body: { content: {
           document: documentId, title: 'Public map', blocks: [
             { block: blocks[0]!.block, kind: 'IMAGE', body: '/public-map.png', alt: 'Map' },
@@ -121,13 +121,14 @@ describe('reader HTTP adapter', () => {
     }
   });
 
-  test('rejects ContentManagement operations at the HTTP boundary', async () => {
+  test('rejects fixture authoring operations at the HTTP boundary', async () => {
     const server = listen();
     try {
       for (const [path, input] of [
-        ['/api/setup/documents/create', { hub: 'missing', title: 'Forbidden', blocks: [] }],
-        ['/api/setup/items/tag', { hub: 'missing', item: 'document:x', required: [] }],
-        ['/api/setup/items/untag', { hub: 'missing', item: 'document:x' }],
+        ['/api/fixtures/articles/create', { hub: 'missing', title: 'Forbidden', blocks: [] }],
+        ['/api/fixtures/requirements/tag', { hub: 'missing', item: 'document:x', required: [] }],
+        ['/api/fixtures/requirements/untag', { hub: 'missing', item: 'document:x' }],
+        ['/api/internal/progress/import', { hub: 'missing', reader: 'forged', checkpoint: 'fake' }],
       ] as const) {
         const result = await post(server, path, input);
         expect(result.status).toBe(404);

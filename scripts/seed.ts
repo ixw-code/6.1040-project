@@ -1,8 +1,10 @@
 import type { Db } from 'mongodb';
-import { createApplication } from '@/assembly/application.ts';
 import { connectMongo } from '@/db.ts';
+import { HubCataloguingConcept } from '@/concepts/HubCataloguing/HubCataloguing.ts';
+import { CheckpointingConcept } from '@/concepts/Checkpointing/Checkpointing.ts';
+import { DocumentingConcept } from '@/concepts/Documenting/Documenting.ts';
+import { RequirementTaggingConcept } from '@/concepts/RequirementTagging/RequirementTagging.ts';
 
-type Gateway = ReturnType<typeof createApplication>['gateway'];
 type Block = { kind: 'TEXT' | 'IMAGE'; body: string; alt: string; required: number[] };
 type Document = { title: string; required: number[]; blocks: Block[] };
 type Hub = { name: string; checkpoints: string[]; documents: Document[] };
@@ -50,23 +52,20 @@ const fixtures: Hub[] = [
   },
 ];
 
-async function invoke<T>(gateway: Gateway, route: string, input: Record<string, unknown>): Promise<T> {
-  const result = await gateway.invoke(route, input);
-  if (!result.ok) throw new Error(`${route} failed: ${JSON.stringify(result.error)}`);
-  return result.value as T;
-}
-
-async function ensureHub(db: Db, gateway: Gateway, fixture: Hub, counts: { hubs: number; checkpoints: number }) {
+async function ensureHub(db: Db, fixture: Hub, counts: { hubs: number; checkpoints: number }) {
   const existing = await db.collection<{ _id: string; name: string }>('hubs').findOne({ name: fixture.name });
-  const hub = existing?._id ?? (await invoke<{ hub: string }>(gateway, '/hubs/create', {
-    name: fixture.name, label: fixture.checkpoints[0],
+  const hub = existing?._id ?? (await new HubCataloguingConcept(db).create({
+    name: fixture.name, creator: 'fixture-user',
   })).hub;
+  const owner = new CheckpointingConcept(db);
+  if (!existing) {
+    const { sequence } = await owner.create({ scope: hub, label: fixture.checkpoints[0]! });
+    await owner.append({ sequence, label: fixture.checkpoints[0]! });
+  }
   if (!existing) { counts.hubs++; counts.checkpoints++; }
 
-  const listed = await invoke<{ sequence: string; checkpoints: Checkpoint[] }>(
-    gateway, '/checkpoints/list', { hub },
-  );
-  const checkpoints = listed.checkpoints;
+  const sequence = (await owner._sequences({ scope: hub }))[0]!.sequence;
+  const checkpoints = await owner._checkpoints({ scope: hub, sequence });
   if (checkpoints[0]?.label !== 'NotStarted' || checkpoints[0].position !== 0) {
     throw new Error(`${fixture.name}: missing ordered NotStarted checkpoint`);
   }
@@ -77,9 +76,7 @@ async function ensureHub(db: Db, gateway: Gateway, fixture: Hub, counts: { hubs:
       throw new Error(`${fixture.name}: checkpoint ${position} differs from the fixture`);
     }
     if (!present) {
-      const created = await invoke<{ checkpoint: string }>(gateway, '/checkpoints/append', {
-        hub, sequence: listed.sequence, label,
-      });
+      const created = await owner.append({ sequence, label });
       checkpoints.push({ checkpoint: created.checkpoint, label, position });
       counts.checkpoints++;
     }
@@ -88,7 +85,7 @@ async function ensureHub(db: Db, gateway: Gateway, fixture: Hub, counts: { hubs:
 }
 
 async function ensureRule(
-  db: Db, gateway: Gateway, hub: string, item: string, required: string[], counts: { rules: number },
+  db: Db, hub: string, item: string, required: string[], counts: { rules: number },
 ) {
   const existing = await db.collection<{ _id: string; required: string[] }>('requirements').findOne({ _id: item });
   if (existing) {
@@ -97,12 +94,12 @@ async function ensureRule(
     if (!same) throw new Error(`Existing rule for ${item} differs from the fixture`);
     return;
   }
-  await invoke(gateway, '/setup/items/tag', { hub, item, required });
+  await new RequirementTaggingConcept(db).tag({ item, required });
   counts.rules++;
 }
 
 async function ensureDocument(
-  db: Db, gateway: Gateway, hub: string, checkpoints: Checkpoint[], fixture: Document,
+  db: Db, hub: string, checkpoints: Checkpoint[], fixture: Document,
   counts: { documents: number; rules: number },
 ) {
   const existing = await db.collection<StoredDocument>('documents').findOne({ scope: hub, title: fixture.title });
@@ -116,11 +113,9 @@ async function ensureDocument(
     document = existing._id;
     blocks = existing.blocks;
   } else {
-    const created = await invoke<{ document: string; blocks: { block: string }[] }>(
-      gateway, '/setup/documents/create', { hub, title: fixture.title, blocks: inputs },
-    );
-    document = created.document;
-    blocks = created.blocks;
+    const owner = new DocumentingConcept(db);
+    document = (await owner.create({ scope: hub, author: 'fixture-user', title: fixture.title, blocks: inputs })).document;
+    blocks = await owner._blocks({ scope: hub, document });
     counts.documents++;
   }
   if (blocks.length !== fixture.blocks.length) throw new Error(`${fixture.title}: block count differs`);
@@ -130,9 +125,9 @@ async function ensureDocument(
     if (!token) throw new Error(`${fixture.title}: unknown checkpoint position ${position}`);
     return token;
   });
-  await ensureRule(db, gateway, hub, document, tokens(fixture.required), counts);
+  await ensureRule(db, hub, document, tokens(fixture.required), counts);
   for (const [index, block] of fixture.blocks.entries()) {
-    await ensureRule(db, gateway, hub, blocks[index]!.block, tokens(block.required), counts);
+    await ensureRule(db, hub, blocks[index]!.block, tokens(block.required), counts);
   }
 }
 
@@ -144,12 +139,11 @@ async function main() {
   try {
     const { db } = connection;
     if (db.databaseName !== 'wikiplotter_dev') throw new Error('Fixture seeding requires wikiplotter_dev.');
-    const { gateway } = createApplication(db);
     const counts = { hubs: 0, checkpoints: 0, documents: 0, rules: 0 };
     for (const fixture of fixtures) {
-      const { hub, checkpoints } = await ensureHub(db, gateway, fixture, counts);
+      const { hub, checkpoints } = await ensureHub(db, fixture, counts);
       for (const document of fixture.documents) {
-        await ensureDocument(db, gateway, hub, checkpoints, document, counts);
+        await ensureDocument(db, hub, checkpoints, document, counts);
       }
     }
     console.log(`Seeded wikiplotter_dev: ${counts.hubs} hubs, ${counts.checkpoints} ordinary checkpoints, ${counts.documents} documents, ${counts.rules} rules created.`);

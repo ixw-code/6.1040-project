@@ -32,7 +32,7 @@ export function issueProgress(headers: Headers, progress: ProgressMap, key: Buff
 export async function importAnonymousProgress(db: Db, user: string, progress: ProgressMap) {
   const guest = createGuestReader(db);
   for (const [hub, checkpoint] of Object.entries(progress)) {
-    const imported = await guest.invoke('/internal/progress/import-one', { hub, reader: user, checkpoint });
+    const imported = await guest.invoke('/internal/progress/import', { hub, reader: user, checkpoint });
     if (!imported.ok) throw new Error('PROGRESS_IMPORT_FAILED');
   }
 }

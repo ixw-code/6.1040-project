@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createApplication } from '@/assembly/application.ts';
+import { createApplication } from '@tests/fixture-application.ts';
 import { createReaderHttpHandler } from '@/http/edge.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 import { SessioningConcept } from '@/concepts/Sessioning/Sessioning.ts';
@@ -50,17 +50,17 @@ describe('Alpha reader journey over HTTP', () => {
       expect(await post('/checkpoints/append', { hub: otherHub, sequence, label: 'Foreign' }))
         .toEqual({ status: 404, body: { error: 'NOT_FOUND' } });
 
-      const publicDoc = await invoke('/setup/documents/create', { hub, title: 'Open guide', blocks: [
+      const publicDoc = await invoke('/fixtures/articles/create', { hub, title: 'Open guide', blocks: [
         { kind: 'TEXT', body: 'PUBLIC_TEXT', alt: '' },
         { kind: 'IMAGE', body: 'https://hidden.example/FIRST_URL_SECRET', alt: 'FIRST_ALT_SECRET' },
         { kind: 'TEXT', body: 'SECOND_BODY_SECRET', alt: '' },
         { kind: 'TEXT', body: 'UNTAGGED_BLOCK_SECRET', alt: '' },
       ] });
-      const restrictedDoc = await invoke('/setup/documents/create', { hub, title: 'HIDDEN_TITLE_SECRET', blocks: [
+      const restrictedDoc = await invoke('/fixtures/articles/create', { hub, title: 'HIDDEN_TITLE_SECRET', blocks: [
         { kind: 'TEXT', body: 'HIDDEN_DOCUMENT_BODY_SECRET', alt: '' },
       ] });
-      const untaggedDoc = await invoke('/setup/documents/create', { hub, title: 'UNTAGGED_TITLE_SECRET', blocks: [] });
-      const imageDoc = await invoke('/setup/documents/create', { hub, title: 'Image only', blocks: [
+      const untaggedDoc = await invoke('/fixtures/articles/create', { hub, title: 'UNTAGGED_TITLE_SECRET', blocks: [] });
+      const imageDoc = await invoke('/fixtures/articles/create', { hub, title: 'Image only', blocks: [
         { kind: 'IMAGE', body: '/public-image.png', alt: 'Public image' },
       ] });
       const blocks = publicDoc.blocks as { block: string }[];
@@ -71,10 +71,10 @@ describe('Alpha reader journey over HTTP', () => {
         [(restrictedDoc.blocks as { block: string }[])[0]!.block, []],
         [imageDoc.document, []], [imageBlock, [start]],
       ] as [string, string[]][]) {
-        await invoke('/setup/items/tag', { hub, item, required });
+        await invoke('/fixtures/requirements/tag', { hub, item, required });
       }
-      const southDoc = await invoke('/setup/documents/create', { hub: otherHub, title: 'South only', blocks: [] });
-      await invoke('/setup/items/tag', { hub: otherHub, item: southDoc.document, required: [] });
+      const southDoc = await invoke('/fixtures/articles/create', { hub: otherHub, title: 'South only', blocks: [] });
+      await invoke('/fixtures/requirements/tag', { hub: otherHub, item: southDoc.document, required: [] });
 
       expect(await post('/progress/get', { hub, reader: 'alice' }))
         .toEqual({ status: 200, body: { checkpoint: null } });
@@ -82,7 +82,7 @@ describe('Alpha reader journey over HTTP', () => {
         .toEqual({ status: 400, body: { error: 'INVALID_REQUEST' } });
       expect(await post('/progress/record', { hub, reader: 'alice', checkpoint: start }))
         .toEqual({ status: 200, body: { checkpoint: start } });
-      const atStart = await post('/content/documents/read', { hub, reader: 'alice', document: publicDoc.document });
+      const atStart = await post('/articles/read', { hub, reader: 'alice', document: publicDoc.document });
       expect(atStart).toEqual({ status: 200, body: { content: {
         document: publicDoc.document, title: 'Open guide', blocks: [
           { block: blocks[0]!.block, kind: 'TEXT', body: 'PUBLIC_TEXT', alt: '' },
@@ -98,9 +98,9 @@ describe('Alpha reader journey over HTTP', () => {
         blocks[3]!.block, southDoc.document,
       ];
       for (const secret of hidden) expect(JSON.stringify({ atStart, startBrowse })).not.toContain(secret);
-      expect(await post('/content/documents/read', { hub, reader: 'alice', document: restrictedDoc.document }))
+      expect(await post('/articles/read', { hub, reader: 'alice', document: restrictedDoc.document }))
         .toEqual({ status: 200, body: { content: null } });
-      expect(await post('/content/documents/read', { hub, reader: 'alice', document: imageDoc.document }))
+      expect(await post('/articles/read', { hub, reader: 'alice', document: imageDoc.document }))
         .toEqual({ status: 200, body: { content: { document: imageDoc.document, title: 'Image only', blocks: [
           { block: imageBlock, kind: 'IMAGE', body: '/public-image.png', alt: 'Public image' },
         ] } } });
@@ -108,13 +108,13 @@ describe('Alpha reader journey over HTTP', () => {
         .toEqual({ status: 400, body: { error: 'INVALID_REQUEST' } });
       expect(await post('/hubs/browse', { hub: otherHub, reader: 'alice' }))
         .toEqual({ status: 400, body: { error: 'INVALID_REQUEST' } });
-      expect(await post('/content/documents/read', { hub, reader: 'alice', document: southDoc.document }))
+      expect(await post('/articles/read', { hub, reader: 'alice', document: southDoc.document }))
         .toEqual({ status: 200, body: { content: null } });
       expect(await post('/progress/record', { hub: otherHub, reader: 'alice', checkpoint: second }))
         .toEqual({ status: 404, body: { error: 'NOT_FOUND' } });
 
       await post('/progress/record', { hub, reader: 'alice', checkpoint: first });
-      const atFirst = await post('/content/documents/read', { hub, reader: 'alice', document: publicDoc.document });
+      const atFirst = await post('/articles/read', { hub, reader: 'alice', document: publicDoc.document });
       expect(((atFirst.body.content as { blocks: { block: string }[] }).blocks).map(({ block }) => block))
         .toEqual([blocks[0]!.block, blocks[1]!.block]);
       expect(JSON.stringify(atFirst)).not.toContain('SECOND_BODY_SECRET');
@@ -123,7 +123,7 @@ describe('Alpha reader journey over HTTP', () => {
         .toContainEqual({ document: restrictedDoc.document, title: 'HIDDEN_TITLE_SECRET' });
       await post('/progress/record', { hub, reader: 'bob', checkpoint: second });
       await post('/progress/record', { hub, reader: 'alice', checkpoint: start });
-      expect(await post('/content/documents/read', { hub, reader: 'alice', document: publicDoc.document }))
+      expect(await post('/articles/read', { hub, reader: 'alice', document: publicDoc.document }))
         .toEqual(atStart);
       expect((await post('/hubs/browse', { hub, reader: 'bob' })).body.documents)
         .toContainEqual({ document: restrictedDoc.document, title: 'HIDDEN_TITLE_SECRET' });
@@ -137,13 +137,13 @@ describe('Alpha reader journey over HTTP', () => {
         .toEqual({ status: 200, body: { checkpoint: second } });
       expect((await post('/hubs/list', {})).body.hubs)
         .toContainEqual({ hub, name: 'Northern Archive' });
-      expect(await post('/content/documents/read', { hub, reader: 'alice', document: publicDoc.document }))
+      expect(await post('/articles/read', { hub, reader: 'alice', document: publicDoc.document }))
         .toEqual(atStart);
       expect(await post('/progress/clear', { hub, reader: 'alice' }))
         .toEqual({ status: 200, body: { cleared: true } });
       expect(await post('/progress/get', { hub, reader: 'alice' }))
         .toEqual({ status: 200, body: { checkpoint: null } });
-      expect(await post('/setup/documents/create', { hub, title: 'Forbidden', blocks: [] }))
+      expect(await post('/fixtures/articles/create', { hub, title: 'Forbidden', blocks: [] }))
         .toEqual({ status: 404, body: { error: 'NOT_FOUND' } });
     } finally {
       server.stop();

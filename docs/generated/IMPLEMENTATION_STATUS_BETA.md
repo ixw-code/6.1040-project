@@ -1,6 +1,6 @@
 # Wikiplotter Beta — implementation status
 
-Milestone 7 adds private GridFS media storage and protected asset workflows. No Milestone 7 commit was made.
+Milestone 7.5 reconciles the current design with the assembled reader, generated wires, and build. No Milestone 7.5 commit was made.
 
 ## Completed history
 
@@ -48,3 +48,35 @@ The full suite passed: **81 tests across 27 files, 620 assertions**. Design synt
     - Protect uploader previews and checkpoint-filtered reader retrieval
     - Refuse deletion of referenced assets and clean up unreferenced bytes
     - Cover metadata, persistence, composition, storage, and HTTP behavior
+
+## Milestone 7.5 files changed
+
+| File | Change |
+| --- | --- |
+| generated.config.ts; generated.reader.config.ts | Bind the accepted types, ReaderProgress, and Reading design files to the selected assembly; point the default artifact at `generated/application`. |
+| generated/application/*; generated/reader/* | Regenerate framework artifacts and the typed reader HTTP wire from the reconciled design. |
+| src/compositions/Reading.ts | Align reader declaration names and route with `Reading.ReadArticle`, `ReadableArticle`, `ArticleDirectory`, and `ArticleContent`. |
+| src/compositions/ReaderProgress.ts; src/auth/progress-cookie.ts | Align the local progress import declaration and route with `ImportAnonymousProgress`; keep the existing login import behavior. |
+| src/http/edge.ts; src/http/reader.ts; src/http/media.ts | Route reads through `/api/articles/read`; block the local-only import route from public HTTP. |
+| frontend/src/api.ts | Use the regenerated reader wire for reader calls and typed protected POSTs for existing hub/checkpoint HTTP routes outside that wire. |
+| src/assembly/assembly.ts | Assemble only current reader compositions. |
+| src/compositions/HubManagement.ts; src/compositions/ContentManagement.ts; src/assembly/application.ts | Remove obsolete local setup compositions and assembly. |
+| scripts/seed.ts | Seed development fixtures through concept owners without obsolete setup endpoints. |
+| tests/fixture-application.ts; affected reader, HTTP, and acceptance tests | Seed legacy reader fixtures through test-only concept actions and verify the current `/articles/read` route. |
+| tests/compositions/HubManagement.test.ts; tests/compositions/ContentManagement.test.ts | Remove obsolete composition tests; current Hubs, Articles, Documenting, RequirementTagging, and reader tests cover their behavior. |
+
+## Milestone 7.5 decisions and verification
+
+No concept contract or product behavior was added. The default and reader artifact configs select the current reader assembly and its accepted design declarations. The local progress-import endpoint is selected for contract checking but blocked at `/api/internal/*`; login still reaches it through the local gateway. Development fixtures retain direct concept setup so legacy image and missing-rule reader cases remain testable without exposing authoring setup routes.
+
+Design syntax, framework source agreement, generated artifact checks, backend/frontend typechecks, and the frontend production build pass. The full MongoDB suite passed: **73 tests across 25 files, 556 assertions** after removing eight obsolete composition tests. A subsequent focused reader HTTP run passed three tests and 40 assertions, including the new private-route check. Hubs and Articles tests continue to cover authenticated management, ownership, transactions, and requirement behavior; reader acceptance tests continue to cover spoiler filtering. Framework check reports ten nonfatal advisories about guarded endpoint fallbacks and order-sensitive formers. No data was deleted or migrated.
+
+## Milestone 7.5 suggested commit message
+
+    refactor(beta): align reader assembly and generated design wires
+
+    - Bind generated artifacts to current types and reader composition contracts
+    - Rename reading declarations and route to Article terminology
+    - Remove obsolete setup compositions and seed through concept owners
+    - Restore typed reader client and protect the local progress import route
+    - Preserve hub, article, and spoiler regression coverage

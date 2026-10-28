@@ -17,7 +17,7 @@ const ReaderSelection = view('reading selection', ({ hub, reader }, { tokens }, 
   ),
 ).optional();
 
-const ReadableDocument = view('readable document', ({ hub, tokens }, { document }) =>
+const ReadableArticle = view('readable document', ({ hub, tokens }, { document }) =>
   where(
     Documenting._documents({ scope: hub }).is({ document }),
     RequirementTagging._eligible({ item: document, tokens }).is({ eligible: true }),
@@ -36,13 +36,13 @@ const HubDirectory = former('reading hub directory', (_input, { hub, name }) =>
     .form({ hub: hub!, name: name! }),
 );
 
-const DocumentDirectory = former('reading document directory', ({ hub, tokens }, { document, title }) =>
-  each(ReadableDocument({ hub, tokens }).is({ document }))
+const ArticleDirectory = former('reading document directory', ({ hub, tokens }, { document, title }) =>
+  each(ReadableArticle({ hub, tokens }).is({ document }))
     .where(Documenting._title({ scope: hub, document: document! }).is({ title }))
     .form({ document: document!, title: title! }),
 );
 
-const DocumentContent = former('reading document content',
+const ArticleContent = former('reading document content',
   ({ hub, document, tokens }, { title, block, kind, body, alt }) =>
     where(Documenting._title({ scope: hub, document }).is({ title }))
       .form({
@@ -72,7 +72,7 @@ const ListHubs = endpoint('/hubs/list', () =>
 const BrowseHub = endpoint('/hubs/browse', ({ hub, reader, tokens }) =>
   receive({ hub, reader }).then(
     where(ReaderSelection({ hub, reader }).is({ tokens }))
-      .then(respond({ documents: DocumentDirectory({ hub, tokens }) })).named('valid-selection'),
+      .then(respond({ documents: ArticleDirectory({ hub, tokens }) })).named('valid-selection'),
     where(no(ExistingHub({ hub })))
       .then(respond({ error: 'HUB_NOT_FOUND' })).named('hub-missing'),
     where(ExistingHub({ hub }), no(ReaderSelection({ hub, reader })))
@@ -80,11 +80,11 @@ const BrowseHub = endpoint('/hubs/browse', ({ hub, reader, tokens }) =>
   ), { input: { required: ['hub', 'reader'] }, validators: { input: validHubReader } },
 );
 
-const ReadDocument = endpoint('/content/documents/read', ({ hub, reader, document, tokens }) =>
+const ReadArticle = endpoint('/articles/read', ({ hub, reader, document, tokens }) =>
   receive({ hub, reader, document }).then(
-    where(ReaderSelection({ hub, reader }).is({ tokens }), ReadableDocument({ hub, tokens }).is({ document }))
-      .then(respond({ content: DocumentContent({ hub, document, tokens }) })).named('readable-document'),
-    where(ReaderSelection({ hub, reader }).is({ tokens }), no(ReadableDocument({ hub, tokens }).is({ document })))
+    where(ReaderSelection({ hub, reader }).is({ tokens }), ReadableArticle({ hub, tokens }).is({ document }))
+      .then(respond({ content: ArticleContent({ hub, document, tokens }) })).named('readable-document'),
+    where(ReaderSelection({ hub, reader }).is({ tokens }), no(ReadableArticle({ hub, tokens }).is({ document })))
       .then(respond({ content: null })).named('unavailable-document'),
     where(no(ExistingHub({ hub })))
       .then(respond({ error: 'HUB_NOT_FOUND' })).named('hub-missing'),
@@ -94,8 +94,8 @@ const ReadDocument = endpoint('/content/documents/read', ({ hub, reader, documen
 );
 
 export const composition = {
-  ListHubs, BrowseHub, ReadDocument, ExistingHub, ReaderSelection, ReadableDocument,
-  EligibleBlock, HubDirectory, DocumentDirectory, DocumentContent,
+  ListHubs, BrowseHub, ReadArticle, ExistingHub, ReaderSelection, ReadableArticle,
+  EligibleBlock, HubDirectory, ArticleDirectory, ArticleContent,
 };
 
 const GuestSelection = view('guest reading selection', ({ hub, checkpoint }, { tokens }, { sequence }) =>
@@ -109,7 +109,7 @@ const GuestSelection = view('guest reading selection', ({ hub, checkpoint }, { t
 const BrowseGuest = endpoint('/internal/guest/browse', ({ hub, checkpoint, tokens }) =>
   receive({ hub, checkpoint }).then(
     where(GuestSelection({ hub, checkpoint }).is({ tokens }))
-      .then(respond({ documents: DocumentDirectory({ hub, tokens }) })).named('valid-selection'),
+      .then(respond({ documents: ArticleDirectory({ hub, tokens }) })).named('valid-selection'),
     where(no(ExistingHub({ hub }))).then(respond({ error: 'HUB_NOT_FOUND' })).named('hub-missing'),
     where(ExistingHub({ hub }), no(GuestSelection({ hub, checkpoint })))
       .then(respond({ error: 'PROGRESS_NOT_SET' })).named('selection-missing'),
@@ -118,9 +118,9 @@ const BrowseGuest = endpoint('/internal/guest/browse', ({ hub, checkpoint, token
 
 const ReadGuest = endpoint('/internal/guest/read', ({ hub, checkpoint, document, tokens }) =>
   receive({ hub, checkpoint, document }).then(
-    where(GuestSelection({ hub, checkpoint }).is({ tokens }), ReadableDocument({ hub, tokens }).is({ document }))
-      .then(respond({ content: DocumentContent({ hub, document, tokens }) })).named('readable-document'),
-    where(GuestSelection({ hub, checkpoint }).is({ tokens }), no(ReadableDocument({ hub, tokens }).is({ document })))
+    where(GuestSelection({ hub, checkpoint }).is({ tokens }), ReadableArticle({ hub, tokens }).is({ document }))
+      .then(respond({ content: ArticleContent({ hub, document, tokens }) })).named('readable-document'),
+    where(GuestSelection({ hub, checkpoint }).is({ tokens }), no(ReadableArticle({ hub, tokens }).is({ document })))
       .then(respond({ content: null })).named('unavailable-document'),
     where(no(ExistingHub({ hub }))).then(respond({ error: 'HUB_NOT_FOUND' })).named('hub-missing'),
     where(ExistingHub({ hub }), no(GuestSelection({ hub, checkpoint })))
@@ -129,6 +129,6 @@ const ReadGuest = endpoint('/internal/guest/read', ({ hub, checkpoint, document,
 );
 
 export const guestComposition = {
-  BrowseGuest, ReadGuest, ExistingHub, GuestSelection, ReadableDocument, EligibleBlock,
-  DocumentDirectory, DocumentContent,
+  BrowseGuest, ReadGuest, ExistingHub, GuestSelection, ReadableArticle, EligibleBlock,
+  ArticleDirectory, ArticleContent,
 };

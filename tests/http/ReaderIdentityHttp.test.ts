@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { createReaderHttpHandler } from '@/http/edge.ts';
-import { createApplication } from '@/assembly/application.ts';
+import { createApplication } from '@tests/fixture-application.ts';
 import { SessioningConcept } from '@/concepts/Sessioning/Sessioning.ts';
 import { ProgressRecordingConcept } from '@/concepts/ProgressRecording/ProgressRecording.ts';
 import { createCookieSealer } from '@/auth/sealed-cookie.ts';
@@ -34,10 +34,10 @@ describe('reader identity HTTP boundary', () => {
     const checkpoints = await gateway.invoke('/checkpoints/list', { hub });
     if (!checkpoints.ok) throw Error('checkpoints');
     const [start, first] = (checkpoints.value as { checkpoints: { checkpoint: string }[] }).checkpoints;
-    const article = await gateway.invoke('/setup/documents/create', { hub, title: 'Visible', blocks: [] });
+    const article = await gateway.invoke('/fixtures/articles/create', { hub, title: 'Visible', blocks: [] });
     if (!article.ok) throw Error('article');
     const document = (article.value as { document: string }).document;
-    await gateway.invoke('/setup/items/tag', { hub, item: document, required: [] });
+    await gateway.invoke('/fixtures/requirements/tag', { hub, item: document, required: [] });
     const server = listen();
     try {
       expect((await post(server, '/api/hubs/browse', { hub, reader: 'forged' })).status).toBe(400);
