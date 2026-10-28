@@ -24,6 +24,8 @@ export async function prepareMongo(db: Db): Promise<void> {
       { unique: true, partialFilterExpression: { title: { $type: 'string' } } },
     ),
     db.collection('progress').createIndex({ scope: 1, reader: 1 }, { unique: true }),
+    db.collection('media_assets').createIndex({ uploader: 1, filename: 1 }, { unique: true }),
+    db.collection('media_assets').createIndex({ storageKey: 1 }, { unique: true }),
   ]);
 }
 

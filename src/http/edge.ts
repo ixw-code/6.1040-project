@@ -7,6 +7,7 @@ import { authOptionsFromEnvironment, createAuthHttpHandler } from '@/http/accoun
 import { createReaderIdentityHttpHandler } from '@/http/reader.ts';
 import { createHubsHttpHandler, hubRoutes } from '@/http/hubs.ts';
 import { createArticlesHttpHandler, articleRoutes } from '@/http/articles.ts';
+import { createMediaHttpHandler, mediaRoutes } from '@/http/media.ts';
 
 export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnvironment()) {
   const application = assembleWikiplotter(db);
@@ -29,6 +30,8 @@ export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnv
   const readerIdentity = authOptions ? createReaderIdentityHttpHandler(db, authOptions, readReader) : undefined;
   const hubs = authOptions ? createHubsHttpHandler(db, authOptions) : undefined;
   const articles = authOptions ? createArticlesHttpHandler(db, authOptions) : undefined;
+  const media = authOptions ? createMediaHttpHandler(db, authOptions, async (request) =>
+    (await readerIdentity?.(request)) ?? await readReader(request)) : undefined;
   const identityRoutes = new Set(['/api/progress/get', '/api/progress/record', '/api/progress/clear',
     '/api/hubs/browse', '/api/content/documents/read']);
   return async (request: Request) => {
@@ -51,6 +54,11 @@ export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnv
     }
     if (articleRoutes.has(url.pathname)) {
       return articles ? (await articles(request))! : new Response(JSON.stringify({ error: 'AUTH_UNCONFIGURED' }), {
+        status: 503, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+      });
+    }
+    if (mediaRoutes.has(url.pathname)) {
+      return media ? (await media(request))! : new Response(JSON.stringify({ error: 'AUTH_UNCONFIGURED' }), {
         status: 503, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
       });
     }

@@ -3,8 +3,9 @@ import { SessioningConcept } from '@/concepts/Sessioning/Sessioning.ts';
 import { RegisteringConcept } from '@/concepts/Registering/Registering.ts';
 import { HubCataloguingConcept } from '@/concepts/HubCataloguing/HubCataloguing.ts';
 import { CheckpointingConcept } from '@/concepts/Checkpointing/Checkpointing.ts';
-import { DocumentingConcept, type BlockInput, type DocumentBlock } from '@/concepts/Documenting/Documenting.ts';
+import { DocumentingConcept, type BlockInput } from '@/concepts/Documenting/Documenting.ts';
 import { RequirementTaggingConcept } from '@/concepts/RequirementTagging/RequirementTagging.ts';
+import { MediaAssetManagingConcept } from '@/concepts/MediaAssetManaging/MediaAssetManaging.ts';
 
 export class ArticleError extends Error {
   constructor(readonly code: string) { super(code); }
@@ -57,9 +58,13 @@ export function createArticles(db: Db, clock?: () => Date) {
         throw new ArticleError('INVALID_REQUIREMENTS');
       }
     }
-    // MediaAssetManaging and its READY references are Milestone 7. No unverified
-    // media identity may enter a new article or replacement save meanwhile.
-    if (blocks.some((block) => block.kind !== 'TEXT')) throw new ArticleError('ASSET_NOT_READY');
+    const assets = new MediaAssetManagingConcept(db, session);
+    for (const block of blocks) {
+      if (block.kind !== 'TEXT') {
+        try { await assets.confirmReadyReference({ asset: block.body, kind: block.kind }); }
+        catch { throw new ArticleError('ASSET_NOT_READY'); }
+      }
+    }
   }
 
   async function authored(hub: string, document: string, user: string, session: ClientSession) {
