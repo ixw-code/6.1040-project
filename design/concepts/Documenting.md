@@ -14,7 +14,7 @@ A maintainer creates a document containing a title, text and an image. Retrievin
 external Scope
   The context to which a document belongs.
 
-BlockType is TEXT or IMAGE
+BlockType is TEXT or IMAGE or VIDEO
   The supported content forms.
 
 opaque Content
@@ -30,6 +30,7 @@ a set of Documents with
   a scope Scope
   a title String
   a blocks seq of Block
+  unique scope and title
 
 a set of Blocks with
   a kind BlockType
@@ -46,16 +47,16 @@ Rule: Every document is created complete and immutable.
 
 ```actions
 create(scope: Scope, title: String, blocks: BlockInputs) : returns (document: Document)
-  where name is blank after trimming
+  where title is blank after trimming
   then
-    refuses DOCUMENT_NAME_REQUIRED "A document name is required."
-  where name is nonblank and a Document in scope has the trimmed name
+    refuses DOCUMENT_TITLE_REQUIRED "A document title is required."
+  where title is nonblank and a Document in scope has the trimmed title
   then
-    refuses DOCUMENT_NAME_TAKEN "This document name is already used in the scope."
-  where name is nonblank and unused in scope, and any of blocks is not a valid text or image block
+    refuses DOCUMENT_TITLE_TAKEN "This document title is already used in the scope."
+  where title is nonblank and unused in scope, and any of blocks is not a valid text or image block
   then
     refuses INVALID_DOCUMENT_BLOCKS "Provide valid text or image blocks."
-  where name is nonblank and unused in scope, and blocks is a complete valid ordered document
+  where title is nonblank and unused in scope, and blocks is a complete valid ordered document
   then
     create a new document identity with scope and trimmed title
     create a new block identity for every input entry in blocks with their kind, body, and alt

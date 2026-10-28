@@ -1,7 +1,7 @@
 import { MongoServerError, type Db } from 'mongodb';
 
-export class DocumentNameRequired extends Error {}
-export class DocumentNameTaken extends Error {}
+export class DocumentTitleRequired extends Error {}
+export class DocumentTitleTaken extends Error {}
 export class InvalidDocumentBlocks extends Error {}
 
 export type BlockKind = 'TEXT' | 'IMAGE';
@@ -23,9 +23,9 @@ export class DocumentingConcept {
     scope: string; title: string; blocks: BlockInput[];
   }): Promise<{ document: string }> {
     const trimmed = title.trim();
-    if (!trimmed) throw new DocumentNameRequired();
+    if (!trimmed) throw new DocumentTitleRequired();
     if (await this.documents.findOne({ scope, title: trimmed }, { projection: { _id: 1 } })) {
-      throw new DocumentNameTaken();
+      throw new DocumentTitleTaken();
     }
     if (!Array.isArray(blocks) || blocks.some((block) =>
       !block || (block.kind !== 'TEXT' && block.kind !== 'IMAGE') ||
@@ -44,7 +44,7 @@ export class DocumentingConcept {
         })),
       });
     } catch (error) {
-      if (error instanceof MongoServerError && error.code === 11000) throw new DocumentNameTaken();
+      if (error instanceof MongoServerError && error.code === 11000) throw new DocumentTitleTaken();
       throw error;
     }
     return { document };
