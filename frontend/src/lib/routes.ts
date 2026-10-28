@@ -36,7 +36,9 @@ export const newArticleUrl = (hub: string) => `${hubUrl(hub)}/articles/new`;
 export const assetUrl = (asset: string) => `/assets/${part(asset)}`;
 export function routeFromPath(path: string): Route {
   try {
-    const segments = path.split('/').filter(Boolean).map(decodeURIComponent);
+    // `navigate()` receives pathname + search + hash. These are not route segments.
+    const pathname = new URL(path, 'http://wikiplotter.local').pathname;
+    const segments = pathname.split('/').filter(Boolean).map(decodeURIComponent);
     if (!segments.length) return { kind: 'home' };
     if (segments.length === 1 && segments[0] === 'login') return { kind: 'login' };
     if (segments.length === 1 && segments[0] === 'register') return { kind: 'register' };

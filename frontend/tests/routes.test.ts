@@ -31,6 +31,11 @@ describe('frontend route links', () => {
     expect(hubUrl('hub:internal-id')).toBe('/north-star');
     expect(() => hubUrl('unlisted-hub')).toThrow('No backend-resolved slug');
   });
+  test('ignores query strings and hashes when matching routes (regression: login navigation)', () => {
+    expect(routeFromPath('/login?returnTo=%2Fstar-harbor')).toEqual({ kind: 'login' });
+    expect(routeFromPath('/account/settings#account')).toEqual({ kind: 'account-settings' });
+    expect(routeFromPath('/star-harbor/Opening/edit?from=article')).toEqual({ kind: 'article-edit', hub: 'star-harbor', document: 'Opening' });
+  });
   test('resolves decoded readable route parameters and exact breadcrumb levels', () => {
     expect(routeFromPath('/star-harbor/A%2FB%3A%20The%20Long%20Way/edit')).toEqual({
       kind: 'article-edit', hub: 'star-harbor', document: 'A/B: The Long Way',
