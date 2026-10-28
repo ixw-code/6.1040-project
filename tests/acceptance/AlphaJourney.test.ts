@@ -136,7 +136,7 @@ describe('Alpha reader journey over HTTP', () => {
       expect(await post('/progress/get', { hub, reader: 'bob' }))
         .toEqual({ status: 200, body: { checkpoint: second } });
       expect((await post('/hubs/list', {})).body.hubs)
-        .toContainEqual({ hub, name: 'Northern Archive' });
+        .toContainEqual({ hub, name: 'Northern Archive', slug: 'north' });
       expect(await post('/articles/read', { hub, reader: 'alice', document: publicDoc.document }))
         .toEqual(atStart);
       expect(await post('/progress/clear', { hub, reader: 'alice' }))

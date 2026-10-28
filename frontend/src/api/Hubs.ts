@@ -1,16 +1,30 @@
 import { readerClient, readerValue } from './readerClient.ts';
 import { postJson } from './http.ts';
+import { rememberArticleDirectory, rememberHubDirectory, rememberHubSlug } from '@/lib/routes.ts';
 
 export type HubCreated = { hub: string; sequence: string };
 export type CheckpointRow = { checkpoint: string; label: string; position: number };
 export type HubDirectory = Awaited<ReturnType<typeof readerClient.hubs.list>>;
 
 export const HubsApi = {
-  async list() { return readerValue(await readerClient.hubs.list({})); },
-  async browse(hub: string) { return readerValue(await readerClient.hubs.browse({ hub, reader: 'cookie' })); },
+  async list() {
+    const result = readerValue(await readerClient.hubs.list({}));
+    rememberHubDirectory(result.hubs);
+    return result;
+  },
+  async browse(hub: string) {
+    const result = readerValue(await readerClient.hubs.browse({ hub, reader: 'cookie' }));
+    rememberArticleDirectory(hub, result.documents);
+    return result;
+  },
   create: (name: string, label: string) => postJson<HubCreated>('/hubs/create', { name, label }),
   rename: (hub: string, name: string) => postJson<{ hub: string }>('/hubs/rename', { hub, name }),
-  updateSlug: (hub: string, slug: string) => postJson<{ hub: string; slug: string }>('/hubs/slug', { hub, slug }),
+  async updateSlug(hub: string, slug: string) {
+    const result = await postJson<{ slug: string }>('/hubs/slug', { hub, slug });
+    rememberHubSlug(hub, result.slug);
+    return result;
+  },
+  access: (hub: string) => postJson<{ canManage: boolean }>('/hubs/access', { hub }),
   delete: (hub: string) => postJson<{ hub: string }>('/hubs/delete', { hub }),
   sequences: (hub: string) => postJson<{ sequences: { sequence: string }[] }>('/hubs/sequences', { hub }),
   checkpoints: (hub: string) => postJson<{ sequence: string; checkpoints: CheckpointRow[] }>('/checkpoints/list', { hub }),

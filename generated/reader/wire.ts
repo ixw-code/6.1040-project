@@ -51,8 +51,9 @@ export type ReaderWire = {
     input: Record<string, never>;
     output: {
       "hubs": {
-        "hub": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_hubs"]>>>, ["hub"]>>;
+        "hub": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_get"]>[0], ["hub"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_hubs"]>>>, ["hub"]>]>>;
         "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_hubs"]>>>, ["name"]>>;
+        "slug": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_get"]>>>, ["slug"]>>;
       }[];
     };
     error: { error: AppWideError | "INVALID_INPUT" };
@@ -143,8 +144,9 @@ export type ReaderWireHttp = {
     input: Record<string, never>;
     output: {
       "hubs": {
-        "hub": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_hubs"]>>>, ["hub"]>>;
+        "hub": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_get"]>[0], ["hub"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_hubs"]>>>, ["hub"]>]>>;
         "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_hubs"]>>>, ["name"]>>;
+        "slug": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_get"]>>>, ["slug"]>>;
       }[];
     };
     error: { error: HttpAppWideError | "INVALID_REQUEST" };

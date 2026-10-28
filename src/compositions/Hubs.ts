@@ -62,6 +62,16 @@ const UpdateSlug = endpoint('/hubs/slug', ({ session, user, hub, slug }) =>
   { input: { required: ['session', 'hub', 'slug'] } },
 );
 
+const GetHubAccess = endpoint('/hubs/access', ({ session, user, hub }) =>
+  receive({ session, hub })
+    .then(Sessioning.use({ session }).responds({ user }))
+    .then(
+      where(IsCreator({ hub, user })).then(respond({ canManage: true })).named('creator'),
+      where(no(IsCreator({ hub, user }))).then(respond({ canManage: false })).named('not-creator'),
+    ),
+  { input: { required: ['session', 'hub'] } },
+);
+
 const GetSequences = endpoint('/hubs/sequences', ({ hub }) =>
   receive({ hub }).then(
     where(ExistingHub({ hub })).then(respond({ sequences: SequenceList({ hub }) })).named('existing-hub'),
@@ -107,6 +117,6 @@ const RelabelCheckpoint = endpoint('/checkpoints/relabel', ({ session, user, hub
 );
 
 export const composition = {
-  CreateHub, RenameHub, UpdateSlug, GetSequences, ListCheckpoints, AppendCheckpoint, RelabelCheckpoint,
+  CreateHub, RenameHub, UpdateSlug, GetHubAccess, GetSequences, ListCheckpoints, AppendCheckpoint, RelabelCheckpoint,
   ExistingHub, IsCreator, HubSequence, HubCheckpoint, SequenceList, CheckpointChoices,
 };

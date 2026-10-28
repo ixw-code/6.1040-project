@@ -35,6 +35,9 @@ describe('protected Hubs HTTP boundary', () => {
     expect(made.status).toBe(200);
     const { hub } = await made.json() as { hub: string };
     expect((await new HubCataloguingConcept(db)._get({ hub }))[0]?.creator).toBe(owner);
+    expect(await (await handle(request('/hubs/access', { hub }, ownerSession))).json()).toEqual({ canManage: true });
+    expect(await (await handle(request('/hubs/access', { hub }, otherSession))).json()).toEqual({ canManage: false });
+    expect((await handle(request('/hubs/access', { hub }))).status).toBe(401);
     expect((await handle(request('/hubs/rename', { hub, name: 'Taken', user: owner }, otherSession))).status).toBe(403);
     expect((await handle(request('/hubs/slug', { hub, slug: 'new-harbor' }, ownerSession))).status).toBe(200);
     expect((await handle(request('/hubs/delete', { hub }, otherSession))).status).toBe(403);

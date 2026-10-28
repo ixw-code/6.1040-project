@@ -41,7 +41,7 @@ describe('Reading local gateway', () => {
     const north = await createHub(gateway, 'North');
     const south = await createHub(gateway, 'South');
     expect(await gateway.invoke('/hubs/list', {})).toEqual({ ok: true, value: { hubs: [
-      { hub: north.hub, name: 'North' }, { hub: south.hub, name: 'South' },
+      { hub: north.hub, name: 'North', slug: 'north' }, { hub: south.hub, name: 'South', slug: 'south' },
     ].sort((a, b) => a.hub.localeCompare(b.hub)) } });
     const publicDoc = await createDocument(gateway, north.hub, 'Public map', [
       { kind: 'IMAGE', body: 'data:image/png;base64,PUBLIC_MAP', alt: 'PUBLIC_MAP_ALT' },

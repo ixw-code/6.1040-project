@@ -369,11 +369,13 @@ Authored path: `Reading.HubDirectory`.
 - Covered by [Reading](../../design/compositions/Reading.md), line 5.
 
 ```former
-Former "reading hub directory" — inputs (); bindings (hub, name); promises exactly one record — forms:
+Former "reading hub directory" — inputs (); bindings (hub, name, slug); promises exactly one record — forms:
   each HubCataloguing._hubs () has (hub, name)
+    where HubCataloguing._get (hub) has (slug)
     form a record of
       hub
       name
+      slug
 ```
 
 ## Reactions

@@ -57,7 +57,7 @@ describe('reader HTTP adapter', () => {
       expect(await post(server, '/api/hubs/rename', { hub, name: 'Northern' }))
         .toEqual({ status: 200, body: { hub } });
       expect(await post(server, '/api/hubs/list', {}))
-        .toEqual({ status: 200, body: { hubs: [{ hub, name: 'Northern' }] } });
+        .toEqual({ status: 200, body: { hubs: [{ hub, name: 'Northern', slug: 'north' }] } });
       expect(await post(server, '/api/checkpoints/list', { hub }))
         .toEqual({ status: 200, body: { sequence, checkpoints: [
           { checkpoint: start, label: 'NotStarted', position: 0 },

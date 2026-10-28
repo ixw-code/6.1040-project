@@ -31,9 +31,10 @@ const EligibleBlock = view('eligible block', ({ hub, document, tokens }, { block
   ),
 ).many();
 
-const HubDirectory = former('reading hub directory', (_input, { hub, name }) =>
+const HubDirectory = former('reading hub directory', (_input, { hub, name, slug }) =>
   each(HubCataloguing._hubs({}).is({ hub, name }))
-    .form({ hub: hub!, name: name! }),
+    .where(HubCataloguing._get({ hub: hub! }).is({ slug }))
+    .form({ hub: hub!, name: name!, slug: slug! }),
 );
 
 const ArticleDirectory = former('reading document directory', ({ hub, tokens }, { document, title }) =>

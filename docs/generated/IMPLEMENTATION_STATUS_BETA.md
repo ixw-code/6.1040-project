@@ -121,3 +121,36 @@ Frontend typecheck and production build pass. No tests were added or run because
     - Keep reader operations on the generated sync-engine client
     - Document available and unavailable Beta HTTP operations
     - Preserve current screen behavior through the existing API facade
+
+## Frontend integration repair files
+
+| File | Change |
+| --- | --- |
+| frontend/src/App.vue; frontend/src/lib/routes.ts | Resolve hub URLs from the generated slug directory, resolve visible article title URLs to stable document IDs, and use server-confirmed hub creator access before showing protected controls. |
+| frontend/src/features/Hub/HubSettings.vue; frontend/src/features/Article/ArticleEditor.vue; frontend/src/features/Media/MediaPicker.vue | Fix Vue template type errors, initialize and update the current slug, preserve title-based article links, and fetch finalized asset metadata through its actual route. |
+| frontend/src/api/Hubs.ts; frontend/src/api/Articles.ts; frontend/src/api/MediaAssets.ts | Match actual backend response shapes for slug updates, article block records, and upload finalization; cache directory and eligible article mappings. |
+| src/compositions/Reading.ts; generated/reader/*; generated/application/* | Return the slug already required by Reading design, using HubCataloguing._get without changing the concept query contract; regenerate typed wires and documentation. |
+| src/compositions/Hubs.ts; src/http/hubs.ts; design/compositions/Hubs.md | Expose the existing IsCreator decision as authenticated `/api/hubs/access`, returning only `canManage` for UI permission display. |
+| tests/http/HubsHttp.test.ts; tests/http/ReaderHttp.test.ts; tests/compositions/Reading.test.ts; tests/acceptance/AlphaJourney.test.ts; frontend/tests/routes.test.ts | Cover creator access, slug directory output and links; update prior directory assertions to include the accepted slug field. |
+
+## Frontend integration diagnosis and remaining blockers
+
+The original Vue typecheck failed because HubSettings called imported API methods directly from template expressions. Component handlers fixed the Vue template typing issue. API contract review also corrected article create/save block response types and asset finalization's ID-only response. Vite proxy configuration already forwards `/api` and `/auth` to the configured backend host and port; same-origin JSON requests carry session cookies and Origin for mutation CSRF checks.
+
+Reading design already specified slug-bearing hub directory output, but the composition omitted it. The implementation now obtains slugs through the existing `_get` query, preserving HubCataloguing._hubs() and its accepted signature. The frontend uses internal IDs for API calls and human-readable slugs/titles in visible navigation. The Hubs composition already owned creator checks; `/api/hubs/access` exposes only a boolean so UI controls can reflect the server's decision without leaking creator IDs.
+
+The account data page still cannot list authored articles because no such endpoint exists. A direct title URL can resolve only an article currently returned by the spoiler-filtered directory; a hidden or unclassified article has no safe title-to-ID lookup path. Account deletion remains disabled with HTTP 501. Local development has no provider credentials configured, so live Google/Commons login returns `PROVIDER_UNAVAILABLE`; provider callback, explicit registration, and logout flows are covered by mock-backed HTTP tests.
+
+## Frontend integration verification
+
+Backend and frontend typechecks, frontend production build, framework checks, generated artifact checks, design checks, and `git diff --check` pass. Framework check retains ten nonfatal advisories. Frontend route/permission tests pass: **6 tests, 25 assertions**. The full suite passes: **79 tests across 27 files, 586 assertions**. Focused HTTP suites pass: **9 tests across 5 files, 113 assertions**.
+
+Live Vite proxy smoke checks passed for homepage serving, hub directory and creator permissions, progress selection, article creation/read/edit, asset upload/finalize/preview/contextual retrieval and deletion protection, hub rename/slug/checkpoint management, hub deletion, and logout. The check also confirmed the expected provider-login 503 with no local OAuth provider configured. Smoke data was removed from the isolated test database afterward. Production build reports existing Node `crypto`/`util` browser externalization notices from the sync-engine runtime.
+
+    fix(frontend): align Beta pages with backend contracts
+
+    - Resolve readable hub slugs and visible article title routes
+    - Expose authenticated hub creator access for protected UI controls
+    - Correct article and media API response types and template handlers
+    - Verify reader, management, editing, and media flows through Vite proxy
+    - Preserve documented provider and authored-article index blockers

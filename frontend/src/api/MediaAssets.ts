@@ -6,10 +6,10 @@ export type UploadInput = { filename: string; kind: AssetKind; contentType: stri
 
 export const MediaAssetsApi = {
   startUpload: (input: UploadInput) => postJson<{ asset: string }>('/assets/start', input),
-  finishUpload: (asset: string) => postJson<Asset>('/assets/finish', { asset }),
+  finishUpload: (asset: string) => postJson<{ asset: string }>('/assets/finish', { asset }),
   list: () => postJson<Asset[]>('/assets/my'),
   get: (asset: string) => postJson<Asset>('/assets/get', { asset }),
   preview: (asset: string) => postBytes('/assets/preview', { asset }),
-  read: (hub: string, document: string, block: string) => postBytes('/assets/read', { hub, document, block }),
+  read: (hub: string, document: string, block: string, asset: string) => postBytes('/assets/read', { hub, document, block, asset }),
   delete: (asset: string) => postJson<{ asset: string }>('/assets/delete', { asset }),
 };
