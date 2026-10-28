@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   CheckpointingConcept, SequenceNotFound, CheckpointLabelRequired,
   CheckpointNotFound, StartLabelFixed, CheckpointRenameLabelRequired,
-} from '@/concepts/Checkpointing.ts';
+} from '@/concepts/Checkpointing/Checkpointing.ts';
 
 describe('Checkpointing', () => {
   const mongo = useMongoTestDb();

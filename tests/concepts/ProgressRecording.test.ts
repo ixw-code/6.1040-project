@@ -1,6 +1,6 @@
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 import { describe, expect, test } from 'bun:test';
-import { ProgressRecordingConcept } from '@/concepts/ProgressRecording.ts';
+import { ProgressRecordingConcept } from '@/concepts/ProgressRecording/ProgressRecording.ts';
 
 describe('ProgressRecording', () => {
   const mongo = useMongoTestDb();

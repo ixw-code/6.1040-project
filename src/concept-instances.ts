@@ -1,9 +1,9 @@
 import type { Db } from 'mongodb';
-import { HubCataloguingConcept } from '@/concepts/HubCataloguing.ts';
-import { CheckpointingConcept } from '@/concepts/Checkpointing.ts';
-import { DocumentingConcept } from '@/concepts/Documenting.ts';
-import { ProgressRecordingConcept } from '@/concepts/ProgressRecording.ts';
-import { RequirementTaggingConcept } from '@/concepts/RequirementTagging.ts';
+import { HubCataloguingConcept } from '@/concepts/HubCataloguing/HubCataloguing.ts';
+import { CheckpointingConcept } from '@/concepts/Checkpointing/Checkpointing.ts';
+import { DocumentingConcept } from '@/concepts/Documenting/Documenting.ts';
+import { ProgressRecordingConcept } from '@/concepts/ProgressRecording/ProgressRecording.ts';
+import { RequirementTaggingConcept } from '@/concepts/RequirementTagging/RequirementTagging.ts';
 
 /** Supply these ready instances to sync-engine assemble({ ..., instances }). */
 export function createMongoConceptInstances(db: Db) {

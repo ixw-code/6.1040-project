@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { createGateway } from '@mit-sdg/sync-engine/boundary';
 import { createApplication } from '@/application.ts';
 import { assembleWikiplotter } from '@/assembly.ts';
-import { ProgressRecordingConcept } from '@/concepts/ProgressRecording.ts';
+import { ProgressRecordingConcept } from '@/concepts/ProgressRecording/ProgressRecording.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 
 describe('ReaderProgress local gateway', () => {

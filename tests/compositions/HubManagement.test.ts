@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { createApplication } from '@/application.ts';
-import { CheckpointingConcept } from '@/concepts/Checkpointing.ts';
-import { HubCataloguingConcept } from '@/concepts/HubCataloguing.ts';
+import { CheckpointingConcept } from '@/concepts/Checkpointing/Checkpointing.ts';
+import { HubCataloguingConcept } from '@/concepts/HubCataloguing/HubCataloguing.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 
 describe('HubManagement gateway', () => {

@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   HubCataloguingConcept, HubNameRequired, HubNameTaken, HubNotFound,
   HubRenameNameRequired, HubRenameNameTaken,
-} from '@/concepts/HubCataloguing.ts';
+} from '@/concepts/HubCataloguing/HubCataloguing.ts';
 
 describe('HubCataloguing', () => {
   const mongo = useMongoTestDb();

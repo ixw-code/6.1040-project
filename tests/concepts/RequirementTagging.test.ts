@@ -2,7 +2,7 @@ import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 import { describe, expect, test } from 'bun:test';
 import {
   RequirementTaggingConcept, RequirementRuleNotFound,
-} from '@/concepts/RequirementTagging.ts';
+} from '@/concepts/RequirementTagging/RequirementTagging.ts';
 
 describe('RequirementTagging', () => {
   const mongo = useMongoTestDb();

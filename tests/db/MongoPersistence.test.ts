@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { HubCataloguingConcept, HubNameTaken } from '@/concepts/HubCataloguing.ts';
-import { CheckpointingConcept } from '@/concepts/Checkpointing.ts';
-import { DocumentingConcept, DocumentTitleTaken } from '@/concepts/Documenting.ts';
-import { ProgressRecordingConcept } from '@/concepts/ProgressRecording.ts';
-import { RequirementTaggingConcept } from '@/concepts/RequirementTagging.ts';
+import { HubCataloguingConcept, HubNameTaken } from '@/concepts/HubCataloguing/HubCataloguing.ts';
+import { CheckpointingConcept } from '@/concepts/Checkpointing/Checkpointing.ts';
+import { DocumentingConcept, DocumentTitleTaken } from '@/concepts/Documenting/Documenting.ts';
+import { ProgressRecordingConcept } from '@/concepts/ProgressRecording/ProgressRecording.ts';
+import { RequirementTaggingConcept } from '@/concepts/RequirementTagging/RequirementTagging.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
 
 describe('MongoDB persistence and concurrent invariants', () => {

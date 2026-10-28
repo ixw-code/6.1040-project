@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   DocumentingConcept, DocumentTitleRequired, DocumentTitleTaken, InvalidDocumentBlocks,
   type BlockInput,
-} from '@/concepts/Documenting.ts';
+} from '@/concepts/Documenting/Documenting.ts';
 
 describe('Documenting', () => {
   const mongo = useMongoTestDb();
