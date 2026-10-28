@@ -33,6 +33,30 @@ export class ProgressRecordingConcept {
     return { cleared: result.deletedCount === 1 };
   }
 
+  async recordIfAbsent({ scope, reader, checkpoint }: {
+    scope: string; reader: string; checkpoint: string;
+  }): Promise<{ recorded: boolean }> {
+    try {
+      const result = await this.progress.updateOne(
+        { scope, reader }, { $setOnInsert: { scope, reader, checkpoint } }, { upsert: true },
+      );
+      return { recorded: result.upsertedCount === 1 };
+    } catch (error) {
+      if (error instanceof MongoServerError && error.code === 11000) return { recorded: false };
+      throw error;
+    }
+  }
+
+  async clearScope({ scope }: { scope: string }): Promise<Record<string, never>> {
+    await this.progress.deleteMany({ scope });
+    return {};
+  }
+
+  async _scopesForReader({ reader }: { reader: string }): Promise<{ scope: string }[]> {
+    const rows = await this.progress.find({ reader }, { projection: { scope: 1 } }).sort({ scope: 1 }).toArray();
+    return rows.map(({ scope }) => ({ scope }));
+  }
+
   async _checkpoint({ scope, reader }: {
     scope: string; reader: string;
   }): Promise<{ checkpoint: string }[]> {

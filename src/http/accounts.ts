@@ -4,6 +4,7 @@ import { createAccounts } from '@/accounts.ts';
 import { createCookieSealer } from '@/auth/sealed-cookie.ts';
 import { CommonsProvider, GoogleProvider, type VerifiedProvider } from '@/auth/providers.ts';
 import type { Provider } from '@/concepts/Registering/Registering.ts';
+import { importAnonymousProgress, issueProgress, progressCookie, verifiedProgress } from '@/auth/progress-cookie.ts';
 
 const sessionName = '__Host-wikiplotter_session';
 const flowName = '__Host-wikiplotter_flow';
@@ -12,7 +13,7 @@ const flowLifetime = 10 * 60 * 1000;
 const pendingLifetime = 10 * 60 * 1000;
 const random = () => randomBytes(32).toString('base64url');
 
-type AuthOptions = {
+export type AuthOptions = {
   origin: string;
   cookieKey: Buffer;
   providers: Partial<Record<Provider, VerifiedProvider>>;
@@ -162,9 +163,12 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
       if (account.error || !textField(account.value?.session)) {
         return json({ error: 'AUTH_FAILED' }, 500, headers);
       }
+      await importAnonymousProgress(db, account.value.user as string,
+        verifiedProgress(progressCookie(request), options.cookieKey, options.clock));
       await revokeOld(request);
       setCookie(headers, sessionName, account.value.session, 7 * 24 * 60 * 60);
       setCookie(headers, pendingName, '', 0);
+      issueProgress(headers, {}, options.cookieKey, options.clock);
       return redirect(new URL(safeReturnTo(flow.returnTo as string, origin), origin).href, headers);
     }
 
@@ -208,10 +212,13 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
           const error = registered.error ?? 'AUTH_FAILED';
           return json({ error }, error === 'USERNAME_TAKEN' ? 409 : 400);
         }
+        await importAnonymousProgress(db, registered.value.user as string,
+          verifiedProgress(progressCookie(request), options.cookieKey, options.clock));
         await revokeOld(request);
         const headers = baseHeaders();
         setCookie(headers, sessionName, registered.value.session, 7 * 24 * 60 * 60);
         setCookie(headers, pendingName, '', 0);
+        issueProgress(headers, {}, options.cookieKey, options.clock);
         return json({
           user: registered.value.user, username: body.username,
           redirectTo: safeReturnTo(pending.returnTo as string, origin),

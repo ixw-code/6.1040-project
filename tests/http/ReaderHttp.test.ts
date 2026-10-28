@@ -2,17 +2,24 @@ import { describe, expect, test } from 'bun:test';
 import { createApplication } from '@/application.ts';
 import { createReaderHttpHandler } from '@/edge.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
+import { SessioningConcept } from '@/concepts/Sessioning/Sessioning.ts';
 
 describe('reader HTTP adapter', () => {
   const mongo = useMongoTestDb();
 
   function listen() {
-    return Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: createReaderHttpHandler(mongo.db()) });
+    return Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: createReaderHttpHandler(mongo.db(), {
+      origin: 'http://localhost:3000', cookieKey: Buffer.alloc(32, 2), providers: {},
+    }) });
   }
 
   async function post(server: ReturnType<typeof listen>, path: string, input: unknown) {
+    const reader = input && typeof input === 'object' && 'reader' in input ? input.reader : undefined;
+    const session = typeof reader === 'string'
+      ? (await new SessioningConcept(mongo.db()).start({ user: reader })).session : undefined;
     const response = await fetch(`http://127.0.0.1:${server.port}${path}`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input),
+      method: 'POST', headers: { 'content-type': 'application/json', origin: 'http://localhost:3000',
+        ...(session ? { cookie: `__Host-wikiplotter_session=${session}` } : {}) }, body: JSON.stringify(input),
     });
     return { status: response.status, body: await response.json() as Record<string, unknown> };
   }

@@ -6,11 +6,15 @@
 - Read the current ALPHA.md, BETA.md and relevant files under design/ before changing behavior. Follow the repository's existing paths.
 - Use the installed sync-engine skill and its linked workflow for framework work. If unavailable, report that and consult the public documentation matching the installed version. Do not guess framework APIs.
 
-## Alpha scope
+## Beta Agent Rules
 
-- Five concepts: HubCataloguing, Documenting, Checkpointing, ProgressRecording and RequirementTagging.
-- Support hub discovery, checkpoint setup, premade documents, requirement tagging, reader progress and filtered reading.
-- Use dummy reader identities. Authentication, public contribution, editing, uploads, history, search and theme customization are outside Alpha unless explicitly requested.
+- BETA.md defines accepted contracts; preserve all user-defined names, signatures, and bindings.
+- Follow the installed SDG engine skill and existing repository conventions.
+- Implement only the requested milestone; avoid unrelated refactoring and unnecessary concepts or lifecycle actions.
+- Propose contract changes before implementing them.
+- Test relevant functionality and preserve Alpha behavior.
+- Update IMPLEMENTATION_STATUS_BETA using its established format. Condense old history without losing important decisions, blockers, or verification results.
+- End with a concise change summary, test results, and suggested commit message.
 
 ## Design boundaries
 

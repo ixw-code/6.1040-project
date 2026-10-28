@@ -88,3 +88,29 @@ feat(beta): add verified account sign-in and explicit registration
 - Cover provider validation, CSRF, session rotation, expiry, and Alpha regression behavior
 - Record provider setup requirements and fail-closed account deletion blocker
 ```
+
+## Milestone 4 files changed
+
+| Files | Change |
+| --- | --- |
+| `src/concepts/ProgressRecording/ProgressRecording.ts`, `registry.ts` | Add atomic `recordIfAbsent`, scope cleanup, and reader scope lookup; point registration at the accepted Beta concept contract. |
+| `src/concepts.ts`, `src/concept-instances.ts`, `src/accounts.ts`, `src/compositions/Accounts.ts` | Use one application concept set for the seven implemented concepts and all local gateways; remove `src/account-concepts.ts`. |
+| `src/compositions/ReaderProgress.ts`, `Reading.ts`, `src/guest-reader.ts` | Validate guest selections, import valid selections without overwriting account progress, and filter guest reading through local compositions. |
+| `src/auth/progress-cookie.ts`, `reader-http.ts`, `http.ts`, `src/edge.ts` | Issue expiring authenticated progress cookies, resolve sessions server-side, ignore client reader IDs, and import guest progress on login or explicit registration. |
+| `frontend/src/api.ts`, `App.vue` | Use cookie-backed reader requests; remove unused `frontend/src/reader.ts` and its test. |
+| `tests/http/ReaderIdentityHttp.test.ts`, `ProgressImportHttp.test.ts`, `ReaderHttp.test.ts`; `tests/concepts/ProgressRecording.test.ts`; `tests/acceptance/AlphaJourney.test.ts` | Cover guest cookies, tampering, expiry, account isolation, atomic import, and spoiler regression through authenticated HTTP. |
+| `src/concepts/{HubCataloguing,Checkpointing,Documenting,RequirementTagging}/registry.ts`, `generated*.config.ts`, `design/alpha/**`, `generated/{reader,setup}/wikiplotter*.md` | Remove old design references and point registries at accepted Beta specs. This leaves framework registration failing until later Beta concept implementations match those specs; generated prose artifacts referencing removed files were removed. |
+
+Milestone 4 behavior passed **64 tests across 20 files** with 491 assertions before the final design-reference removal. After that requested removal, `bun run check:design` and backend/frontend typechecks pass, but runtime tests stop at `registerConcept(HubCataloguingConcept)` because accepted Beta actions `updateSlug` and `delete` are not implemented yet. Framework and artifact checks also fail because the configs now contain no authored documents. These are current failures; the earlier green test run is not a current pass. The user explicitly accepted leaving design checks failing to remove old references. No commit was made.
+
+## Suggested Milestone 4 commit message
+
+```text
+feat(beta): integrate cookie-backed reader progress and session identity
+
+- Store anonymous progress in expiring authenticated cookies and resolve account readers through Sessioning
+- Import validated guest selections only where account progress is absent
+- Keep spoiler filtering in compositions and reject client-supplied reader identities
+- Remove split concept sets and obsolete design references
+- Record framework registration and artifact check failures pending later Beta concept work
+```

@@ -21,14 +21,14 @@ export const api = {
   async relabelCheckpoint(hub: string, checkpoint: string, label: string) {
     return value(await client.checkpoints.relabel({ hub, checkpoint, label }));
   },
-  async progress(hub: string, reader: string) { return value(await client.progress.get({ hub, reader })); },
-  async record(hub: string, reader: string, checkpoint: string) {
-    return value(await client.progress.record({ hub, reader, checkpoint }));
+  async progress(hub: string) { return value(await client.progress.get({ hub, reader: 'cookie' })); },
+  async record(hub: string, checkpoint: string) {
+    return value(await client.progress.record({ hub, reader: 'cookie', checkpoint }));
   },
-  async clear(hub: string, reader: string) { return value(await client.progress.clear({ hub, reader })); },
-  async browse(hub: string, reader: string) { return value(await client.hubs.browse({ hub, reader })); },
-  async read(hub: string, reader: string, document: string) {
-    return value(await client.content.documents.read({ hub, reader, document }));
+  async clear(hub: string) { return value(await client.progress.clear({ hub, reader: 'cookie' })); },
+  async browse(hub: string) { return value(await client.hubs.browse({ hub, reader: 'cookie' })); },
+  async read(hub: string, document: string) {
+    return value(await client.content.documents.read({ hub, reader: 'cookie', document }));
   },
 };
 

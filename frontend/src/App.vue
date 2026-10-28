@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { api, type Checkpoint, type DocumentContent, type DocumentSummary, type Hub } from '@/api.ts';
-import { readerIdentity } from '@/reader.ts';
 
 type Page = { kind: 'home' } | { kind: 'login' } | { kind: 'register' } |
   { kind: 'hub'; hub: string } | { kind: 'manage'; hub: string } |
@@ -23,7 +22,6 @@ function readPage(): Page {
   return { kind: 'home' };
 }
 
-const reader = readerIdentity();
 const page = ref<Page>(readPage());
 const hubs = ref<Hub[]>([]);
 const checkpoints = ref<Checkpoint[]>([]);
@@ -128,7 +126,7 @@ async function loadPage() {
     if (!found) throw new Error('Hub not found');
     renameName.value = found.name;
     const [choices, progress] = await Promise.all([
-      api.checkpoints(destination.hub), api.progress(destination.hub, reader),
+      api.checkpoints(destination.hub), api.progress(destination.hub),
     ]);
     if (ticket !== generation) return;
     sequence.value = choices.sequence;
@@ -138,10 +136,10 @@ async function loadPage() {
     chosenCheckpoint.value = progress.checkpoint ?? '';
     if (progress.checkpoint === null || destination.kind === 'manage') return;
     if (destination.kind === 'hub') {
-      const result = await api.browse(destination.hub, reader);
+      const result = await api.browse(destination.hub);
       if (ticket === generation) documents.value = result.documents;
     } else {
-      const result = await api.read(destination.hub, reader, destination.document);
+      const result = await api.read(destination.hub, destination.document);
       if (ticket === generation) content.value = result.content;
     }
   } catch (cause) {
@@ -206,13 +204,13 @@ function saveProgress() {
   if (!('hub' in page.value) || !chosenCheckpoint.value) return;
   const hub = page.value.hub;
   const checkpoint = chosenCheckpoint.value;
-  void change(() => api.record(hub, reader, checkpoint));
+  void change(() => api.record(hub, checkpoint));
 }
 
 function clearProgress() {
   if (!('hub' in page.value)) return;
   const hub = page.value.hub;
-  void change(() => api.clear(hub, reader));
+  void change(() => api.clear(hub));
 }
 
 function renameHub() {

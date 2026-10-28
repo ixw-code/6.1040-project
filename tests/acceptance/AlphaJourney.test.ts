@@ -2,15 +2,24 @@ import { describe, expect, test } from 'bun:test';
 import { createApplication } from '@/application.ts';
 import { createReaderHttpHandler } from '@/edge.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
+import { SessioningConcept } from '@/concepts/Sessioning/Sessioning.ts';
 
 describe('Alpha reader journey over HTTP', () => {
   const mongo = useMongoTestDb();
 
   test('keeps spoiler metadata hidden across readers, hubs, progress changes, and reconnection', async () => {
-    let server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: createReaderHttpHandler(mongo.db()) });
+    const options = { origin: 'http://localhost:3000', cookieKey: Buffer.alloc(32, 4), providers: {} };
+    const sessions = new SessioningConcept(mongo.db());
+    const alice = (await sessions.start({ user: 'alice' })).session;
+    const bob = (await sessions.start({ user: 'bob' })).session;
+    let server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: createReaderHttpHandler(mongo.db(), options) });
     const post = async (path: string, input: object) => {
+      const reader = 'reader' in input ? input.reader : undefined;
+      const cookie = reader === 'alice' ? `__Host-wikiplotter_session=${alice}` :
+        reader === 'bob' ? `__Host-wikiplotter_session=${bob}` : '';
       const response = await fetch(`http://127.0.0.1:${server.port}/api${path}`, {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input),
+        method: 'POST', headers: { 'content-type': 'application/json', origin: options.origin, cookie },
+        body: JSON.stringify(input),
       });
       return { status: response.status, body: await response.json() as Record<string, unknown> };
     };
@@ -119,7 +128,7 @@ describe('Alpha reader journey over HTTP', () => {
 
       server.stop();
       const reconnected = await mongo.reconnect();
-      server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: createReaderHttpHandler(reconnected) });
+      server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: createReaderHttpHandler(reconnected, options) });
       expect(await post('/progress/get', { hub, reader: 'alice' }))
         .toEqual({ status: 200, body: { checkpoint: start } });
       expect(await post('/progress/get', { hub, reader: 'bob' }))

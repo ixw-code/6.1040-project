@@ -65,3 +65,30 @@ const ClearProgress = endpoint('/progress/clear', ({ hub, reader, cleared }) =>
 );
 
 export const composition = { GetProgress, RecordProgress, ClearProgress, ExistingHub, ValidSelection, StoredProgress, ProgressResult };
+
+/** Local-only validation for cookie selections; never writes anonymous progress. */
+const ValidateGuestSelection = endpoint('/internal/progress/validate', ({ hub, checkpoint }) =>
+  receive({ hub, checkpoint }).then(
+    where(ValidSelection({ hub, checkpoint })).then(respond({ valid: true })).named('valid'),
+    where(no(ValidSelection({ hub, checkpoint }))).then(respond({ valid: false })).named('invalid'),
+  ), { input: { required: ['hub', 'checkpoint'] } },
+);
+
+const GuestHubExists = endpoint('/internal/progress/hub-exists', ({ hub }) =>
+  receive({ hub }).then(
+    where(ExistingHub({ hub })).then(respond({ exists: true })).named('existing-hub'),
+    where(no(ExistingHub({ hub }))).then(respond({ exists: false })).named('missing-hub'),
+  ), { input: { required: ['hub'] } },
+);
+
+const ImportOne = endpoint('/internal/progress/import-one', ({ hub, reader, checkpoint, recorded }) =>
+  receive({ hub, reader, checkpoint }).then(
+    where(ValidSelection({ hub, checkpoint }))
+      .then(ProgressRecording.recordIfAbsent({ scope: hub, reader, checkpoint }).responds({ recorded }))
+      .then(respond({ recorded })).named('valid-selection'),
+    where(no(ValidSelection({ hub, checkpoint })))
+      .then(respond({ recorded: false })).named('invalid-selection'),
+  ), { input: { required: ['hub', 'reader', 'checkpoint'] } },
+);
+
+export const guestComposition = { ValidateGuestSelection, GuestHubExists, ImportOne, ExistingHub, ValidSelection };

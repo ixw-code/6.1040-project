@@ -1,5 +1,5 @@
 import { registerConcept } from "@mit-sdg/sync-engine/assembly";
-import spec from "@design/alpha/concepts/Checkpointing.md" with { type: "text" };
+import spec from "@design/concepts/Checkpointing.md" with { type: "text" };
 import {
   CheckpointingConcept,
   SequenceNotFound,

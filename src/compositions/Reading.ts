@@ -97,3 +97,38 @@ export const composition = {
   ListHubs, BrowseHub, ReadDocument, ExistingHub, ReaderSelection, ReadableDocument,
   EligibleBlock, HubDirectory, DocumentDirectory, DocumentContent,
 };
+
+const GuestSelection = view('guest reading selection', ({ hub, checkpoint }, { tokens }, { sequence }) =>
+  where(
+    ExistingHub({ hub }),
+    Checkpointing._sequences({ scope: hub }).is({ sequence }),
+    Checkpointing._prefixTokens({ scope: hub, sequence, checkpoint }).is({ tokens }),
+  ),
+).optional();
+
+const BrowseGuest = endpoint('/internal/guest/browse', ({ hub, checkpoint, tokens }) =>
+  receive({ hub, checkpoint }).then(
+    where(GuestSelection({ hub, checkpoint }).is({ tokens }))
+      .then(respond({ documents: DocumentDirectory({ hub, tokens }) })).named('valid-selection'),
+    where(no(ExistingHub({ hub }))).then(respond({ error: 'HUB_NOT_FOUND' })).named('hub-missing'),
+    where(ExistingHub({ hub }), no(GuestSelection({ hub, checkpoint })))
+      .then(respond({ error: 'PROGRESS_NOT_SET' })).named('selection-missing'),
+  ), { input: { required: ['hub', 'checkpoint'] } },
+);
+
+const ReadGuest = endpoint('/internal/guest/read', ({ hub, checkpoint, document, tokens }) =>
+  receive({ hub, checkpoint, document }).then(
+    where(GuestSelection({ hub, checkpoint }).is({ tokens }), ReadableDocument({ hub, tokens }).is({ document }))
+      .then(respond({ content: DocumentContent({ hub, document, tokens }) })).named('readable-document'),
+    where(GuestSelection({ hub, checkpoint }).is({ tokens }), no(ReadableDocument({ hub, tokens }).is({ document })))
+      .then(respond({ content: null })).named('unavailable-document'),
+    where(no(ExistingHub({ hub }))).then(respond({ error: 'HUB_NOT_FOUND' })).named('hub-missing'),
+    where(ExistingHub({ hub }), no(GuestSelection({ hub, checkpoint })))
+      .then(respond({ error: 'PROGRESS_NOT_SET' })).named('selection-missing'),
+  ), { input: { required: ['hub', 'checkpoint', 'document'] } },
+);
+
+export const guestComposition = {
+  BrowseGuest, ReadGuest, ExistingHub, GuestSelection, ReadableDocument, EligibleBlock,
+  DocumentDirectory, DocumentContent,
+};

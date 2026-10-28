@@ -1,5 +1,5 @@
 import { registerConcept } from "@mit-sdg/sync-engine/assembly";
-import spec from "@design/alpha/concepts/RequirementTagging.md" with { type: "text" };
+import spec from "@design/concepts/RequirementTagging.md" with { type: "text" };
 import {
   RequirementTaggingConcept,
   RequirementRuleNotFound,

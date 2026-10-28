@@ -4,6 +4,18 @@ import { ProgressRecordingConcept } from '@/concepts/ProgressRecording/ProgressR
 
 describe('ProgressRecording', () => {
   const mongo = useMongoTestDb();
+  test('Beta import is atomic and persists across reconnection', async () => {
+    const progress = new ProgressRecordingConcept(mongo.db());
+    const results = await Promise.all(Array.from({ length: 6 }, () =>
+      progress.recordIfAbsent({ scope: 'hub', reader: 'user', checkpoint: 'first' })));
+    expect(results.filter(({ recorded }) => recorded)).toHaveLength(1);
+    expect(await progress.recordIfAbsent({ scope: 'hub', reader: 'user', checkpoint: 'other' }))
+      .toEqual({ recorded: false });
+    const rebuilt = new ProgressRecordingConcept(await mongo.reconnect());
+    expect(await rebuilt._checkpoint({ scope: 'hub', reader: 'user' }))
+      .toEqual([{ checkpoint: 'first' }]);
+    expect(await rebuilt._scopesForReader({ reader: 'user' })).toEqual([{ scope: 'hub' }]);
+  });
   test('distinguishes missing progress from an actual selected first checkpoint', async () => {
     const c = new ProgressRecordingConcept(mongo.db());
     expect(await c._checkpoint({ scope: 'hub1', reader: 'reader1' })).toEqual([]);
