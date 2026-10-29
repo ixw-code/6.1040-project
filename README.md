@@ -25,7 +25,6 @@ The project is built with Vue, TypeScript, Bun, sync-engine **1.1.0**, and Mongo
 ### Demo 
 **Click the thumbnail below!**
 <p align="center">
-TBA
   <a href="https://drive.google.com/file/d/112hfS25D1E4obQiywFr-kQ4Vh8hAKH2F/view" target="_blank" rel="noopener noreferrer">
     <img src="./docs/assets/thumbnails/beta-demo.png" alt="Wikiplotter Beta Demo">
   </a>
