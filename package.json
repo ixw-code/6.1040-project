@@ -27,7 +27,7 @@
 
         "build:frontend": "bun run build:frontend:prod",
         "build:frontend:dev": "bun --env-file=.env.development.local x vite build --mode development --config frontend/vite.config.ts",
-        "build:frontend:prod": "bun --env-file=.env x vite build --mode production --config frontend/vite.config.ts",
+        "build:frontend:prod": "bun x vite build --mode production --config frontend/vite.config.ts",
 
         "seed": "bun --env-file=.env.development.local scripts/seed.ts",
         "generate": "sync-engine artifacts pin && sync-engine artifacts pin --config generated.reader.config.ts",
