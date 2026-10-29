@@ -50,5 +50,14 @@ Browser-driven acceptance was unavailable: no browser binary or browser automati
 - Existing legacy hubs without creator/slug metadata need an explicit migration decision before management can be enabled for them.
 - Media deletion can leave inaccessible GridFS orphans after metadata removal; automated orphan cleanup is not implemented.
 
-## Suggested commit message
+## Production health check
 
+| File | Change |
+| --- | --- |
+| `.env.example`; `src/main.ts` | Configure `0.0.0.0:3000`; start listening before MongoDB connection/index preparation. Return `503 STARTING` for ordinary requests until the application handler is ready. Stop the listener and propagate database initialization failures. |
+| `src/http/health.ts`; `src/http/edge.ts` | Serve public `GET /health` with `{ "status": "ok" }` before application routing; no session, provider, or database access is required by the endpoint. |
+| `tests/http/HealthHttp.test.ts` | Verify unauthenticated health response, method handling, and pass-through of ordinary requests. |
+
+MongoDB startup still runs `connectMongo()` and index preparation before application routes become available. Its server selection timeout is 5 seconds; during initialization ordinary requests receive `503 STARTING`, while a failed initialization stops the listener and fails process startup. The health response reports process liveness and does not conceal that failure. The application binds to the configured `HOST` and `PORT`; the production example now matches the platform's `0.0.0.0:3000` settings.
+
+Verification: `bun run typecheck` passed; `bun run build:frontend:prod` passed with existing sync-engine `node:util`/`node:crypto` browser externalization advisories; `bun test tests/http/HealthHttp.test.ts` passed (1 test, 10 assertions). `bun test tests/http/ReaderHttp.test.ts` could not initialize its MongoDB fixture (`ECONNREFUSED 127.0.0.1:27018`), so the focused health test invokes the exact HTTP handler directly and verifies ordinary-route pass-through without database setup. An initial socket-backed health test attempt failed to bind Bun's ephemeral port (`EADDRINUSE`); no application test assertions ran in that attempt.

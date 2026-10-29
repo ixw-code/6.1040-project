@@ -8,6 +8,7 @@ import { createReaderIdentityHttpHandler } from '@/http/reader.ts';
 import { createHubsHttpHandler, hubRoutes } from '@/http/hubs.ts';
 import { createArticlesHttpHandler, articleRoutes } from '@/http/articles.ts';
 import { createMediaHttpHandler, mediaRoutes } from '@/http/media.ts';
+import { healthResponse } from '@/http/health.ts';
 
 export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnvironment()) {
   const application = assembleWikiplotter(db);
@@ -35,6 +36,8 @@ export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnv
   const identityRoutes = new Set(['/api/progress/get', '/api/progress/record', '/api/progress/clear',
     '/api/hubs/browse', '/api/articles/read']);
   return async (request: Request) => {
+    const health = healthResponse(request);
+    if (health) return health;
     const url = new URL(request.url);
     if (url.pathname.startsWith('/api/internal/')) {
       return new Response(JSON.stringify({ error: 'NOT_FOUND' }), {
