@@ -7,91 +7,129 @@ Wikiplotter is a spoiler-aware wiki for narrative fiction. Each series has a hub
 After reaching chapter 90, Bob learned new lore about the artifact, but found that the relevant information wasn't updated on the article page. Since he's been using Wikiplotter for a while now, he thinks it's worthwhile to finally create an account. "Log in" redirects him to use a Google or Commons account to access the wiki, and to register his username as a new user. The progress from his browsing session up to Chapter 90 as a guest is automatically updated to his new account. He quickly finds the article page and clicks on the edit button. Bob decides to append a block about the artifact, setting the checkpoint to Chapter 90. He also thinks an image of the updated form of the artifact would fit well here, so he uploads it directly in the editor as another block after the explanation, and saves the edits. The article updates, and the site refreshes for Bob, reflecting the changes. 
 
 ### Beta 
-See all current features in [BETA.md](./docs/decisions/BETA.md).
 
-The project is being built incrementally with TypeScript, Bun, sync-engine **1.1.0**, and MongoDB.
+See [BETA.md](./docs/decisions/BETA.md) for the full specification and aaccepted feature scope.
+
+#### Features
+
+- Spoiler-aware reading: Browse articles and view content filtered by ordered reading checkpoints, including NotStarted.
+- Reader progress: Record progress anonymously through browser cookies or persist it with an account. Guest progress is synchronized on login without overwriting existing account progress.
+- Accounts: Authenticate with Google or Commons, register a username, manage account information, and maintain expiring sessions.
+- Hubs: Create and manage hubs with readable URLs, ordered checkpoints, and creator-restricted settings.
+- Articles: Create and edit articles using ordered text, image, and video blocks, with checkpoint requirements controlling visibility.
+- Media: Upload, preview, reuse, and manage image/video assets stored through MongoDB GridFS.
+- Authorization and safety: Enforce account and resource permissions, protect spoiler-restricted content, and confirm destructive actions.
+
+The project is built with Vue, TypeScript, Bun, sync-engine **1.1.0**, and MongoDB.
 
 ### Demo 
 **Click the thumbnail below!**
 <p align="center">
-  <a href="https://drive.google.com/file/d/1YOJrL5zgmGN7S9tEPsCWyqzui64yi_4r/view" target="_blank" rel="noopener noreferrer">
-    <img src="./docs/assets/thumbnails/alpha-demo.png" alt="Wikiplotter Alpha Demo">
+TBA
+  <!-- <a href="https://drive.google.com/file/d/1YOJrL5zgmGN7S9tEPsCWyqzui64yi_4r/view" target="_blank" rel="noopener noreferrer"> -->
+  <!--   <img src="./docs/assets/thumbnails/alpha-demo.png" alt="Wikiplotter Alpha Demo"> -->
   </a>
 </p>
 
 ## Getting Started
 
-### Installation
+### Prerequisites
 
-Install [Bun 1.x](https://bun.sh) and ensure MongoDB is available locally.
+- [Bun 1.x](https://bun.sh)
+- Podman, for the local MongoDB container
+- MongoDB with replica-set support for transactional operations
+- Google OAuth credentials and/or Commons authentication configuration for sign-in
+
+Install project dependencies:
 
 ```sh
 bun install
-bun run db:up
 ```
 
-### Environment Setup
+### Environment Configuration
 
-Create the environment files from their templates:
+Wikiplotter uses separate environments and databases:
 
-```sh
-cp .env.example .env
-cp .env.test.example .env.test.local
-cp .env.production.example .env.production.local
-```
-
-Configure matching MongoDB credentials and ports across all three files. Each environment uses a separate database:
-
-| Environment | Database | Configuration |
+| Environment | Configuration | Database |
 |---|---|---|
-| Development | `wikiplotter_dev` | `.env` |
-| Testing | `wikiplotter_test_*` | `.env.test.local` |
-| Production | `wikiplotter` | `.env.production.local` |
+| Development | `.env.development.local` | `wikiplotter_dev` |
+| Testing | `.env.test.local` | `wikiplotter_test_*` |
+| Production | `.env` | `wikiplotter` |
 
 Database names are validated against `WIKIPLOTTER_ENV` to prevent cross-environment access.
 
-### Running the Application
+Configure MongoDB credentials and the following authentication variables:
 
-**Development** (backend and frontend):
+- `PUBLIC_ORIGIN`: The exact URL used to access Wikiplotter, including scheme and port (e.g. `http://localhost:5174` locally or `https://wikiplotter.com` in production).
+- `AUTH_COOKIE_KEY`: A secret used to sign authentication cookies. Generate a separate key for each environment:
+
+  ```sh
+  openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n'
+  ```
+
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`: Credentials for OAuth Web Application client through Google Cloud Console. Register `${PUBLIC_ORIGIN}/auth/google/callback` as an authorized redirect URI.
+- `COMMONS_ORIGIN`: The Commons identity provider's origin, normally `https://class.mit-sdg.dev`. This is **not** the Wikiplotter URL.
+
+Keep environment files and secrets out of version control. On hosting platforms, configure production variables through the provider's environment settings.
+
+### Development
+
+Configure `.env.development.local`, then run:
 
 ```sh
+bun install
 bun run dev
 ```
 
-**Production:**
+Starts the local MongoDB container, Bun backend, and Vite frontend.
+
+```sh
+bun run check
+``` 
+
+Tests application build in development.
+
+### Testing
+
+Configure `.env.test.local` and ensure MongoDB is running, then run:
+
+```sh
+bun run test
+bun run check:static
+```
+
+Runs design/framework checks, typechecking, frontend build validation, and isolated tests using disposable `wikiplotter_test_*` databases. Runs sync-engine static design contract validation checks.
+
+### Production
+
+Configure production variables in `.env` or your hosting provider's environment settings.
 
 ```sh
 bun run generate
-bun run check
+bun run check:prod
 bun run start
 ```
 
-Populate demonstration content using the local fixture workflow before serving reader content.
+Build and serve the compiled Vue frontend alongside the Bun API under the same public HTTPS origin. Configure your hosting platform's port to match the backend's `PORT` setting (or the actual port variable used by the server).
 
-### Testing & Notes
+Production checks must not run destructive tests against the production database.
 
-- Run tests with `bun run test` and project checks with `bun run check`.
-- Tests use isolated, disposable MongoDB databases.
-- Concept, composition, and persistence tests verify individual operations, workflows, and database durability.
-- MongoDB credentials are initialized when the database volume is first created; changing environment files does not update existing credentials.
-- See `package.json` for additional commands and configuration.
-
-## Project layout
+## Project Structure
 
 | Location | Purpose |
-| --- | --- |
-| `docs/decisions/` | Architectural decisions and rationale between iterations. |
-| `design/concepts/` | Independent concept specifications. |
-| `design/compositions/` | Application workflows and endpoint contracts. |
-| `design/types.md` | Concept instances and application type bindings. |
-| `src/concepts/`, `src/concepts.ts` | Concept implementations, registrations, and the application concept set. |
-| `src/compositions/` | Executable composition declarations. |
-| `src/assembly.ts` | Reader and local setup assembly construction. |
-| `src/main.ts`, `src/db.ts` | Backend startup and MongoDB connection. |
-| `frontend/` | Vue application. |
-| `scripts/` | Local fixture creation through the gateway. |
-| `tests/` | Concept, composition, and persistence tests. |
-| `generated.config.ts`, `generated.reader.config.ts`, `generated/` | Setup and reader design-check configurations and generated contracts. |
+|---|---|
+| `docs/decisions/` | Architectural decisions, Beta specifications, and scope |
+| `design/concepts/` | Independent concept specifications |
+| `design/compositions/` | Workflow specifications and endpoint contracts |
+| `design/types.md` | Concept instances and application type bindings |
+| `src/concepts/`, `src/concepts.ts` | Concept implementations and registrations |
+| `src/compositions/` | Composition implementations |
+| `src/http/`, `src/assembly.ts` | HTTP integration, authentication, and application assembly |
+| `src/main.ts`, `src/db.ts` | Backend startup and database connectivity |
+| `frontend/` | Vue application, routes, components, API modules, and styles |
+| `scripts/` | Local fixtures and development utilities |
+| `tests/` | Concept, composition, HTTP, and persistence tests |
+| `generated/`, `generated*.config.ts` | Generated contracts and sync-engine configuration |
 
 ---
 

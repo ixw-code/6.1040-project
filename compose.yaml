@@ -1,7 +1,7 @@
 services:
   mongo:
     image: docker.io/library/mongo:8.0
-    # One local server; each application profile selects its own database via MONGODB_URL.
+    # One local server; each application profile selects its own database via MONGODB_URI.
     # Matching container/host ports let the single replica-set member use localhost.
     entrypoint:
       - /bin/bash

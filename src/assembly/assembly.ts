@@ -7,8 +7,8 @@ import { createMongoConceptInstances } from './concept-instances.ts';
 
 /** The no-argument form supports runtime and design tooling without opening a connection. */
 function assembleWith(db: Db | undefined, session?: ClientSession) {
-  const mongoUrl = process.env.MONGODB_URL;
-  if (!db && !mongoUrl) throw new Error('MONGODB_URL must be set for the default assembly.');
+  const mongoUrl = process.env.MONGODB_URI;
+  if (!db && !mongoUrl) throw new Error('MONGODB_URI must be set for the default assembly.');
   const handle = db ?? new MongoClient(mongoUrl!).db();
   return assemble({
     conceptSet: applicationConceptSet,

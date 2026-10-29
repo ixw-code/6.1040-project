@@ -30,10 +30,10 @@ export async function prepareMongo(db: Db): Promise<void> {
 }
 
 /** Caller owns connection lifetime; never close this client from a concept. */
-export async function connectMongo(url = process.env.MONGODB_URL): Promise<MongoConnection> {
-  if (!url) throw new Error('MONGODB_URL must be set to a MongoDB URI with a database name.');
+export async function connectMongo(url = process.env.MONGODB_URI): Promise<MongoConnection> {
+  if (!url) throw new Error('MONGODB_URI must be set to a MongoDB URI with a database name.');
   const database = decodeURIComponent(new URL(url).pathname.slice(1));
-  if (!database) throw new Error('MONGODB_URL must include a database name.');
+  if (!database) throw new Error('MONGODB_URI must include a database name.');
   assertMongoTarget(database);
 
   const parsed = new URL(url);

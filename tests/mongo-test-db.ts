@@ -8,12 +8,12 @@ export function useMongoTestDb() {
   let disposableUrl: string | undefined;
 
   beforeEach(async () => {
-    const raw = process.env.MONGODB_URL;
-    if (!raw) throw new Error('Set MONGODB_URL to a wikiplotter_test_* database URL.');
+    const raw = process.env.MONGODB_URI;
+    if (!raw) throw new Error('Set MONGODB_URI to a wikiplotter_test_* database URL.');
     const parsed = new URL(raw);
     const databaseName = decodeURIComponent(parsed.pathname.slice(1));
     if (!/^wikiplotter_test_[a-zA-Z0-9]+$/.test(databaseName)) {
-      throw new Error('Refusing MongoDB tests: MONGODB_URL database must match wikiplotter_test_*.');
+      throw new Error('Refusing MongoDB tests: MONGODB_URI database must match wikiplotter_test_*.');
     }
     parsed.pathname = `/wikiplotter_test_${crypto.randomUUID().replaceAll('-', '')}`;
     disposableUrl = parsed.toString();

@@ -1,7 +1,7 @@
 import { MongoClient, MongoServerError } from 'mongodb';
 
 const setName = 'wikiplotter-rs';
-const url = process.env.MONGODB_URL;
+const url = process.env.MONGODB_URI;
 const port = Number(process.env.MONGO_PORT);
 if (!url || process.env.MONGO_BIND_HOST !== '127.0.0.1' ||
   !Number.isInteger(port) || port < 1 || port > 65535) {
@@ -10,7 +10,7 @@ if (!url || process.env.MONGO_BIND_HOST !== '127.0.0.1' ||
 const parsed = new URL(url);
 if (parsed.hostname !== '127.0.0.1' || Number(parsed.port) !== port ||
   !['wikiplotter_dev', 'wikiplotter_test_local'].includes(parsed.pathname.slice(1))) {
-  throw new Error('MONGODB_URL must target the configured local port and an allowed local database.');
+  throw new Error('MONGODB_URI must target the configured local port and an allowed local database.');
 }
 
 // Direct connection reaches an uninitialized member before driver discovery is possible.

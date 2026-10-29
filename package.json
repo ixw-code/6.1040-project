@@ -22,20 +22,27 @@
         "dev:backend": "bun --env-file=.env.development.local --watch src/main.ts",
         "dev:frontend": "bun --env-file=.env.development.local x vite --mode development --config frontend/vite.config.ts",
 
-        "start": "bun run --parallel start:backend start:frontend",
-        "start:backend": "bun src/main.ts",
-        "start:frontend": "bun x vite --mode production --config frontend/vite.config.ts",
-        "build:frontend": "bun x vite build --mode production --config frontend/vite.config.ts",
+        "start": "bun run start:backend",
+        "start:backend": "bun --env-file=.env src/main.ts",
+
+        "build:frontend": "bun run build:frontend:prod",
+        "build:frontend:dev": "bun --env-file=.env.development.local x vite build --mode development --config frontend/vite.config.ts",
+        "build:frontend:prod": "bun --env-file=.env x vite build --mode production --config frontend/vite.config.ts",
 
         "seed": "bun --env-file=.env.development.local scripts/seed.ts",
         "generate": "sync-engine artifacts pin && sync-engine artifacts pin --config generated.reader.config.ts",
 
         "test": "bun --env-file=.env.test.local test",
 
-        "check": "bun run check:design && bun run check:framework && bun run check:artifacts && bun run typecheck && bun run build:frontend && bun run test",
+        "check": "bun run check:dev",
+        "check:dev": "bun run check:static && bun run build:frontend:dev && bun run test",
+        "check:prod": "bun run check:static && bun run build:frontend:prod",
+        "check:static": "bun run check:design && bun run check:framework && bun run check:artifacts && bun run typecheck",
+
         "check:design": "sync-engine check-design design/concepts/*.md design/types.md design/compositions/*.md",
         "check:framework": "sync-engine check && sync-engine check --config generated.reader.config.ts",
         "check:artifacts": "sync-engine artifacts check && sync-engine artifacts check --config generated.reader.config.ts",
+
         "typecheck": "bun run typecheck:backend && bun run typecheck:frontend",
         "typecheck:backend": "tsc -p tsconfig.json --noEmit",
         "typecheck:frontend": "vue-tsc -p frontend/tsconfig.json --noEmit",
