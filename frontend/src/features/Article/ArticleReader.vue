@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { ArticlesApi } from '@/api/Articles.ts'; import { ReaderProgressApi } from '@/api/ReaderProgress.ts';
+import { ArticlesApi } from '@/api/Articles.ts'; import { needsProgressSelection, ReaderProgressApi } from '@/api/ReaderProgress.ts';
 import { MediaAssetsApi } from '@/api/MediaAssets.ts';
 import { legacyMediaSource } from '@/lib/legacyMedia.ts';
 import { editUrl, hubUrl, rememberArticleTitle, welcomeUrl } from '@/lib/routes.ts';
@@ -16,7 +16,7 @@ onUnmounted(() => images.forEach(url => URL.revokeObjectURL(url)));
 onMounted(async () => {
  try {
   const progress = await ReaderProgressApi.get(props.hub);
-  if (progress.checkpoint === null) { location.replace(welcomeUrl(props.hub)); return; }
+  if (needsProgressSelection(progress.checkpoint)) { location.replace(welcomeUrl(props.hub)); return; }
   const result = await ArticlesApi.read(props.hub,props.document);
   if (!result.content) throw new Error('This article is not available at your current checkpoint.');
   title.value = result.content.title;

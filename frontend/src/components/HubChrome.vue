@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { HubsApi, type CheckpointRow } from "@/api/Hubs.ts";
+import { HubsApi, notStartedCheckpoint, type CheckpointRow } from "@/api/Hubs.ts";
 import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
-import { hubUrl, settingsUrl } from "@/lib/routes.ts";
+import { hubUrl, settingsUrl, welcomeUrl } from "@/lib/routes.ts";
+import { navigate } from "@/lib/navigation.ts";
 const props = defineProps<{ hub: string; name: string; canManage: boolean }>();
 const open = ref(false),
   busy = ref(false),
@@ -19,7 +20,7 @@ onMounted(async () => {
     ]);
     checkpoints.value = choices.checkpoints;
     selected.value = progress.checkpoint;
-    draft.value = progress.checkpoint ?? "";
+    draft.value = progress.checkpoint ?? notStartedCheckpoint(checkpoints.value) ?? "";
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not load progress";
   }
@@ -45,9 +46,10 @@ async function clear() {
   try {
     await ReaderProgressApi.clear(props.hub);
     selected.value = null;
-    draft.value = "";
+    draft.value = notStartedCheckpoint(checkpoints.value) ?? "";
     open.value = false;
-    emit("changed");
+    const moved = await navigate(welcomeUrl(props.hub), true);
+    if (!moved) emit("changed");
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not clear progress";
   } finally {
@@ -56,8 +58,7 @@ async function clear() {
 }
 </script>
 <template>
-  <div class="hub-banner"><div class="hub-banner-content"></div></div>
-  <div class="hub-nav-wrap">
+  <div class="hub-banner">
     <nav class="hub-nav" aria-label="Hub navigation">
       <a class="hub-title" :href="hubUrl(hub)">{{ name }}</a>
       <input
@@ -81,19 +82,10 @@ async function clear() {
           <div v-if="open" class="progress-popover">
             <h3>Reading progress</h3>
             <p class="muted small">Choose your latest completed checkpoint.</p>
-            <div class="checkpoint-strip" role="group" aria-label="Checkpoints">
-              <button
-                v-for="row in checkpoints"
-                :key="row.checkpoint"
-                :class="[
-                  'checkpoint-choice',
-                  { active: draft === row.checkpoint },
-                ]"
-                @click="draft = row.checkpoint"
-              >
-                {{ row.label }}
-              </button>
-            </div>
+            <label class="small" for="hub-progress-checkpoint">Current progress</label>
+            <select id="hub-progress-checkpoint" v-model="draft" class="checkpoint-select">
+              <option v-for="row in checkpoints" :key="row.checkpoint" :value="row.checkpoint">{{ row.label }}</option>
+            </select>
             <p v-if="error" class="error-text">{{ error }}</p>
             <div class="popover-actions">
               <button

@@ -50,13 +50,17 @@ async function change(work: () => Promise<unknown>, message: string) {
   }
 }
 function rename() {
-  return change(() => HubsApi.rename(props.hub, name.value), "Hub renamed");
+  return change(async () => {
+    await HubsApi.rename(props.hub, name.value);
+    window.location.reload();
+  }, "Hub renamed");
 }
 function updateSlug() {
   return change(async () => {
     const result = await HubsApi.updateSlug(props.hub, slug.value);
     slug.value = result.slug;
     history.replaceState(null, "", settingsUrl(props.hub));
+    window.location.reload();
   }, "Slug updated");
 }
 function relabel(checkpoint: string) {

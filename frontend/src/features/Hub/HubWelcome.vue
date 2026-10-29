@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { HubsApi, type CheckpointRow } from "@/api/Hubs.ts";
+import { HubsApi, notStartedCheckpoint, type CheckpointRow } from "@/api/Hubs.ts";
 import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import { hubUrl } from "@/lib/routes.ts";
 const props = defineProps<{ hub: string; name: string }>();
@@ -12,7 +12,7 @@ onMounted(async () => {
   try {
     const data = await HubsApi.checkpoints(props.hub);
     choices.value = data.checkpoints;
-    selected.value = choices.value[0]?.checkpoint ?? "";
+    selected.value = notStartedCheckpoint(choices.value) ?? "";
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not load checkpoints";
   }

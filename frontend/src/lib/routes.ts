@@ -31,6 +31,8 @@ export const articleUrl = (hub: string, document: string, knownTitle?: string) =
   if (!title) throw new Error(`No readable title is available for article ${document}`);
   return `${hubUrl(hub)}/${part(title)}`;
 };
+export const articleCancelUrl = (hub: string, document: string, savedTitle: string) =>
+  articleUrl(hub, document, savedTitle);
 export const editUrl = (hub: string, document: string, knownTitle?: string) => `${articleUrl(hub, document, knownTitle)}/edit`;
 export const newArticleUrl = (hub: string) => `${hubUrl(hub)}/articles/new`;
 export const assetUrl = (asset: string) => `/assets/${part(asset)}`;

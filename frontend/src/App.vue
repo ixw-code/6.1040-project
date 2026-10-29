@@ -86,7 +86,7 @@ async function load() {
    if (generation === loadGeneration) loading.value = false;
  }
 }
-function refreshPage() { void load(); }
+function refreshPage() { window.location.reload(); }
 async function logout() { if (!await confirmNavigation()) return; try { await AccountsApi.logout(); account.value=null; location.href='/'; }
 catch(e) { error.value=e instanceof Error ? e.message : 'Logout failed'; } }
 let lastPath = window.location.pathname;

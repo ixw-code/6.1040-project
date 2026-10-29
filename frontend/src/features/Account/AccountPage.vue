@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { AccountsApi, type Account } from "@/api/Accounts.ts";
-import { HubsApi, type CheckpointRow } from "@/api/Hubs.ts";
+import {
+  HubsApi,
+  notStartedCheckpoint,
+  selectedCheckpointLabel,
+  type CheckpointRow,
+} from "@/api/Hubs.ts";
 import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import { MediaAssetsApi, type Asset } from "@/api/MediaAssets.ts";
 import { hubUrl, assetUrl } from "@/lib/routes.ts";
@@ -11,7 +16,12 @@ const username = ref(props.account.username),
   busy = ref(false),
   error = ref(""),
   success = ref("");
-const reading = ref<{ hub: string; name: string; checkpoint: string | null }[]>(
+const reading = ref<{
+    hub: string;
+    name: string;
+    checkpoint: string | null;
+    checkpointLabel: string | null;
+  }[]>(
     [],
   ),
   uploads = ref<Asset[]>([]);
@@ -24,11 +34,22 @@ onMounted(async () => {
       const hubs = await HubsApi.list();
       reading.value = (
         await Promise.all(
-          hubs.hubs.map(async (hub) => ({
-            hub: hub.hub,
-            name: hub.name,
-            checkpoint: (await ReaderProgressApi.get(hub.hub)).checkpoint,
-          })),
+          hubs.hubs.map(async (hub) => {
+            const [progress, sequence] = await Promise.all([
+              ReaderProgressApi.get(hub.hub),
+              HubsApi.checkpoints(hub.hub),
+            ]);
+            const checkpoint = progress.checkpoint;
+            return {
+              hub: hub.hub,
+              name: hub.name,
+              checkpoint,
+              checkpointLabel: selectedCheckpointLabel(
+                checkpoint,
+                sequence.checkpoints,
+              ),
+            };
+          }),
         )
       ).filter((row) => row.checkpoint !== null);
       uploads.value = await MediaAssetsApi.list();
@@ -44,7 +65,7 @@ async function manageProgress(hub: string) {
     progressChoices.value = (await HubsApi.checkpoints(hub)).checkpoints;
     progressDraft.value =
       reading.value.find((row) => row.hub === hub)?.checkpoint ??
-      progressChoices.value[0]?.checkpoint ??
+      notStartedCheckpoint(progressChoices.value) ??
       "";
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Cannot load checkpoints";
@@ -63,7 +84,13 @@ async function changeProgress(clear: boolean) {
     const entry = reading.value.find(
       (row) => row.hub === activeProgressHub.value,
     );
-    if (entry) entry.checkpoint = clear ? null : progressDraft.value;
+    if (entry) {
+      entry.checkpoint = clear ? null : progressDraft.value;
+      entry.checkpointLabel = selectedCheckpointLabel(
+        entry.checkpoint,
+        progressChoices.value,
+      );
+    }
     activeProgressHub.value = "";
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not update progress";
@@ -96,7 +123,7 @@ async function logout() {
 <template>
   <main class="center-container">
     <section class="panel content-panel account-panel">
-      <h1>User settings</h1>
+      <h1>Settings</h1>
       <nav class="tabbar" aria-label="Account settings">
         <a :class="{ chosen: tab === 'settings' }" href="/account/settings"
           >Account</a
@@ -143,8 +170,9 @@ async function logout() {
           />
         </div>
         <div class="settings-section">
-          <h2>Session</h2>
-          <button class="button-outline" @click="logout">Log out</button>
+          <div class="security-actions">
+            <button class="button-outline" @click="logout">Log out</button>
+          </div>
         </div> </template
       ><template v-else
         ><h2>Reading progress</h2>
@@ -152,7 +180,7 @@ async function logout() {
         <div v-for="hub in reading" :key="hub.hub" class="data-row">
           <a :href="hubUrl(hub.hub)">{{ hub.name }}</a
           ><span class="muted">{{
-            hub.checkpoint ? "Progress saved" : "Not selected"
+            hub.checkpointLabel ?? "Checkpoint unavailable"
           }}</span
           ><button class="text-button" @click="manageProgress(hub.hub)">
             Manage

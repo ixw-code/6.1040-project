@@ -321,7 +321,7 @@ The implementation for the Beta will happen in the following incremental steps:
 
 ### Next Steps
 
-- **Code complete** (P4): Iterate on test suites, perform validation checks for any leftover state invariant violations; finalize deployment environment with introducing S3 for media, etc; polish visual design and/or flow of frontend components.
+- **Code complete** (P4): Iterate on test suites, perform validation checks for any leftover state invariant violations; finalize deployment environment with introducing S3 for media, etc; polish visual design and/or flow of frontend components. Features: UI additions + integrated account deletion.
 - **User testing**(P5): Populate production databases with realistic hubs, articles, and assets; perform user testing and report findings.  
 
 ### Potential Future Expansions

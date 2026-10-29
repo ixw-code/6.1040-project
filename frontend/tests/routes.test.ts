@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { hubUrl, welcomeUrl, settingsUrl, articleUrl, editUrl, newArticleUrl, assetUrl,
+import { hubUrl, welcomeUrl, settingsUrl, articleUrl, articleCancelUrl, editUrl, newArticleUrl, assetUrl,
   rememberArticleDirectory, rememberHubDirectory, rememberHubSlug, routeFromPath, articleBreadcrumbs } from '../src/lib/routes.ts';
 import { legacyMediaSource } from '../src/lib/legacyMedia.ts';
 
@@ -43,5 +43,10 @@ describe('frontend route links', () => {
     expect(articleBreadcrumbs('Star Harbor')).toEqual(['Star Harbor']);
     expect(articleBreadcrumbs('Star Harbor', 'A/B: The Long Way')).toEqual(['Star Harbor', 'A/B: The Long Way']);
     expect(articleBreadcrumbs('Star Harbor', 'A/B: The Long Way', true)).toEqual(['Star Harbor', 'A/B: The Long Way', 'Editing']);
+  });
+  test('article cancel keeps the saved title route after a draft title change', () => {
+    rememberHubDirectory([{ hub: 'hub:one', slug: 'star-harbor' }]);
+    expect(articleCancelUrl('hub:one', 'document:two', 'Saved: Title / One'))
+      .toBe('/star-harbor/Saved%3A%20Title%20%2F%20One');
   });
 });

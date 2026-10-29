@@ -6,6 +6,23 @@ export type HubCreated = { hub: string; sequence: string };
 export type CheckpointRow = { checkpoint: string; label: string; position: number };
 export type HubDirectory = Awaited<ReturnType<typeof readerClient.hubs.list>>;
 
+/** A valid progress selection always starts at the sequence's fixed NotStarted checkpoint. */
+export function notStartedCheckpoint(checkpoints: CheckpointRow[]): string | undefined {
+  return checkpoints.find((row) => row.position === 0)?.checkpoint;
+}
+
+export function selectedCheckpointLabel(
+  checkpoint: string | null,
+  checkpoints: CheckpointRow[],
+): string | null {
+  return checkpoints.find((row) => row.checkpoint === checkpoint)?.label ?? null;
+}
+
+/** Empty rules mean no additional checkpoint requirement; present that baseline in the editor. */
+export function requirementCheckpointValue(required: string[], checkpoints: CheckpointRow[]): string {
+  return required[0] ?? notStartedCheckpoint(checkpoints) ?? '';
+}
+
 export const HubsApi = {
   async list() {
     const result = readerValue(await readerClient.hubs.list({}));

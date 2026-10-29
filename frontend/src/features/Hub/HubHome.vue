@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import { HubsApi } from "@/api/Hubs.ts";
-import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
+import { needsProgressSelection, ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import { articleUrl, newArticleUrl, welcomeUrl } from "@/lib/routes.ts";
 import { ArticlesApi } from "@/api/Articles.ts";
 import { MediaAssetsApi } from "@/api/MediaAssets.ts";
@@ -47,7 +47,7 @@ async function loadPreview(document: string) {
 onMounted(async () => {
   try {
     const progress = await ReaderProgressApi.get(props.hub);
-    if (progress.checkpoint === null) {
+    if (needsProgressSelection(progress.checkpoint)) {
       location.replace(welcomeUrl(props.hub));
       return;
     }

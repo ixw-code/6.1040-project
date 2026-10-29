@@ -1,106 +1,183 @@
-@media(max-width:850px){
-  .article-layout{
-  grid-template-columns:1fr}
-.article-aside{
-  display:none}
-.hub-nav{
-  gap:9px}
-.hub-title{
-  font-size:1.25rem}
-.hub-search{
-  min-width:120px;
-  flex:1}
-.tile-grid{
-  grid-template-columns:repeat(2,1fr)}
-.editor-block{
-  grid-template-columns:32px 32px 1fr 30px}
-.editor-block .block-rule{
-  grid-column:3 / span 1}
-.account-panel{
-  margin-top:15px}
+@media (max-width: 850px) {
+  .article-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .article-aside {
+    display: none;
+  }
+
+  .hub-nav {
+    gap: 9px;
+  }
+
+  .hub-title {
+    font-size: 1.25rem;
+  }
+
+  .hub-search {
+    min-width: 120px;
+    flex: 1;
+  }
+
+  .tile-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .editor-block {
+    grid-template-columns: 32px 32px 1fr 30px;
+  }
+
+  .editor-block .block-rule {
+    grid-column: 3 / span 1;
+  }
+
+  .account-panel {
+    margin-top: 15px;
+  }
 }
 
-@media(max-width:550px){
-  .center-container{
-  padding-left:12px;
-  padding-right:12px}
-.global-inner{
-  padding:0 15px}
-.hub-banner{
-  height:85px}
-.hub-nav{
-  height:58px;
-  padding:0 12px}
-.hub-title{
-  font-size:1.08rem;
-  max-width:36%}
-.hub-search{
-  max-width:140px;
-  padding:9px;
-  font-size:.74rem}
-.hub-toolbar{
-  gap:4px}
-.nav-icon{
-  width:33px;
-  height:35px;
-  font-size:17px}
-.progress-popover{
-  right:-42px;
-  min-width:min(90vw,330px)}
-.tile-grid{
-  grid-template-columns:1fr 1fr;
-  gap:9px}
-.tile-placeholder{
-  height:95px}
-.tile-detail{
-  padding:10px}
-.tile-detail h3{
-  font-size:1rem}
-.home-hero{
-  height:250px}
-.home-hero h1{
-  font-size:2rem}
-.content-panel{
-  padding:18px}
-.welcome-panel{
-  min-height:380px;
-  padding:40px 16px}
-.welcome-panel h1{
-  font-size:1.8rem}
-.article-surface{
-  padding:20px}
-.article-topline h1{
-  font-size:1.75rem}
-.editor-panel{
-  padding:13px}
-.editor-block{
-  gap:5px;
-  padding:6px;
-  grid-template-columns:23px 28px 1fr 20px}
-.drag-tools .small,.drag-tools .mini-button{
-  display:none}
-.block-rule{
-  grid-column:3;
-  grid-row:auto}
-.doc-requirements{
-  flex-wrap:wrap}
-.doc-requirements label{
-  width:100%;
-  justify-content:space-between}
-.auth-box{
-  padding:32px 22px}
-.setting-row{
-  flex-wrap:wrap}
-.setting-row>span:first-child{
-  min-width:85px}
-.account-panel .setting-row{
-  gap:10px}
+@media (max-width: 550px) {
+  .center-container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .global-inner {
+    padding: 0 15px;
+  }
+
+  .hub-banner {
+    height: 85px;
+  }
+
+  .hub-nav {
+    height: 58px;
+    padding: 0 12px;
+  }
+
+  .hub-title {
+    font-size: 1.08rem;
+    max-width: 36%;
+  }
+
+  .hub-search {
+    max-width: 140px;
+    padding: 9px;
+    font-size: 0.74rem;
+  }
+
+  .hub-toolbar {
+    gap: 4px;
+  }
+
+  .nav-icon {
+    width: 33px;
+    height: 35px;
+    font-size: 17px;
+  }
+
+  .progress-popover {
+    right: -42px;
+    min-width: min(90vw, 330px);
+  }
+
+  .tile-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .tile-placeholder {
+    height: 95px;
+  }
+
+  .tile-detail {
+    padding: 10px;
+  }
+
+  .tile-detail h3 {
+    font-size: 1rem;
+  }
+
+  .home-hero {
+    height: 250px;
+  }
+
+  .home-hero h1 {
+    font-size: 2rem;
+  }
+
+  .content-panel {
+    padding: 18px;
+  }
+
+  .welcome-panel {
+    min-height: 380px;
+    padding: 40px 16px;
+  }
+
+  .welcome-panel h1 {
+    font-size: 1.8rem;
+  }
+
+  .article-surface {
+    padding: 20px;
+  }
+
+  .article-topline h1 {
+    font-size: 1.75rem;
+  }
+
+  .editor-panel {
+    padding: 13px;
+  }
+
+  .editor-block {
+    gap: 5px;
+    padding: 6px;
+    grid-template-columns: 23px 28px 1fr 20px;
+  }
+
+  .drag-tools .small,
+  .drag-tools .mini-button {
+    display: none;
+  }
+
+  .block-rule {
+    grid-column: 3;
+    grid-row: auto;
+  }
+
+  .doc-requirements {
+    flex-wrap: wrap;
+  }
+
+  .doc-requirements label {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .auth-box {
+    padding: 32px 22px;
+  }
+
+  .setting-row {
+    flex-wrap: wrap;
+  }
+
+  .setting-row>span:first-child {
+    min-width: 85px;
+  }
+
+  .account-panel .setting-row {
+    gap: 10px;
+  }
 }
 
-
-.tile-placeholder img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  position:relative;
-  z-index:1}
+.tile-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+}
