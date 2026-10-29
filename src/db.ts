@@ -3,12 +3,36 @@ import { MongoClient, type Db } from 'mongodb';
 export type MongoConnection = { client: MongoClient; db: Db };
 
 /** Fail closed before any local process can connect to the wrong database. */
-export function assertMongoTarget(database: string, profile = process.env.WIKIPLOTTER_ENV ?? 'development'): void {
-  const allowed = profile === 'development' ? database === 'wikiplotter_dev'
-    : profile === 'production' ? database === 'wikiplotter'
-    : profile === 'test' ? /^wikiplotter_test_[a-zA-Z0-9]+$/.test(database)
-    : false;
-  if (!allowed) throw new Error(`Refusing MongoDB database ${JSON.stringify(database)} for ${JSON.stringify(profile)} profile.`);
+export function assertMongoTarget(
+  database: string,
+  profile = process.env.WIKIPLOTTER_ENV ?? "development",
+): void {
+  const isTestDatabase =
+    /^wikiplotter_test_[a-zA-Z0-9]+$/.test(database);
+
+  const isDevelopmentDatabase =
+    database === "wikiplotter_dev";
+
+  const isProductionDatabase =
+    database.length > 0 &&
+    !isDevelopmentDatabase &&
+    !isTestDatabase &&
+    database !== "wikiplotter_test";
+
+  const allowed =
+    profile === "development"
+      ? isDevelopmentDatabase
+      : profile === "test"
+        ? isTestDatabase
+        : profile === "production"
+          ? isProductionDatabase
+          : false;
+
+  if (!allowed) {
+    throw new Error(
+      `Refusing MongoDB database ${JSON.stringify(database)} for ${JSON.stringify(profile)} profile.`,
+    );
+  }
 }
 
 /** Indexes enforce invariants even when two requests arrive concurrently. */
