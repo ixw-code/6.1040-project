@@ -2,13 +2,14 @@
 
 Wikiplotter is a spoiler-aware wiki for narrative fiction. Each series has a hub with an ordered set of reading checkpoints. Readers record their progress, while contributors organize articles into versioned content blocks and assign checkpoint requirements to articles, titles, text, and images. The intended experience is a wiki that reveals information as the reader advances, based on contributors' spoiler classifications.
 
-**A reader's journey:** Bob finishes chapter 50 and visits the series hub to look up an artifact mentioned earlier in the series. As this is his first time visiting, before he is allowed to view any pages, he is prompted to select his latest completed chapter. The site refreshes and he can now browse all the articles and content available up to that point in the story. Whether browsing or reading an article, any later revelations remain hidden, including any revealing article titles or passages. When Bob reaches chapter 70, he can update his progress at the click of a button and the site will refresh with newly available information up until that point. There's no stress involved with navigating vague spoiler warnings.
+### A reader's journey:
+Bob finishes chapter 50 and visits the series hub to look up an artifact mentioned earlier in the series. As this is his first time visiting, before he is allowed to view any pages, he is prompted to select his latest completed chapter. The site refreshes and he can now browse all the articles and content available up to that point in the story. Whether browsing or reading an article, any later revelations remain hidden, including any revealing article titles or passages. When Bob reaches chapter 70, he can update his progress at the click of a button and the site will refresh with newly available information up until that point. There's no stress involved with navigating vague spoiler warnings.
 
 After reaching chapter 90, Bob learned new lore about the artifact, but found that the relevant information wasn't updated on the article page. Since he's been using Wikiplotter for a while now, he thinks it's worthwhile to finally create an account. "Log in" redirects him to use a Google or Commons account to access the wiki, and to register his username as a new user. The progress from his browsing session up to Chapter 90 as a guest is automatically updated to his new account. He quickly finds the article page and clicks on the edit button. Bob decides to append a block about the artifact, setting the checkpoint to Chapter 90. He also thinks an image of the updated form of the artifact would fit well here, so he uploads it directly in the editor as another block after the explanation, and saves the edits. The article updates, and the site refreshes for Bob, reflecting the changes. 
 
-### Beta 
+### Code Complete (features in Beta)
 
-See [BETA.md](./docs/decisions/BETA.md) for the full specification and aaccepted feature scope.
+See [CODE_COMPLETE.md](./docs/decisions/CODE_COMPLETE.md) for the full specification and accepted feature scope, highlighting decisions and changes since the Alpha.
 
 #### Features
 
@@ -18,19 +19,21 @@ See [BETA.md](./docs/decisions/BETA.md) for the full specification and aaccepted
 - Hubs: Create and manage hubs with readable URLs, ordered checkpoints, and creator-restricted settings.
 - Articles: Create and edit articles using ordered text, image, and video blocks, with checkpoint requirements controlling visibility.
 - Media: Upload, preview, reuse, and manage image/video assets stored through MongoDB GridFS.
-- Authorization and safety: Enforce account and resource permissions, protect spoiler-restricted content, and confirm destructive actions.
+- Authorization and safety: Enforce account and resource permissions, protect spoiler-restricted content, and confirm before destructive actions.
 
 The project is built with Vue, TypeScript, Bun, sync-engine **1.1.0**, and MongoDB.
 
 ### Demo 
 **Click the thumbnail below!**
 <p align="center">
-  <a href="https://drive.google.com/file/d/112hfS25D1E4obQiywFr-kQ4Vh8hAKH2F/view" target="_blank" rel="noopener noreferrer">
-    <img src="./docs/assets/thumbnails/beta-demo.png" alt="Wikiplotter Beta Demo">
+  <a href="placeholder link" target="_blank" rel="noopener noreferrer">
+    <img src="./docs/assets/thumbnails/complete-demo.png" alt="Wikiplotter Complete Demo">
   </a>
 </p>
 
 ## Getting Started
+
+Follow the instructions below to get started with Wikiplotter locally, or deploy on your own server.
 
 ### Prerequisites
 
@@ -123,17 +126,21 @@ Production checks must not run destructive tests against the production database
 | `design/concepts/` | Independent concept specifications |
 | `design/compositions/` | Workflow specifications and endpoint contracts |
 | `design/types.md` | Concept instances and application type bindings |
-| `src/concepts/`, `src/concepts.ts` | Concept implementations and registrations |
+| `src/concepts/`, `src/assembly/` | Concept implementations, registrations, and application assembly |
 | `src/compositions/` | Composition implementations |
-| `src/http/`, `src/assembly.ts` | HTTP integration, authentication, and application assembly |
+| `src/http/` | HTTP integration and route handlers |
+| `src/auth/` | Authentication provider integrations |
+| `src/operations/` | Application coordination and recovery journal |
+| `src/storage/` | Media storage adapters, including GridFS |
 | `src/main.ts`, `src/db.ts` | Backend startup and database connectivity |
 | `frontend/` | Vue application, routes, components, API modules, and styles |
 | `scripts/` | Local fixtures and development utilities |
-| `tests/` | Concept, composition, HTTP, and persistence tests |
+| `tests/` | Acceptance, concept, composition, HTTP, and persistence tests |
 | `generated/`, `generated*.config.ts` | Generated contracts and sync-engine configuration |
+| `package.json`, `.env.*.example` | Project scripts, dependencies, and environment examples |
 
 ---
 
 ## Disclaimer
 
-**AI assistance:** This README and portions of the project design were generated or revised with AI assistance. Generated material requires review and testing; this documentation is not evidence that the application has been fully implemented or verified.
+**AI assistance:** Portions of this README, the project design, and project code were generated or revised with AI assistance. Generated material may require more extensive review and testing; this documentation is not evidence that the application has been fully implemented or verified.
