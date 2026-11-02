@@ -2,6 +2,7 @@ import { connectMongo, type MongoConnection } from '@/db.ts';
 import { createReaderHttpHandler } from '@/http/edge.ts';
 import { createFrontendHandler } from '@/http/frontend.ts';
 import { withHealthCheck } from '@/http/health.ts';
+import { recoverPendingOperations } from '@/operations/Coordinator.ts';
 
 const serveFrontend = createFrontendHandler();
 
@@ -41,7 +42,9 @@ process.once('SIGTERM', () => { void shutdown(); });
 
 try {
   connection = await connectMongo();
-  applicationHandler = createReaderHttpHandler(connection.db);
+  const handler = createReaderHttpHandler(connection.db);
+  await recoverPendingOperations(connection.db);
+  applicationHandler = handler;
   console.log('Wikiplotter application is ready.');
 } catch (error) {
   server.stop();

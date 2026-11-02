@@ -95,7 +95,7 @@ export function createHubsHttpHandler(db: Db, options: AuthOptions) {
     const route = path.slice('/api'.length);
     const result = publicRoutes.has(path)
       ? await hubs.gateway.invoke(route, input)
-      : await hubs.transactionalInvoke(route, { ...input, session: secret });
+      : await hubs.invoke(route, { ...input, session: secret });
     if (result.ok) return json(result.value);
     const error = errorCode(result);
     const status = error.endsWith('_TAKEN') ? 409 : error.endsWith('_NOT_FOUND') ? 404

@@ -8,8 +8,8 @@
 | 2 — identity | Registering owns usernames/provider identities. Sessioning persists only `verifierHash` and expires/revokes sessions. |
 | 3 — authentication | Google OIDC and MIT SDG Commons adapters verify provider identities. New users remain pending until explicit registration. Secure cookies and CSRF checks stay at HTTP boundary. |
 | 4 — reader | Anonymous progress remains in signed expiring cookies; authenticated progress belongs to Registering users. Login import preserves existing account selections. Missing progress remains distinct from NotStarted. |
-| 5 — hubs | Creator ownership, unique slugs, checkpoints, and multi-concept deletion use MongoDB transactions. Existing local data volume was preserved; tests use isolated `wikiplotter_test_*` databases. |
-| 6 — articles | Any authenticated user may create/edit; hub creator alone may delete. Full ordered saves and requirement updates are transactional; stable surviving block IDs and fail-closed spoiler filtering are preserved. |
+| 5 — hubs | Creator ownership, unique slugs, checkpoints, and multi-concept deletion use a serialized backend operation journal; interrupted cascades recover before the service serves requests. Existing local data volume was preserved; tests use isolated `wikiplotter_test_*` databases. |
+| 6 — articles | Any authenticated user may create/edit; hub creator alone may delete. Full ordered saves and requirement updates are journaled and replayed under the backend application gate; stable block IDs and fail-closed article-rule ordering are preserved. |
 | 7 — media | Metadata is concept-owned and bytes are private GridFS objects. Upload validation, uploader-only management, eligible reader retrieval, and referenced-asset deletion protection are tested. Failed final GridFS cleanup can leave inaccessible orphan bytes; no sweeper exists. |
 | 7.5 — alignment | Removed obsolete setup compositions and reconciled current reader wires/assemblies. |
 | 8A / integration | Typed frontend APIs follow existing routes and generated reader client. Article editing resolves scoped titles to stable IDs; no backend route is invented for unavailable data operations. |
@@ -32,7 +32,7 @@
 | design/compositions/Accounts.md | Correct provider wording to MIT SDG Commons, matching BETA.md and the verified adapter. |
 | docs/generated/IMPLEMENTATION_STATUS_BETA.md | Condense prior milestone history while preserving decisions, blockers, and verification. |
 
-The acceptance review found no permission mismatch in the covered HTTP/composition boundaries. Tests exercise distinct users making direct article/hub/media requests; forged identities, invalid/expired sessions and cookies, cross-hub checkpoints, spoiler-filtered content/media, transactional saves/deletions, and progress import conflicts. No backend authorization or concept contract was weakened.
+The acceptance review found no permission mismatch in the covered HTTP/composition boundaries. Tests exercise distinct users making direct article/hub/media requests; forged identities, invalid/expired sessions and cookies, cross-hub checkpoints, spoiler-filtered content/media, journaled saves/deletions, and progress import conflicts. No backend authorization or concept contract was weakened.
 
 NotStarted is the reader's initial baseline; the editor presents it for no-additional-checkpoint requirements but leaves an unchanged explicit empty rule intact. Image previews use uploader-only preview first and checkpoint-filtered contextual read second. This preserves server-side spoiler rules.
 
@@ -44,7 +44,7 @@ Browser-driven acceptance was unavailable: no browser binary or browser automati
 
 ## Remaining Beta acceptance blockers
 
-- `/api/accounts/delete` returns `501 ACCOUNT_DELETION_UNAVAILABLE` although the Accounts design describes deletion; implementation needs an ownership-safe transaction and UI flow.
+- `/api/accounts/delete` returns `501 ACCOUNT_DELETION_UNAVAILABLE` although the Accounts design describes deletion; implementation needs an ownership-safe recovery design and UI flow.
 - Manage Data cannot list authored articles because no authenticated author-index HTTP operation exists.
 - Live provider callbacks, production HTTPS/cookie behavior, and deployment infrastructure have not been validated. Deployment must provision Google and MIT SDG Commons settings and persistent media storage.
 - Existing legacy hubs without creator/slug metadata need an explicit migration decision before management can be enabled for them.

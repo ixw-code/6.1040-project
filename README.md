@@ -36,7 +36,7 @@ The project is built with Vue, TypeScript, Bun, sync-engine **1.1.0**, and Mongo
 
 - [Bun 1.x](https://bun.sh)
 - Podman, for the local MongoDB container
-- MongoDB with replica-set support for transactional operations
+- MongoDB 6.0 or newer; standalone MongoDB is supported
 - Google OAuth credentials and/or Commons authentication configuration for sign-in
 
 Install project dependencies:
@@ -44,6 +44,8 @@ Install project dependencies:
 ```sh
 bun install
 ```
+
+The backend operation coordinator requires one active backend writer. Stop the previous backend before starting a replacement so an interrupted-operation journal is recovered before traffic resumes.
 
 ### Environment Configuration
 

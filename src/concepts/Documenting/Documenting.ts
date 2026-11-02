@@ -1,4 +1,4 @@
-import { MongoServerError, type ClientSession, type Db } from 'mongodb';
+import { MongoServerError, type Db } from 'mongodb';
 
 export class DocumentTitleRequired extends Error {}
 export class DocumentTitleTaken extends Error {}
@@ -31,7 +31,7 @@ function validBlocks(blocks: BlockInput[], existing?: Set<string>): boolean {
 export class DocumentingConcept {
   private readonly documents;
 
-  constructor(db: Db, private readonly session?: ClientSession) {
+  constructor(db: Db) {
     this.documents = db.collection<DocumentRecord>('documents');
   }
 
@@ -40,7 +40,7 @@ export class DocumentingConcept {
   }): Promise<{ document: string }> {
     const trimmed = title.trim();
     if (!trimmed) throw new DocumentTitleRequired();
-    if (await this.documents.findOne({ scope, title: trimmed }, { projection: { _id: 1 }, session: this.session })) {
+    if (await this.documents.findOne({ scope, title: trimmed }, { projection: { _id: 1 } })) {
       throw new DocumentTitleTaken();
     }
     if (!validBlocks(blocks)) throw new InvalidDocumentBlocks();
@@ -54,7 +54,7 @@ export class DocumentingConcept {
         blocks: blocks.map(({ kind, body, alt }) => ({
           block: `block:${crypto.randomUUID()}`, kind, body, alt,
         })),
-      }, { session: this.session });
+      });
     } catch (error) {
       if (error instanceof MongoServerError && error.code === 11000) throw new DocumentTitleTaken();
       throw error;
@@ -65,7 +65,7 @@ export class DocumentingConcept {
   async update({ scope, document, blocks }: {
     scope: string; document: string; blocks: BlockInput[];
   }): Promise<{ document: string; blocks: DocumentBlock[] }> {
-    const current = await this.documents.findOne({ _id: document, scope }, { session: this.session });
+    const current = await this.documents.findOne({ _id: document, scope });
     if (!current) throw new DocumentNotFound();
     const existing = new Set(current.blocks.map(({ block }) => block));
     if (!validBlocks(blocks, existing)) throw new InvalidDocumentBlocks();
@@ -73,7 +73,7 @@ export class DocumentingConcept {
       block: block ?? `block:${crypto.randomUUID()}`, kind, body, alt,
     }));
     const result = await this.documents.updateOne({ _id: document, scope },
-      { $set: { blocks: replacement } }, { session: this.session });
+      { $set: { blocks: replacement } });
     if (!result.matchedCount) throw new DocumentNotFound();
     return { document, blocks: replacement };
   }
@@ -81,12 +81,12 @@ export class DocumentingConcept {
   async rename({ scope, document, title }: {
     scope: string; document: string; title: string;
   }): Promise<{ title: string }> {
-    if (!(await this.documents.findOne({ _id: document, scope }, { session: this.session }))) throw new DocumentNotFound();
+    if (!(await this.documents.findOne({ _id: document, scope }))) throw new DocumentNotFound();
     const trimmed = title.trim();
     if (!trimmed) throw new DocumentTitleRequired();
     try {
       const result = await this.documents.updateOne({ _id: document, scope },
-        { $set: { title: trimmed } }, { session: this.session });
+        { $set: { title: trimmed } });
       if (!result.matchedCount) throw new DocumentNotFound();
     } catch (error) {
       if (error instanceof MongoServerError && error.code === 11000) throw new DocumentTitleTaken();
@@ -96,39 +96,39 @@ export class DocumentingConcept {
   }
 
   async delete({ scope, document }: { scope: string; document: string }): Promise<{ document: string }> {
-    const result = await this.documents.deleteOne({ _id: document, scope }, { session: this.session });
+    const result = await this.documents.deleteOne({ _id: document, scope });
     if (!result.deletedCount) throw new DocumentNotFound();
     return { document };
   }
 
   async _documents({ scope }: { scope: string }): Promise<{ document: string }[]> {
-    const rows = await this.documents.find({ scope }, { projection: { _id: 1 }, session: this.session })
+    const rows = await this.documents.find({ scope }, { projection: { _id: 1 } })
       .sort({ _id: 1 }).toArray();
     return rows.map(({ _id }) => ({ document: _id }));
   }
 
   async _title({ scope, document }: { scope: string; document: string }): Promise<{ title: string }[]> {
-    const doc = await this.documents.findOne({ _id: document, scope }, { projection: { title: 1 }, session: this.session });
+    const doc = await this.documents.findOne({ _id: document, scope }, { projection: { title: 1 } });
     return doc?.title === undefined ? [] : [{ title: doc.title }];
   }
 
   async _blocks({ scope, document }: {
     scope: string; document: string;
   }): Promise<DocumentBlock[]> {
-    const doc = await this.documents.findOne({ _id: document, scope }, { session: this.session });
+    const doc = await this.documents.findOne({ _id: document, scope });
     return doc ? doc.blocks.filter((block): block is DocumentBlock => block.kind !== 'TITLE')
       .map((block) => ({ ...block })) : [];
   }
 
   async _documentForEditing({ scope, document }: { scope: string; document: string }):
     Promise<{ title: string; author: string; blocks: DocumentBlock[] }[]> {
-    const doc = await this.documents.findOne({ _id: document, scope }, { session: this.session });
+    const doc = await this.documents.findOne({ _id: document, scope });
     return doc?.title && doc.author ? [{ title: doc.title, author: doc.author,
       blocks: doc.blocks.filter((block) => block.kind !== 'TITLE').map((block) => ({ ...block, kind: block.kind as BlockKind })) }] : [];
   }
 
   async _authoredBy({ author }: { author: string }): Promise<{ scope: string; document: string }[]> {
-    const rows = await this.documents.find({ author }, { session: this.session }).sort({ _id: 1 }).toArray();
+    const rows = await this.documents.find({ author }).sort({ _id: 1 }).toArray();
     return rows.map(({ scope, _id }) => ({ scope, document: _id }));
   }
 }

@@ -4,8 +4,8 @@ import { RegisteringConcept } from '@/concepts/Registering/Registering.ts';
 import { MediaAssetManagingConcept, type AssetKind } from
   '@/concepts/MediaAssetManaging/MediaAssetManaging.ts';
 import { GridFsMedia } from '@/storage/GridFsMedia.ts';
-import { DocumentingConcept } from '@/concepts/Documenting/Documenting.ts';
-import { HubCataloguingConcept } from '@/concepts/HubCataloguing/HubCataloguing.ts';
+import { runOperation, withApplicationLock, registerOperationRecovery, type PendingOperation } from
+  '@/operations/Coordinator.ts';
 
 const MAX_BYTES = 20 * 1024 * 1024;
 export class MediaAssetsError extends Error { constructor(readonly code: string) { super(code); } }
@@ -48,22 +48,29 @@ export function createMediaAssets(db: Db, clock?: () => Date) {
     if (!detected || detected.kind !== kind || detected.contentType !== contentType)
       throw new MediaAssetsError('INVALID_MEDIA');
     const storageKey = new ObjectId().toHexString();
-    const { asset } = await metadata().create({ uploader: user, filename, storageKey, kind });
-    try { await store.put(storageKey, bytes); }
-    catch (error) {
-      await metadata().delete({ asset }).catch(() => {});
-      await store.delete(storageKey).catch(() => {});
-      throw error;
-    }
-    return { asset };
+    return runOperation({ db, kind: 'media.upload', actor: user,
+      payload: { filename, storageKey, kind },
+      work: async () => {
+        await store.put(storageKey, bytes);
+        return metadata().create({ uploader: user, filename, storageKey, kind });
+      },
+      onFailure: async () => {
+        const row = await db.collection<{ _id: string; uploader: string; storageKey: string }>('media_assets')
+          .findOne({ uploader: user, storageKey });
+        if (row) await metadata().delete({ asset: row._id });
+        await store.delete(storageKey);
+      },
+    });
   }
   async function finishUpload(secret: string, asset: string) {
-    const row = await owned(secret, asset);
-    const bytes = await store.get(row.storageKey);
-    const found = bytes && detectMedia(bytes);
-    if (!bytes?.length || bytes.length > MAX_BYTES || found?.kind !== row.kind)
-      throw new MediaAssetsError('INVALID_MEDIA');
-    return metadata().finalize({ asset });
+    return withApplicationLock(db, async () => {
+      const row = await owned(secret, asset);
+      const bytes = await store.get(row.storageKey);
+      const found = bytes && detectMedia(bytes);
+      if (!bytes?.length || bytes.length > MAX_BYTES || found?.kind !== row.kind)
+        throw new MediaAssetsError('INVALID_MEDIA');
+      return metadata().finalize({ asset });
+    });
   }
   async function myAssets(secret: string) { return metadata()._uploadedBy({ uploader: await identity(secret) }); }
   async function getAsset(secret: string, asset: string) {
@@ -79,29 +86,51 @@ export function createMediaAssets(db: Db, clock?: () => Date) {
     return { bytes, contentType: type.contentType, filename: row.filename };
   }
   async function deleteAsset(secret: string, asset: string) {
-    await owned(secret, asset);
-    const session = db.client.startSession();
-    let storageKey = '';
-    try {
-      await session.withTransaction(async () => {
-        const assets = new MediaAssetManagingConcept(db, session);
-        const row = (await assets._get({ asset }))[0];
+    const user = await identity(secret);
+    const initial = await owned(secret, asset);
+    return runOperation({ db, kind: 'media.delete', actor: user,
+      payload: { asset, storageKey: initial.storageKey },
+      prepare: async () => {
+        const row = (await metadata()._get({ asset }))[0];
         if (!row) throw new MediaAssetsError('ASSET_NOT_FOUND');
-        storageKey = row.storageKey;
-        const documents = new DocumentingConcept(db, session);
-        for (const { hub } of await new HubCataloguingConcept(db, session)._hubs({})) {
-          for (const { document } of await documents._documents({ scope: hub })) {
-            if ((await documents._blocks({ scope: hub, document })).some((block) =>
-              block.kind !== 'TEXT' && block.body === asset)) throw new MediaAssetsError('ASSET_REFERENCED');
-          }
-        }
-        await assets.delete({ asset });
-      }, { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' } });
-    } finally { await session.endSession(); }
-    // A failed byte delete leaves only private orphan bytes, never a downloadable asset.
-    try { await store.delete(storageKey); } catch { /* periodic orphan cleanup may retry */ }
-    return { asset };
+        if (row.storageKey !== initial.storageKey) throw new MediaAssetsError('ASSET_NOT_FOUND');
+        const referenced = await db.collection('documents').findOne({
+          blocks: { $elemMatch: { kind: { $in: ['IMAGE', 'VIDEO'] }, body: asset } },
+        }, { projection: { _id: 1 } });
+        if (referenced) throw new MediaAssetsError('ASSET_REFERENCED');
+        return row.storageKey;
+      },
+      work: async (storageKey) => {
+        await metadata().delete({ asset });
+        await store.delete(storageKey);
+        return { asset };
+      },
+    });
   }
+
+  registerOperationRecovery(db, 'media.upload', async (operation: PendingOperation) => {
+    const { filename, storageKey } = operation.payload as { filename: string; storageKey: string };
+    const row = await db.collection<{ _id: string; uploader: string; storageKey: string }>('media_assets')
+      .findOne({ uploader: operation.actor, storageKey });
+    const bytes = await store.get(storageKey);
+    if (row && bytes?.length) return { asset: row._id };
+    if (row) await metadata().delete({ asset: row._id as string }).catch(() => {});
+    await store.delete(storageKey).catch(() => {});
+    return { filename, recovered: true };
+  });
+  registerOperationRecovery(db, 'media.delete', async (operation: PendingOperation) => {
+    const { asset, storageKey } = operation.payload as { asset: string; storageKey: string };
+    const row = (await metadata()._get({ asset }))[0];
+    if (row) {
+      const referenced = await db.collection('documents').findOne({
+        blocks: { $elemMatch: { kind: { $in: ['IMAGE', 'VIDEO'] }, body: asset } },
+      }, { projection: { _id: 1 } });
+      if (referenced) throw new MediaAssetsError('ASSET_REFERENCED');
+      await metadata().delete({ asset });
+    }
+    await store.delete(storageKey);
+    return { asset };
+  });
   return { StartUpload: startUpload, FinishUpload: finishUpload, MyAssets: myAssets,
     GetAsset: getAsset, PreviewAsset: preview, DeleteAsset: deleteAsset };
 }

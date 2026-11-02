@@ -29,7 +29,7 @@ describe('Articles composition', () => {
     return { db, author, other, authorSession, otherSession, hub, start, first };
   }
 
-  test('creates explicit rules and saves stable surviving blocks atomically', async () => {
+  test('creates explicit rules and saves stable surviving blocks under the operation journal', async () => {
     const s = await setup();
     const articles = createArticles(s.db);
     const created = await articles.CreateArticle(s.authorSession, { hub: s.hub, title: '  Guide  ', required: [],
@@ -85,6 +85,31 @@ describe('Articles composition', () => {
     expect(await articles.EditingView(s.authorSession, s.hub, created.document)).toMatchObject({
       title: 'Revised Guide', blocks: [{ block: secret!.block, required: [s.first] }, { required: [] }],
     });
+  });
+
+  test('recovers an interrupted content and requirement update before returning', async () => {
+    const s = await setup();
+    const articles = createArticles(s.db);
+    const created = await articles.CreateArticle(s.authorSession, { hub: s.hub, title: 'Recoverable', required: [],
+      blocks: [{ kind: 'TEXT', body: 'Before', alt: '', required: [] }] });
+    const originalTag = RequirementTaggingConcept.prototype.tag;
+    let failOnce = true;
+    RequirementTaggingConcept.prototype.tag = async function(input) {
+      if (failOnce) { failOnce = false; throw new Error('simulated failure after content replacement'); }
+      return originalTag.call(this, input);
+    };
+    try {
+      const saved = await articles.SaveArticle(s.authorSession, { hub: s.hub, document: created.document,
+        title: 'Recovered', required: [], blocks: [
+          { block: created.blocks[0]!.block, kind: 'TEXT', body: 'After', alt: '', required: [s.first] },
+        ] });
+      expect(saved.title).toBe('Recovered');
+    } finally { RequirementTaggingConcept.prototype.tag = originalTag; }
+
+    expect(await new RequirementTaggingConcept(s.db)._rule({ item: created.document })).toEqual([{ required: [] }]);
+    expect(await new DocumentingConcept(s.db)._documents({ scope: s.hub })).toEqual([{ document: created.document }]);
+    const operationCount = await s.db.collection('wikiplotter_operations').countDocuments({ kind: 'article.save' });
+    expect(operationCount).toBe(0);
   });
 
   test('allows authenticated editing and limits deletion to the hub creator', async () => {

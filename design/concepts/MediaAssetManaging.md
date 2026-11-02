@@ -33,14 +33,12 @@ a set of Assets with
   a storageKey StorageKey
   a kind AssetType
   a status AssetStatus
-  a referenceRevision Number
   unique uploader and filename
 
 Rule: The storage key is unique across assets.
 Rule: Filenames are unique per uploader by exact case-sensitive comparison.
 Rule: Asset identities remain stable across document edits and references.
 Rule: MediaAssetManaging stores metadata and storage references, never media bytes.
-Rule: A reference validation writes the asset record so it conflicts with concurrent deletion in the same transaction domain.
 ```
 
 ## Actions
@@ -58,7 +56,7 @@ create(uploader: User, filename: String, storageKey: StorageKey, kind: AssetType
     refuses ASSET_FILENAME_TAKEN "You already have an asset with this filename."
   where input is valid and storageKey is unused
   then
-    create a PENDING Asset with the trimmed filename and referenceRevision zero
+    create a PENDING Asset with the trimmed filename
     returns asset
 
 finalize(asset: Asset): returns (asset: Asset)
@@ -68,15 +66,6 @@ finalize(asset: Asset): returns (asset: Asset)
   where asset exists
   then
     set status to READY, leaving an already READY asset unchanged
-    returns asset
-
-confirmReadyReference(asset: Asset, kind: AssetType): returns (asset: Asset)
-  where asset does not exist or is not READY or its kind differs
-  then
-    refuses ASSET_NOT_READY "This media asset is unavailable for the requested kind."
-  where asset is READY and its kind matches
-  then
-    increment referenceRevision atomically on the asset record
     returns asset
 
 delete(asset: Asset): returns (asset: Asset)

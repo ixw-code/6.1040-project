@@ -22,11 +22,11 @@ describe('Hubs composition', () => {
       otherSession: (await sessions.start({ user: other })).session };
   }
 
-  test('creates atomically, manages slug and checkpoints only for the creator', async () => {
+  test('creates a hub and manages slug and checkpoints only for the creator', async () => {
     const db = mongo.db();
     const ids = await identities();
     const hubs = createHubs(db);
-    const created = await hubs.transactionalInvoke('/hubs/create',
+    const created = await hubs.invoke('/hubs/create',
       { session: ids.ownerSession, name: 'Star Harbor', label: 'Chapter One' });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
@@ -34,25 +34,25 @@ describe('Hubs composition', () => {
     expect(await new HubCataloguingConcept(db)._get({ hub }))
       .toEqual([{ name: 'Star Harbor', slug: 'star-harbor', creator: ids.owner }]);
     expect(await new CheckpointingConcept(db)._checkpoints({ scope: hub, sequence })).toHaveLength(2);
-    expect((await hubs.transactionalInvoke('/hubs/rename',
+    expect((await hubs.invoke('/hubs/rename',
       { session: ids.otherSession, hub, name: 'Stolen' })).ok).toBe(false);
-    expect((await hubs.transactionalInvoke('/checkpoints/append',
+    expect((await hubs.invoke('/checkpoints/append',
       { session: ids.otherSession, hub, sequence, label: 'Stolen' })).ok).toBe(false);
-    expect(await hubs.transactionalInvoke('/hubs/slug',
+    expect(await hubs.invoke('/hubs/slug',
       { session: ids.ownerSession, hub, slug: 'new-harbor' }))
       .toMatchObject({ ok: true, value: { slug: 'new-harbor' } });
     expect(await new HubCataloguingConcept(db)._bySlug({ slug: 'new-harbor' })).toEqual([{ hub }]);
-    const appended = await hubs.transactionalInvoke('/checkpoints/append',
+    const appended = await hubs.invoke('/checkpoints/append',
       { session: ids.ownerSession, hub, sequence, label: 'Chapter Two' });
     expect(appended.ok).toBe(true);
     expect((await hubs.gateway.invoke('/checkpoints/list', { hub })).ok).toBe(true);
   });
 
-  test('deletes documents, rules, progress and sequence together; leaves assets unscoped', async () => {
+  test('recovers an interrupted hub cascade and leaves assets unscoped', async () => {
     const db = mongo.db();
     const ids = await identities();
     const hubs = createHubs(db);
-    const created = await hubs.transactionalInvoke('/hubs/create',
+    const created = await hubs.invoke('/hubs/create',
       { session: ids.ownerSession, name: 'Star Harbor', label: 'Chapter One' });
     if (!created.ok) throw new Error('Hub creation failed');
     const { hub, sequence } = created.value as { hub: string; sequence: string };
@@ -68,7 +68,14 @@ describe('Hubs composition', () => {
     await new ProgressRecordingConcept(db).record({ scope: hub, reader: ids.other, checkpoint: selected });
     await expect(hubs.deleteHub(ids.otherSession, hub)).rejects.toBeInstanceOf(HubForbidden);
     expect(await documents._documents({ scope: hub })).toEqual([{ document }]);
-    expect(await hubs.deleteHub(ids.ownerSession, hub)).toEqual({ hub });
+    const originalDelete = DocumentingConcept.prototype.delete;
+    let failOnce = true;
+    DocumentingConcept.prototype.delete = async function(input) {
+      if (failOnce) { failOnce = false; throw new Error('simulated cascade interruption'); }
+      return originalDelete.call(this, input);
+    };
+    try { expect(await hubs.deleteHub(ids.ownerSession, hub)).toEqual({ hub }); }
+    finally { DocumentingConcept.prototype.delete = originalDelete; }
     expect(await new HubCataloguingConcept(db)._get({ hub })).toEqual([]);
     expect(await documents._documents({ scope: hub })).toEqual([]);
     expect(await requirements._rule({ item: document })).toEqual([]);

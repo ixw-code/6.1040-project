@@ -7,6 +7,7 @@ import { createMediaAssets } from '@/compositions/MediaAssets.ts';
 import { createArticles } from '@/compositions/Articles.ts';
 import { HubCataloguingConcept } from '@/concepts/HubCataloguing/HubCataloguing.ts';
 import { CheckpointingConcept } from '@/concepts/Checkpointing/Checkpointing.ts';
+import { GridFsMedia } from '@/storage/GridFsMedia.ts';
 
 const png = Uint8Array.from([137,80,78,71,13,10,26,10,0,0,0,0]);
 describe('MediaAssets composition and GridFS', () => {
@@ -45,15 +46,15 @@ describe('MediaAssets composition and GridFS', () => {
     await mongo.reconnect();
     expect((await createMediaAssets(mongo.db()).PreviewAsset(token, asset)).bytes).toEqual(png);
   });
-  test('concept enforces unique metadata and ready references', async () => {
-    const concept = new MediaAssetManagingConcept(mongo.db());
+  test('concept enforces unique metadata and pending-to-ready lifecycle', async () => {
+    const db = mongo.db();
+    const concept = new MediaAssetManagingConcept(db);
     const created = await concept.create({ uploader: 'user:1', filename: 'x', storageKey: 'key1', kind: 'IMAGE' });
-    await expect(concept.confirmReadyReference({ asset: created.asset, kind: 'IMAGE' }))
-      .rejects.toMatchObject({ code: 'ASSET_NOT_READY' });
+    expect(await concept._get({ asset: created.asset })).toMatchObject([{ status: 'PENDING', kind: 'IMAGE' }]);
+    expect((await db.collection('media_assets').findOne({ _id: created.asset }))?.referenceRevision).toBeUndefined();
     await concept.finalize({ asset: created.asset });
-    await concept.confirmReadyReference({ asset: created.asset, kind: 'IMAGE' });
-    await expect(concept.confirmReadyReference({ asset: created.asset, kind: 'VIDEO' }))
-      .rejects.toMatchObject({ code: 'ASSET_NOT_READY' });
+    await concept.finalize({ asset: created.asset });
+    expect(await concept._get({ asset: created.asset })).toMatchObject([{ status: 'READY', kind: 'IMAGE' }]);
     await expect(concept.create({ uploader: 'user:1', filename: 'x', storageKey: 'key2', kind: 'IMAGE' }))
       .rejects.toMatchObject({ code: 'ASSET_FILENAME_TAKEN' });
     await expect(concept.create({ uploader: 'user:2', filename: 'y', storageKey: 'key1', kind: 'VIDEO' }))
@@ -69,10 +70,27 @@ describe('MediaAssets composition and GridFS', () => {
     const media = createMediaAssets(db);
     await expect(media.StartUpload(token, 'bad.png', 'IMAGE', 'image/png', Uint8Array.from([1,2,3])))
       .rejects.toMatchObject({ code: 'INVALID_MEDIA' });
+    const originalCreate = MediaAssetManagingConcept.prototype.create;
+    let failCreate = true;
+    MediaAssetManagingConcept.prototype.create = async function(input) {
+      if (failCreate) { failCreate = false; throw new Error('simulated metadata write failure'); }
+      return originalCreate.call(this, input);
+    };
+    try {
+      await expect(media.StartUpload(token, 'interrupted.png', 'IMAGE', 'image/png', png)).rejects.toThrow();
+    } finally { MediaAssetManagingConcept.prototype.create = originalCreate; }
+    expect(await db.collection('media_bytes.files').countDocuments()).toBe(0);
     const { asset } = await media.StartUpload(token, 'good.png', 'IMAGE', 'image/png', png);
     const key = (await new MediaAssetManagingConcept(db)._get({ asset }))[0]!.storageKey;
     expect(await db.collection('media_bytes.files').countDocuments()).toBe(1);
-    await media.DeleteAsset(token, asset);
+    const originalDelete = GridFsMedia.prototype.delete;
+    let failOnce = true;
+    GridFsMedia.prototype.delete = async function(key) {
+      if (failOnce) { failOnce = false; throw new Error('simulated byte cleanup failure'); }
+      return originalDelete.call(this, key);
+    };
+    try { await media.DeleteAsset(token, asset); }
+    finally { GridFsMedia.prototype.delete = originalDelete; }
     expect(await db.collection('media_bytes.files').countDocuments()).toBe(0);
     expect(await new MediaAssetManagingConcept(db)._get({ asset })).toEqual([]);
     expect(key).toBeTruthy();

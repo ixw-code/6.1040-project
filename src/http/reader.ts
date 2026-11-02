@@ -2,6 +2,7 @@ import type { Db } from 'mongodb';
 import { SessioningConcept } from '@/concepts/Sessioning/Sessioning.ts';
 import { createGuestReader } from '@/assembly/guest-reader.ts';
 import { issueProgress, progressCookie, verifiedProgress } from '@/auth/progress-cookie.ts';
+import { withApplicationLock } from '@/operations/Coordinator.ts';
 
 type Options = { origin: string; cookieKey: Buffer; clock?: () => Date };
 const routes = new Set(['/api/progress/get', '/api/progress/record', '/api/progress/clear',
@@ -18,7 +19,7 @@ export function createReaderIdentityHttpHandler(db: Db, options: Options,
   const guest = createGuestReader(db);
   const sessions = new SessioningConcept(db, options.clock);
   const origin = new URL(options.origin).origin;
-  return async (request: Request): Promise<Response | undefined> => {
+  const handle = async (request: Request): Promise<Response | undefined> => {
     const path = new URL(request.url).pathname;
     if (!routes.has(path)) return undefined;
     if (request.method !== 'POST' || request.headers.get('content-type')?.split(';')[0] !== 'application/json') {
@@ -86,18 +87,15 @@ export function createReaderIdentityHttpHandler(db: Db, options: Options,
       return response({ cleared: !!selected }, 200, headers);
     }
     if (!selected) return response({ error: 'INVALID_REQUEST' }, 400);
-    const snapshot = db.client.startSession();
-    let result;
-    try {
-      result = await snapshot.withTransaction(() => createGuestReader(db, snapshot).invoke(
-        path === '/api/hubs/browse' ? '/internal/guest/browse' : '/internal/guest/read',
-        { hub, checkpoint: selected, document: input.document },
-      ), { readConcern: { level: 'snapshot' } });
-    } finally { await snapshot.endSession(); }
+    const result = await createGuestReader(db).invoke(
+      path === '/api/hubs/browse' ? '/internal/guest/browse' : '/internal/guest/read',
+      { hub, checkpoint: selected, document: input.document },
+    );
     if (!result.ok) return response({ error: 'INVALID_REQUEST' }, 400);
     const value = result.value as Record<string, unknown>;
     if (value.error === 'HUB_NOT_FOUND') return response({ error: 'NOT_FOUND' }, 404);
     if (value.error) return response({ error: 'INVALID_REQUEST' }, 400);
     return response(value);
   };
+  return (request: Request) => withApplicationLock(db, () => handle(request));
 }

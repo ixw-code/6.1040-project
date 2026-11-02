@@ -119,8 +119,6 @@ Defined in [MediaAssetManaging](../../design/concepts/MediaAssetManaging.md), li
   - Refuses `ASSET_FILENAME_TAKEN`: You already have an asset with this filename.
 - `finalize(asset: Asset) : returns (asset: Asset)`
   - Refuses `ASSET_NOT_FOUND`: There is no such asset.
-- `confirmReadyReference(asset: Asset, kind: AssetType) : returns (asset: Asset)`
-  - Refuses `ASSET_NOT_READY`: This media asset is unavailable for the requested kind.
 - `delete(asset: Asset) : returns (asset: Asset)`
   - Refuses `ASSET_NOT_FOUND`: There is no such asset.
 
@@ -240,7 +238,7 @@ _Views name reusable conditions. Multiple `where` blocks are alternatives._
 ### eligible block
 
 Authored path: `Reading.EligibleBlock`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 17.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
 
 ```view
 eligible block — inputs (hub, document, tokens); outputs (block, kind, body, alt); bindings () — answers any number of (block, kind, body, alt)
@@ -252,7 +250,7 @@ eligible block — inputs (hub, document, tokens); outputs (block, kind, body, a
 ### readable document
 
 Authored path: `Reading.ReadableArticle`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 11.
+- Covered by [Reading](../../design/compositions/Reading.md), line 13.
 
 ```view
 readable document — inputs (hub, tokens); outputs (document); bindings () — answers any number of (document)
@@ -287,7 +285,7 @@ reader progress selection — inputs (hub, checkpoint); outputs (); bindings (se
 ### reading hub
 
 Authored path: `Reading.ExistingHub`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 5.
+- Covered by [Reading](../../design/compositions/Reading.md), line 7.
 
 ```view
 reading hub — inputs (hub); outputs (); bindings ()
@@ -297,7 +295,7 @@ reading hub — inputs (hub); outputs (); bindings ()
 ### reading selection
 
 Authored path: `Reading.ReaderSelection`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 3.
+- Covered by [Reading](../../design/compositions/Reading.md), line 5.
 
 ```view
 reading selection — inputs (hub, reader); outputs (tokens); bindings (sequence, checkpoint) — answers at most one (tokens)
@@ -333,7 +331,7 @@ Former "reader progress result" — inputs (hub, reader); bindings (checkpoint);
 ### reading document content
 
 Authored path: `Reading.ArticleContent`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 17.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
 
 ```former
 Former "reading document content" — inputs (hub, document, tokens); bindings (title, block, kind, body, alt); promises exactly one record — forms:
@@ -352,7 +350,7 @@ Former "reading document content" — inputs (hub, document, tokens); bindings (
 ### reading document directory
 
 Authored path: `Reading.ArticleDirectory`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 11.
+- Covered by [Reading](../../design/compositions/Reading.md), line 13.
 
 ```former
 Former "reading document directory" — inputs (hub, tokens); bindings (document, title); promises exactly one record — forms:
@@ -366,7 +364,7 @@ Former "reading document directory" — inputs (hub, tokens); bindings (document
 ### reading hub directory
 
 Authored path: `Reading.HubDirectory`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 5.
+- Covered by [Reading](../../design/compositions/Reading.md), line 7.
 
 ```former
 Former "reading hub directory" — inputs (); bindings (hub, name, slug); promises exactly one record — forms:
@@ -572,8 +570,8 @@ then
 ### Reading.BrowseHub:hub-missing
 
 Authored path: `Reading.BrowseHub`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 11.
-- Covered by [Reading](../../design/compositions/Reading.md), line 14.
+- Covered by [Reading](../../design/compositions/Reading.md), line 13.
+- Covered by [Reading](../../design/compositions/Reading.md), line 16.
 
 ```reaction
 when RequestBoundary.request (hub, path: "/hubs/browse", reader, requestId)
@@ -586,8 +584,8 @@ then
 ### Reading.BrowseHub:selection-missing
 
 Authored path: `Reading.BrowseHub`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 11.
-- Covered by [Reading](../../design/compositions/Reading.md), line 14.
+- Covered by [Reading](../../design/compositions/Reading.md), line 13.
+- Covered by [Reading](../../design/compositions/Reading.md), line 16.
 
 ```reaction
 when RequestBoundary.request (hub, path: "/hubs/browse", reader, requestId)
@@ -601,8 +599,8 @@ then
 ### Reading.BrowseHub:valid-selection
 
 Authored path: `Reading.BrowseHub`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 11.
-- Covered by [Reading](../../design/compositions/Reading.md), line 14.
+- Covered by [Reading](../../design/compositions/Reading.md), line 13.
+- Covered by [Reading](../../design/compositions/Reading.md), line 16.
 
 ```reaction
 when RequestBoundary.request (hub, path: "/hubs/browse", reader, requestId)
@@ -615,8 +613,8 @@ then
 ### Reading.ListHubs
 
 Authored path: `Reading.ListHubs`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 5.
-- Covered by [Reading](../../design/compositions/Reading.md), line 8.
+- Covered by [Reading](../../design/compositions/Reading.md), line 7.
+- Covered by [Reading](../../design/compositions/Reading.md), line 10.
 
 ```reaction
 when RequestBoundary.request (path: "/hubs/list", requestId)
@@ -627,8 +625,8 @@ then
 ### Reading.ReadArticle:hub-missing
 
 Authored path: `Reading.ReadArticle`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 17.
-- Covered by [Reading](../../design/compositions/Reading.md), line 20.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
+- Covered by [Reading](../../design/compositions/Reading.md), line 24.
 
 ```reaction
 when RequestBoundary.request (document, hub, path: "/articles/read", reader, requestId)
@@ -641,8 +639,8 @@ then
 ### Reading.ReadArticle:readable-document
 
 Authored path: `Reading.ReadArticle`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 17.
-- Covered by [Reading](../../design/compositions/Reading.md), line 20.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
+- Covered by [Reading](../../design/compositions/Reading.md), line 24.
 
 ```reaction
 when RequestBoundary.request (document, hub, path: "/articles/read", reader, requestId)
@@ -656,8 +654,8 @@ then
 ### Reading.ReadArticle:selection-missing
 
 Authored path: `Reading.ReadArticle`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 17.
-- Covered by [Reading](../../design/compositions/Reading.md), line 20.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
+- Covered by [Reading](../../design/compositions/Reading.md), line 24.
 
 ```reaction
 when RequestBoundary.request (document, hub, path: "/articles/read", reader, requestId)
@@ -671,8 +669,8 @@ then
 ### Reading.ReadArticle:unavailable-document
 
 Authored path: `Reading.ReadArticle`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 17.
-- Covered by [Reading](../../design/compositions/Reading.md), line 20.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
+- Covered by [Reading](../../design/compositions/Reading.md), line 24.
 
 ```reaction
 when RequestBoundary.request (document, hub, path: "/articles/read", reader, requestId)

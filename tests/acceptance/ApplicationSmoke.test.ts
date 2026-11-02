@@ -38,12 +38,27 @@ describe('application smoke test', () => {
       expect(await post('/hubs/list', {})).toMatchObject({ status: 200, body: {
         hubs: [expect.objectContaining({ hub, name: 'Smoke Test' })],
       } });
-      expect(await post('/checkpoints/list', { hub })).toMatchObject({ status: 200, body: {
+      const listed = await post('/checkpoints/list', { hub });
+      expect(listed).toMatchObject({ status: 200, body: {
         sequence,
         checkpoints: [
           { label: 'NotStarted', position: 0 },
           { label: 'Start', position: 1 },
         ],
+      } });
+      const start = (listed.body.checkpoints as { checkpoint: string; label: string }[])[0]!.checkpoint;
+      const createdArticle = await post('/articles/create', { hub, title: 'Standalone article', required: [],
+        blocks: [{ kind: 'TEXT', body: 'Ordinary reads work', alt: '', required: [] }] });
+      expect(createdArticle.status).toBe(200);
+      const document = createdArticle.body.document as string;
+      expect(await post('/progress/record', { hub, checkpoint: start })).toMatchObject({
+        status: 200, body: { checkpoint: start },
+      });
+      expect(await post('/hubs/browse', { hub })).toMatchObject({ status: 200, body: {
+        documents: [{ document, title: 'Standalone article' }],
+      } });
+      expect(await post('/articles/read', { hub, document })).toMatchObject({ status: 200, body: {
+        content: { document, blocks: [{ body: 'Ordinary reads work' }] },
       } });
     } finally {
       server.stop();

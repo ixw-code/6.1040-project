@@ -60,15 +60,7 @@ export async function connectMongo(url = process.env.MONGODB_URI): Promise<Mongo
   if (!database) throw new Error('MONGODB_URI must include a database name.');
   assertMongoTarget(database);
 
-  const parsed = new URL(url);
-  if ((process.env.WIKIPLOTTER_ENV === 'development' || process.env.WIKIPLOTTER_ENV === 'test') &&
-    parsed.hostname === '127.0.0.1') {
-    // The advertised member is localhost inside the container at the same port.
-    // Direct mode keeps the host-side Bun client on its configured loopback address.
-    parsed.searchParams.set('replicaSet', 'wikiplotter-rs');
-    parsed.searchParams.set('directConnection', 'true');
-  }
-  const client = new MongoClient(parsed.toString(), { serverSelectionTimeoutMS: 5_000 });
+  const client = new MongoClient(url, { serverSelectionTimeoutMS: 5_000 });
   try {
     await client.connect();
     const db = client.db(database);

@@ -9,24 +9,13 @@ import { createHubsHttpHandler, hubRoutes } from '@/http/hubs.ts';
 import { createArticlesHttpHandler, articleRoutes } from '@/http/articles.ts';
 import { createMediaHttpHandler, mediaRoutes } from '@/http/media.ts';
 import { healthResponse } from '@/http/health.ts';
+import { withApplicationLock } from '@/operations/Coordinator.ts';
 
 export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnvironment()) {
   const application = assembleWikiplotter(db);
   const gateway = createGateway({ application });
   const reader = createHttpHandler({ application, gateway, policy: readerHttpPolicy });
-  const snapshotPaths = new Set(['/api/hubs/list', '/api/hubs/browse', '/api/articles/read']);
-  const readReader = async (request: Request) => {
-    if (!snapshotPaths.has(new URL(request.url).pathname)) return reader(request);
-    const session = db.client.startSession();
-    try {
-      return await session.withTransaction(async () => {
-        const snapshot = assembleWikiplotter(db, session);
-        const gateway = createGateway({ application: snapshot });
-        const handler = createHttpHandler({ application: snapshot, gateway, policy: readerHttpPolicy });
-        return handler(request.clone() as Request);
-      }, { readConcern: { level: 'snapshot' } });
-    } finally { await session.endSession(); }
-  };
+  const readReader = (request: Request) => reader(request);
   const auth = authOptions ? createAuthHttpHandler(db, authOptions) : undefined;
   const readerIdentity = authOptions ? createReaderIdentityHttpHandler(db, authOptions, readReader) : undefined;
   const hubs = authOptions ? createHubsHttpHandler(db, authOptions) : undefined;
@@ -35,7 +24,7 @@ export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnv
     (await readerIdentity?.(request)) ?? await readReader(request)) : undefined;
   const identityRoutes = new Set(['/api/progress/get', '/api/progress/record', '/api/progress/clear',
     '/api/hubs/browse', '/api/articles/read']);
-  return async (request: Request) => {
+  const handle = async (request: Request) => {
     const health = healthResponse(request);
     if (health) return health;
     const url = new URL(request.url);
@@ -73,5 +62,14 @@ export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnv
     const identityResponse = await readerIdentity?.(request);
     if (identityResponse) return identityResponse;
     return readReader(request);
+  };
+  return async (request: Request) => {
+    const path = new URL(request.url).pathname;
+    if (path.startsWith('/auth/') || path.startsWith('/api/accounts/')) return handle(request);
+    try { return await withApplicationLock(db, () => handle(request)); }
+    catch {
+      return new Response(JSON.stringify({ error: 'RECOVERY_PENDING' }), { status: 503,
+        headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'retry-after': '1' } });
+    }
   };
 }

@@ -1,22 +1,22 @@
 import { assemble } from '@mit-sdg/sync-engine/assembly';
-import { MongoClient, type ClientSession, type Db } from 'mongodb';
+import { MongoClient, type Db } from 'mongodb';
 import { composition as readerProgress } from '@/compositions/ReaderProgress.ts';
 import { composition as reading } from '@/compositions/Reading.ts';
 import { applicationConceptSet } from './concepts.ts';
 import { createMongoConceptInstances } from './concept-instances.ts';
 
 /** The no-argument form supports runtime and design tooling without opening a connection. */
-function assembleWith(db: Db | undefined, session?: ClientSession) {
+function assembleWith(db: Db | undefined) {
   const mongoUrl = process.env.MONGODB_URI;
   if (!db && !mongoUrl) throw new Error('MONGODB_URI must be set for the default assembly.');
   const handle = db ?? new MongoClient(mongoUrl!).db();
   return assemble({
     conceptSet: applicationConceptSet,
-    instances: createMongoConceptInstances(handle, session),
+    instances: createMongoConceptInstances(handle),
     composition: { ReaderProgress: readerProgress, Reading: reading },
   });
 }
 
-export function assembleWikiplotter(db?: Db, session?: ClientSession) {
-  return assembleWith(db, session);
+export function assembleWikiplotter(db?: Db) {
+  return assembleWith(db);
 }

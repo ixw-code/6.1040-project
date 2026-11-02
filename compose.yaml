@@ -2,19 +2,7 @@ services:
   mongo:
     image: docker.io/library/mongo:8.0
     # One local server; each application profile selects its own database via MONGODB_URI.
-    # Matching container/host ports let the single replica-set member use localhost.
-    entrypoint:
-      - /bin/bash
-      - -euc
-      - |
-        if [ ! -e /data/db/wikiplotter-keyfile ]; then
-          umask 077
-          openssl rand -base64 756 > /data/db/wikiplotter-keyfile.tmp
-          mv /data/db/wikiplotter-keyfile.tmp /data/db/wikiplotter-keyfile
-        fi
-        chmod 400 /data/db/wikiplotter-keyfile
-        chown mongodb:mongodb /data/db/wikiplotter-keyfile
-        exec docker-entrypoint.sh mongod --replSet wikiplotter-rs --bind_ip_all --port ${MONGO_PORT:?Set MONGO_PORT} --keyFile /data/db/wikiplotter-keyfile
+    command: ["mongod", "--bind_ip_all", "--port", "${MONGO_PORT:?Set MONGO_PORT}"]
     ports:
       - "${MONGO_BIND_HOST:?Set MONGO_BIND_HOST}:${MONGO_PORT:?Set MONGO_PORT}:${MONGO_PORT:?Set MONGO_PORT}"
     environment:
