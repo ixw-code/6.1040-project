@@ -27,13 +27,14 @@ describe('Hubs composition', () => {
     const ids = await identities();
     const hubs = createHubs(db);
     const created = await hubs.invoke('/hubs/create',
-      { session: ids.ownerSession, name: 'Star Harbor', label: 'Chapter One' });
+      { session: ids.ownerSession, name: 'Star Harbor' });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
     const { hub, sequence } = created.value as { hub: string; sequence: string };
     expect(await new HubCataloguingConcept(db)._get({ hub }))
       .toEqual([{ name: 'Star Harbor', slug: 'star-harbor', creator: ids.owner }]);
-    expect(await new CheckpointingConcept(db)._checkpoints({ scope: hub, sequence })).toHaveLength(2);
+    expect(await new CheckpointingConcept(db)._checkpoints({ scope: hub, sequence }))
+      .toEqual([{ checkpoint: expect.any(String), label: 'NotStarted', position: 0 }]);
     expect((await hubs.invoke('/hubs/rename',
       { session: ids.otherSession, hub, name: 'Stolen' })).ok).toBe(false);
     expect((await hubs.invoke('/checkpoints/append',
@@ -53,10 +54,11 @@ describe('Hubs composition', () => {
     const ids = await identities();
     const hubs = createHubs(db);
     const created = await hubs.invoke('/hubs/create',
-      { session: ids.ownerSession, name: 'Star Harbor', label: 'Chapter One' });
+      { session: ids.ownerSession, name: 'Star Harbor' });
     if (!created.ok) throw new Error('Hub creation failed');
     const { hub, sequence } = created.value as { hub: string; sequence: string };
     const checkpoints = new CheckpointingConcept(db);
+    await checkpoints.append({ sequence, label: 'Chapter One' });
     const selected = (await checkpoints._checkpoints({ scope: hub, sequence }))[1]!.checkpoint;
     const documents = new DocumentingConcept(db);
     const { document } = await documents.create({ scope: hub, author: ids.other, title: 'Secret',

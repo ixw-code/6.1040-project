@@ -30,24 +30,24 @@ describe('reader HTTP adapter', () => {
   test('serves hub, progress, and reading routes with existing response shapes', async () => {
     const server = listen();
     try {
-      const created = await post(server, '/api/hubs/create', { name: 'North', label: 'Chapter 1' });
+      const created = await post(server, '/api/hubs/create', { name: 'North' });
       expect(created.status).toBe(200);
       const { hub, sequence } = created.body as { hub: string; sequence: string };
       expect(typeof hub).toBe('string');
       expect(typeof sequence).toBe('string');
       const listed = await post(server, '/api/checkpoints/list', { hub });
       expect(listed.status).toBe(200);
-      const checkpoints = (listed.body as { checkpoints: { checkpoint: string }[] }).checkpoints;
+      const checkpoints = (listed.body as { checkpoints: { checkpoint: string; label: string; position: number }[] }).checkpoints;
       const start = checkpoints[0]!.checkpoint;
-      const first = checkpoints[1]!.checkpoint;
       expect(typeof start).toBe('string');
-      expect(typeof first).toBe('string');
       expect(listed.body).toEqual({ sequence, checkpoints: [
         { checkpoint: start, label: 'NotStarted', position: 0 },
-        { checkpoint: first, label: 'Chapter 1', position: 1 },
       ] });
       expect(await post(server, '/api/hubs/sequences', { hub }))
         .toEqual({ status: 200, body: { sequences: [{ sequence }] } });
+      const firstCreated = await post(server, '/api/checkpoints/append', { hub, sequence, label: 'Chapter 1' });
+      expect(firstCreated.status).toBe(200);
+      const first = firstCreated.body.checkpoint as string;
       const appended = await post(server, '/api/checkpoints/append', { hub, sequence, label: 'Chapter 2' });
       expect(appended.status).toBe(200);
       const second = appended.body.checkpoint as string;
@@ -101,12 +101,12 @@ describe('reader HTTP adapter', () => {
   test('preserves validation and domain refusals over HTTP', async () => {
     const server = listen();
     try {
-      const invalid = await post(server, '/api/hubs/create', { name: 'Bad', label: ' ' });
+      const invalid = await post(server, '/api/hubs/create', { name: ' ' });
       expect(invalid.status).toBe(400);
       expect(invalid.body).toMatchObject({ error: 'INVALID_REQUEST' });
-      expect(await post(server, '/api/hubs/create', { name: 'North', label: 'First' }))
+      expect(await post(server, '/api/hubs/create', { name: 'North' }))
         .toMatchObject({ status: 200 });
-      expect(await post(server, '/api/hubs/create', { name: 'North', label: 'First' }))
+      expect(await post(server, '/api/hubs/create', { name: 'North' }))
         .toEqual({ status: 409, body: { error: 'CONFLICT' } });
       const missing = await post(server, '/api/hubs/browse', { hub: 'missing', reader: 'alice' });
       expect(missing.body).toMatchObject({ error: 'NOT_FOUND' });

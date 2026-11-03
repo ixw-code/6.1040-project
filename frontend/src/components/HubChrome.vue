@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { HubsApi, notStartedCheckpoint, type CheckpointRow } from "@/api/Hubs.ts";
 import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import { hubUrl, settingsUrl, welcomeUrl } from "@/lib/routes.ts";
@@ -9,10 +9,15 @@ const open = ref(false),
   busy = ref(false),
   error = ref(""),
   selected = ref<string | null>(null);
+const progressControl = ref<HTMLElement | null>(null);
 const checkpoints = ref<CheckpointRow[]>([]),
   draft = ref("");
 const emit = defineEmits<{ changed: [] }>();
+function closeOnOutsideClick(event: MouseEvent) {
+  if (open.value && !progressControl.value?.contains(event.target as Node)) open.value = false;
+}
 onMounted(async () => {
+  document.addEventListener("click", closeOnOutsideClick);
   try {
     const [choices, progress] = await Promise.all([
       HubsApi.checkpoints(props.hub),
@@ -25,6 +30,7 @@ onMounted(async () => {
     error.value = e instanceof Error ? e.message : "Could not load progress";
   }
 });
+onBeforeUnmount(() => document.removeEventListener("click", closeOnOutsideClick));
 async function save() {
   if (!draft.value || busy.value) return;
   busy.value = true;
@@ -69,7 +75,7 @@ async function clear() {
         title="Hub search is not available yet"
       />
       <div class="hub-toolbar">
-        <div class="progress-control">
+        <div ref="progressControl" class="progress-control">
           <button
             class="nav-icon"
             :aria-expanded="open"

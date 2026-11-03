@@ -172,6 +172,28 @@
   .account-panel .setting-row {
     gap: 10px;
   }
+
+  .hub-settings-header {
+    flex-wrap: wrap;
+  }
+
+  .hub-detail-control {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hub-detail-control .hub-change-button,
+  .hub-slug-description .hub-change-button {
+    align-self: flex-start;
+  }
+
+  .hub-slug-description {
+    align-items: center;
+  }
+
+  .hub-slug-inline-input {
+    flex-basis: 100%;
+  }
 }
 
 .tile-placeholder img {

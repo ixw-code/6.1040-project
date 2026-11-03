@@ -83,6 +83,129 @@
     display: block;
 }
 
+.hub-create-box input {
+    padding: 13px 14px;
+    text-align: left;
+}
+
+.hub-field-error {
+    min-height: 1.4em;
+    margin: 4px 0 8px;
+    color: #9b242b;
+    visibility: hidden;
+}
+
+.hub-field-error.visible {
+    visibility: visible;
+}
+
+.hub-settings-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.hub-back-link {
+    display: inline-block;
+    margin-bottom: 10px;
+    color: #0755ad;
+}
+
+.hub-settings-header h1 {
+    margin: 0;
+}
+
+.hub-settings-panel .settings-section h2 {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.08rem;
+}
+
+.hub-detail-field {
+    max-width: 620px;
+    margin-top: 10px;
+}
+
+.hub-detail-label {
+    font-weight: 400;
+    margin-bottom: 7px;
+}
+
+.hub-detail-control,
+.hub-slug-description {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hub-detail-control input,
+.hub-readonly-field {
+    flex: 1;
+    min-width: 0;
+}
+
+.hub-readonly-field {
+    min-height: 39px;
+    padding: 10px 12px;
+    border: 1px solid #c7d0dc;
+    border-radius: 2px;
+    background: #f1f3f5;
+    color: #768094;
+}
+
+.hub-change-button {
+    flex: 0 0 auto;
+    padding: 7px 9px;
+}
+
+.hub-slug-description {
+    justify-content: flex-start;
+    min-height: 39px;
+    flex-wrap: wrap;
+}
+
+.hub-slug-description em {
+    color: #637189;
+}
+
+.hub-slug-inline-input {
+    flex: 0 1 230px;
+    width: 230px;
+    min-width: 150px;
+}
+
+.hub-settings-panel > .settings-section .hub-field-error {
+    max-width: 620px;
+    margin: 4px 0 0;
+}
+
+.hub-save-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
+}
+
+.hub-delete-description {
+    max-width: 620px;
+    margin: 10px 0 14px;
+}
+
+.hub-delete-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.hub-delete-dialog > input {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.hub-delete-dialog .confirm-actions {
+    justify-content: flex-end;
+}
+
 .account-panel {
     max-width: 920px;
     margin: 35px auto;

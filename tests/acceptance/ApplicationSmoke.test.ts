@@ -28,7 +28,7 @@ describe('application smoke test', () => {
     };
 
     try {
-      const created = await post('/hubs/create', { name: 'Smoke Test', label: 'Start' });
+      const created = await post('/hubs/create', { name: 'Smoke Test' });
       expect(created.status).toBe(200);
       const { hub, sequence } = created.body as { hub: string; sequence: string };
 
@@ -41,10 +41,7 @@ describe('application smoke test', () => {
       const listed = await post('/checkpoints/list', { hub });
       expect(listed).toMatchObject({ status: 200, body: {
         sequence,
-        checkpoints: [
-          { label: 'NotStarted', position: 0 },
-          { label: 'Start', position: 1 },
-        ],
+        checkpoints: [{ label: 'NotStarted', position: 0 }],
       } });
       const start = (listed.body.checkpoints as { checkpoint: string; label: string }[])[0]!.checkpoint;
       const createdArticle = await post('/articles/create', { hub, title: 'Standalone article', required: [],

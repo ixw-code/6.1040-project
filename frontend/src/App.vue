@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, onErrorCaptured, ref, computed } from 'vue';
 import { HubsApi } from '@/api/Hubs.ts'; import { AccountsApi, type Account } from '@/api/Accounts.ts';
-import type { Hub } from '@/api.ts'; import { routeFromLocation, type Route } from '@/lib/routes.ts';
+import { ReaderProgressApi } from '@/api/ReaderProgress.ts';
+import type { Hub } from '@/api.ts'; import { hubRouteForProgress, routeFromLocation, welcomeUrl, type Route } from '@/lib/routes.ts';
 import GlobalHeader from '@/components/GlobalHeader.vue'; import HubChrome from '@/components/HubChrome.vue';
 import HomePage from '@/features/Home/HomePage.vue';
 import HubWelcome from '@/features/Hub/HubWelcome.vue'; import HubHome from '@/features/Hub/HubHome.vue'; import HubSettings from '@/features/Hub/HubSettings.vue';
+import HubCreatePage from '@/features/Hub/HubCreatePage.vue';
 import ArticleReader from '@/features/Article/ArticleReader.vue'; import ArticleEditor from '@/features/Article/ArticleEditor.vue';
 import SignInPage from '@/features/Account/SignInPage.vue'; import RegisterPage from '@/features/Account/RegisterPage.vue'; import AccountPage from '@/features/Account/AccountPage.vue';
 import MediaLibrary from '@/features/Media/MediaLibrary.vue'; import MediaPreview from '@/features/Media/MediaPreview.vue';
@@ -17,6 +19,7 @@ const activeHub = computed(() => { const current = route.value; return 'hub' in 
 const isHubPage = computed(() => 'hub' in route.value);
 const canManageHub = ref(false);
 const renderFailure = ref('');
+const hubProgressError = ref('');
 onErrorCaptured((cause) => {
   renderFailure.value = cause instanceof Error ? cause.message : String(cause);
   return false; // Show a visible error instead of losing the route subtree.
@@ -35,6 +38,7 @@ function withinDeadline<T>(operation: Promise<T>, label: string): Promise<T> {
 async function load() {
  const generation = ++loadGeneration;
  canManageHub.value = false;
+ hubProgressError.value = '';
  try { const [accountResult, hubResult] = await Promise.allSettled([
    withinDeadline(AccountsApi.current(), 'Account request'),
    withinDeadline(HubsApi.list(), 'Hub directory request'),
@@ -59,6 +63,21 @@ async function load() {
   else error.value = hubResult.reason instanceof Error
     ? `Hub directory unavailable: ${hubResult.reason.message}` : 'Hub directory is temporarily unavailable.';
   const currentHub = activeHub.value;
+  const currentRoute = route.value;
+  if (currentHub && currentRoute.kind === 'hub') {
+   try {
+    const progress = await withinDeadline(ReaderProgressApi.get(currentHub.hub), 'Reading progress request');
+    const destinationRoute = hubRouteForProgress(currentRoute.hub, progress.checkpoint);
+    if (destinationRoute.kind === 'welcome') {
+     const destination = welcomeUrl(currentHub.hub);
+     history.replaceState(null, '', destination + window.location.search + window.location.hash);
+     lastPath = window.location.pathname;
+    }
+    route.value = destinationRoute;
+   } catch (cause) {
+    hubProgressError.value = cause instanceof Error ? cause.message : 'Could not verify reading progress.';
+   }
+  }
   if (account.value && currentHub) {
    try { canManageHub.value = (await withinDeadline(HubsApi.access(currentHub.hub), 'Hub access request')).canManage; }
    catch { error.value = 'Could not verify hub permissions. Creator-only controls are hidden.'; }
@@ -87,6 +106,7 @@ async function load() {
  }
 }
 function refreshPage() { window.location.reload(); }
+function retryCurrentRoute() { loading.value = true; void load(); }
 async function logout() { if (!await confirmNavigation()) return; try { await AccountsApi.logout(); account.value=null; location.href='/'; }
 catch(e) { error.value=e instanceof Error ? e.message : 'Logout failed'; } }
 let lastPath = window.location.pathname;
@@ -153,7 +173,7 @@ onMounted(() => {
 onUnmounted(() => { document.removeEventListener('click', onClick); window.removeEventListener('wikiplotter:navigate', syncRoute); window.removeEventListener('wikiplotter:replace-route', syncReplacedRoute); window.removeEventListener('popstate', onPopState); });
 </script>
 <template><div class="site-shell"><GlobalHeader :account="account" @logout="logout" />
- <template v-if="!loading && isHubPage && activeHub"><HubChrome :key="activeHub.hub" :hub="activeHub.hub" :name="activeHub.name" :can-manage="canManageHub" @changed="refreshPage" /></template>
+ <template v-if="!loading && !hubProgressError && isHubPage && activeHub"><HubChrome :key="activeHub.hub" :hub="activeHub.hub" :name="activeHub.name" :can-manage="canManageHub" @changed="refreshPage" /></template>
  <p v-if="error" class="global-error" role="alert">{{ error }}</p>
  <main v-if="renderFailure" class="center-container"><section class="panel content-panel" role="alert">
   <h1>Page failed to render</h1><p>{{ renderFailure }}</p><p><a href="/">Return to Wikiplotter</a></p>
@@ -161,12 +181,19 @@ onUnmounted(() => { document.removeEventListener('click', onClick); window.remov
  <HomePage v-else-if="route.kind==='home'" :hubs="hubs" :signed-in="!!account" :directory-loading="loading" />
  <SignInPage v-else-if="route.kind==='login'" />
  <div v-else-if="loading" class="loading-screen" role="status">Loading Wikiplotter…</div>
+ <main v-else-if="hubProgressError" class="center-container"><section class="panel content-panel" role="alert">
+  <h1>Could not verify reading progress</h1><p>{{ hubProgressError }}</p><button class="button-outline" @click="retryCurrentRoute">Try again</button>
+ </section></main>
  <template v-else>
   <RegisterPage v-if="route.kind==='register'" :pending="pending" />
   <AccountPage v-else-if="route.kind==='account-settings' && account" :account="account" tab="settings" />
   <AccountPage v-else-if="route.kind==='account-data' && account" :account="account" tab="data" />
   <MediaLibrary v-else-if="route.kind==='media-library' && account" />
   <MediaPreview v-else-if="route.kind==='media-preview' && account" :asset="route.asset" />
+  <HubCreatePage v-else-if="route.kind==='hub-create' && account" />
+  <section v-else-if="route.kind==='hub-create'" class="panel content-panel center-container">
+   <h1>Sign in to start a hub</h1><p>Hub creation is available to registered users.</p><a class="button-outline" href="/login">Log in</a>
+  </section>
   <template v-else-if="activeHub"><main class="hub-content center-container">
    <HubWelcome v-if="route.kind==='welcome'" :hub="activeHub.hub" :name="activeHub.name" />
    <HubHome v-else-if="route.kind==='hub'" :hub="activeHub.hub" :hub-name="activeHub.name" :signed-in="!!account" />

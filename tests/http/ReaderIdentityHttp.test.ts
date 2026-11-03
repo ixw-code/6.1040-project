@@ -28,9 +28,11 @@ describe('reader identity HTTP boundary', () => {
   test('guest selection stays in a signed cookie, rejects tampering and expiry, and filters reading', async () => {
     now = new Date('2026-01-01T00:00:00Z');
     const { gateway } = createApplication(mongo.db());
-    const created = await gateway.invoke('/hubs/create', { name: 'North', label: 'First' });
+    const created = await gateway.invoke('/hubs/create', { name: 'North' });
     if (!created.ok) throw Error('hub');
     const { hub } = created.value as { hub: string };
+    const sequence = (created.value as { sequence: string }).sequence;
+    if (!(await gateway.invoke('/checkpoints/append', { hub, sequence, label: 'First' })).ok) throw Error('checkpoint');
     const checkpoints = await gateway.invoke('/checkpoints/list', { hub });
     if (!checkpoints.ok) throw Error('checkpoints');
     const [start, first] = (checkpoints.value as { checkpoints: { checkpoint: string }[] }).checkpoints;
@@ -66,7 +68,7 @@ describe('reader identity HTTP boundary', () => {
   test('session user overrides forged reader and guest cookie; expiry blocks access', async () => {
     now = new Date('2026-01-01T00:00:00Z');
     const { gateway } = createApplication(mongo.db());
-    const created = await gateway.invoke('/hubs/create', { name: 'South', label: 'First' });
+    const created = await gateway.invoke('/hubs/create', { name: 'South' });
     if (!created.ok) throw Error('hub');
     const hub = (created.value as { hub: string }).hub;
     const checkpoints = await gateway.invoke('/checkpoints/list', { hub });

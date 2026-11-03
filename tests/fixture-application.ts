@@ -20,8 +20,7 @@ export function createApplication(db: Db) {
       try {
         if (path === '/hubs/create') {
           const { hub } = await hubs.create({ name: input.name as string, creator: 'fixture-user' });
-          const { sequence } = await checkpoints.create({ scope: hub, label: input.label as string });
-          await checkpoints.append({ sequence, label: input.label as string });
+          const { sequence } = await checkpoints.create({ scope: hub, label: (input.name as string).trim() });
           return { ok: true, value: { hub, sequence } };
         }
         if (path === '/checkpoints/list') {

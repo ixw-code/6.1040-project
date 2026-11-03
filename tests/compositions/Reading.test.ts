@@ -9,13 +9,16 @@ describe('Reading local gateway', () => {
   const mongo = useMongoTestDb();
 
   async function createHub(gateway: Gateway, name: string) {
-    const result = await gateway.invoke('/hubs/create', { name, label: 'First' });
+    const result = await gateway.invoke('/hubs/create', { name });
     if (!result.ok) throw new Error(`Could not create hub ${name}`);
     const { hub, sequence } = result.value as { hub: string; sequence: string };
+    const firstResult = await gateway.invoke('/checkpoints/append', { hub, sequence, label: 'First' });
+    if (!firstResult.ok) throw new Error('Could not create first checkpoint');
+    const first = (firstResult.value as { checkpoint: string }).checkpoint;
     const listed = await gateway.invoke('/checkpoints/list', { hub });
     if (!listed.ok) throw new Error('Could not list checkpoints');
     const checkpoints = (listed.value as { checkpoints: { checkpoint: string }[] }).checkpoints;
-    return { hub, sequence, start: checkpoints[0]!.checkpoint, first: checkpoints[1]!.checkpoint };
+    return { hub, sequence, start: checkpoints[0]!.checkpoint, first };
   }
 
   async function createDocument(gateway: Gateway, hub: string, title: string,

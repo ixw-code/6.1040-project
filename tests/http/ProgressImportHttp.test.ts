@@ -14,9 +14,12 @@ describe('login progress synchronization', () => {
   test('imports only absent account hubs after verified login and clears guest cookie', async () => {
     const app = createApplication(mongo.db()).gateway;
     async function hub(name: string) {
-      const created = await app.invoke('/hubs/create', { name, label: 'First' });
+      const created = await app.invoke('/hubs/create', { name });
       if (!created.ok) throw Error('hub');
       const id = (created.value as { hub: string }).hub;
+      const sequence = (created.value as { sequence: string }).sequence;
+      const appended = await app.invoke('/checkpoints/append', { hub: id, sequence, label: 'First' });
+      if (!appended.ok) throw Error('first checkpoint');
       const listed = await app.invoke('/checkpoints/list', { hub: id });
       if (!listed.ok) throw Error('checkpoints');
       const [start, first] = (listed.value as { checkpoints: { checkpoint: string }[] }).checkpoints;

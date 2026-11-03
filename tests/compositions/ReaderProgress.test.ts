@@ -9,13 +9,16 @@ describe('ReaderProgress local gateway', () => {
   const mongo = useMongoTestDb();
 
   async function createHub(gateway: ReturnType<typeof createApplication>['gateway'], name: string) {
-    const created = await gateway.invoke('/hubs/create', { name, label: 'First' });
+    const created = await gateway.invoke('/hubs/create', { name });
     if (!created.ok) throw new Error('Hub creation failed');
     const { hub, sequence } = created.value as { hub: string; sequence: string };
+    const firstResult = await gateway.invoke('/checkpoints/append', { hub, sequence, label: 'First' });
+    if (!firstResult.ok) throw new Error('Checkpoint creation failed');
+    const first = (firstResult.value as { checkpoint: string }).checkpoint;
     const listed = await gateway.invoke('/checkpoints/list', { hub });
     if (!listed.ok) throw new Error('Checkpoint listing failed');
     const rows = (listed.value as { checkpoints: { checkpoint: string }[] }).checkpoints;
-    return { hub, sequence, start: rows[0]!.checkpoint, first: rows[1]!.checkpoint };
+    return { hub, sequence, start: rows[0]!.checkpoint, first };
   }
 
   test('returns missing progress, records NotStarted, moves backward, and clears idempotently', async () => {

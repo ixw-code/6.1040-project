@@ -31,26 +31,35 @@ export function createHubs(db: Db, clock?: () => Date) {
   const catalog = new HubCataloguingConcept(db);
   const checkpoints = new CheckpointingConcept(db);
 
-  async function recoverCreate(actor: string, name: string, label: string) {
+  async function finishLegacyCreate(hub: string, name: string, checkpoint?: string) {
+    const { sequence } = await checkpoints.create({ scope: hub, label: name.trim() });
+    if (!checkpoint?.trim()) return;
+    const ordinary = await checkpoints._checkpoints({ scope: hub, sequence });
+    if (!ordinary.some((row) => row.position > 0 && row.label === checkpoint.trim())) {
+      await checkpoints.append({ sequence, label: checkpoint });
+    }
+  }
+
+  async function recoverCreate(actor: string, name: string, legacyCheckpoint?: string) {
     let hub = (await catalog._hub({ name: name.trim() }))[0]?.hub;
     if (!hub) {
       const session = await recoverySession(actor);
       try {
-        const result = await gateway.invoke('/hubs/create', { session, name, label });
+        const result = await gateway.invoke('/hubs/create', { session, name });
+        if (result.ok && legacyCheckpoint?.trim()) {
+          await finishLegacyCreate((result.value as { hub: string }).hub, name, legacyCheckpoint);
+        }
         return result;
       } finally { await new SessioningConcept(db, clock).end({ session }); }
     }
     const owner = (await catalog._get({ hub }))[0];
     if (!owner || owner.creator !== actor) {
       const session = await recoverySession(actor);
-      try { return await gateway.invoke('/hubs/create', { session, name, label }); }
+      try { return await gateway.invoke('/hubs/create', { session, name }); }
       finally { await new SessioningConcept(db, clock).end({ session }); }
     }
-    const { sequence } = await checkpoints.create({ scope: hub, label });
-    const ordinary = await checkpoints._checkpoints({ scope: hub, sequence });
-    if (!ordinary.some((row) => row.position > 0 && row.label === label.trim())) {
-      await checkpoints.append({ sequence, label });
-    }
+    await finishLegacyCreate(hub, name, legacyCheckpoint);
+    const { sequence } = (await checkpoints._sequences({ scope: hub }))[0]!;
     return { ok: true, value: { hub, sequence } } as Awaited<ReturnType<typeof gateway.invoke>>;
   }
 
@@ -64,20 +73,19 @@ export function createHubs(db: Db, clock?: () => Date) {
     if (typeof sessionSecret !== 'string') return gateway.invoke(path, input);
     const actor = (await new SessioningConcept(db, clock).use({ session: sessionSecret })).user;
     const name = input.name as string;
-    const label = input.label as string;
     const trimmedName = name.trim();
     const derivedSlug = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    if (!trimmedName || !label.trim() || derivedSlug.length < 3 || derivedSlug.length > 80 ||
+    if (!trimmedName || derivedSlug.length < 3 || derivedSlug.length > 80 ||
       (await catalog._hub({ name: trimmedName })).length || (await catalog._bySlug({ slug: derivedSlug })).length) {
       return gateway.invoke(path, input);
     }
-    return runOperation({ db, kind: 'hub.create', actor, payload: { name, label },
+    return runOperation({ db, kind: 'hub.create', actor, payload: { name },
       work: async () => {
         const result = await gateway.invoke(path, input);
         if (result.ok) return result;
         const hub = (await catalog._hub({ name: trimmedName }))[0]?.hub;
         const owner = hub && (await catalog._get({ hub }))[0]?.creator;
-        if (owner === actor) return recoverCreate(actor, name, label);
+        if (owner === actor) return recoverCreate(actor, name);
         return result;
       },
     });
@@ -115,7 +123,7 @@ export function createHubs(db: Db, clock?: () => Date) {
   }
 
   registerOperationRecovery(db, 'hub.create', async (operation: PendingOperation) => {
-    const { name, label } = operation.payload as { name: string; label: string };
+    const { name, label } = operation.payload as { name: string; label?: string };
     return recoverCreate(operation.actor, name, label);
   });
   registerOperationRecovery(db, 'hub.delete', (operation) => {

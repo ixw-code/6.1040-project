@@ -30,14 +30,13 @@ const CheckpointChoices = former('hubs checkpoint choices', ({ hub, sequence }, 
     .form({ checkpoint: checkpoint!, label: label!, position: position! }),
 );
 
-const CreateHub = endpoint('/hubs/create', ({ session, user, name, label, hub, sequence, checkpoint }) =>
-  receive({ session, name, label })
+const CreateHub = endpoint('/hubs/create', ({ session, user, name, hub, sequence }) =>
+  receive({ session, name })
     .then(Sessioning.use({ session }).responds({ user }))
     .then(HubCataloguing.create({ name, creator: user }).responds({ hub }))
-    .then(Checkpointing.create({ scope: hub, label }).responds({ sequence }))
-    .then(Checkpointing.append({ sequence, label }).responds({ checkpoint }))
+    .then(Checkpointing.create({ scope: hub, label: name }).responds({ sequence }))
     .then(respond({ hub, sequence })),
-  { input: { required: ['session', 'name', 'label'] } },
+  { input: { required: ['session', 'name'] } },
 );
 
 const RenameHub = endpoint('/hubs/rename', ({ session, user, hub, name }) =>

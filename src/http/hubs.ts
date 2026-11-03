@@ -54,7 +54,7 @@ export function createHubsHttpHandler(db: Db, options: AuthOptions) {
     if (request.method !== 'POST') return json({ error: 'INVALID_REQUEST' }, 400);
     const input = await inputJson(request);
     if (!input) return json({ error: 'INVALID_REQUEST' }, 400);
-    const keys = path === '/api/hubs/create' ? ['name', 'label']
+    const keys = path === '/api/hubs/create' ? ['name']
       : path === '/api/hubs/rename' ? ['hub', 'name']
       : path === '/api/hubs/slug' ? ['hub', 'slug']
       : path === '/api/checkpoints/append' ? ['hub', 'sequence', 'label']

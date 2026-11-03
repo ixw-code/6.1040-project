@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { hubUrl, welcomeUrl, settingsUrl, articleUrl, articleCancelUrl, editUrl, newArticleUrl, assetUrl,
+import { hubCreateUrl, hubRouteForProgress, hubUrl, welcomeUrl, settingsUrl, articleUrl, articleCancelUrl, editUrl, newArticleUrl, assetUrl,
   rememberArticleDirectory, rememberHubDirectory, rememberHubSlug, routeFromPath, articleBreadcrumbs } from '../src/lib/routes.ts';
 import { legacyMediaSource } from '../src/lib/legacyMedia.ts';
 
@@ -8,6 +8,7 @@ describe('frontend route links', () => {
     rememberHubDirectory([{ hub: 'hub:one', slug: 'star-harbor' }]);
     rememberArticleDirectory('hub:one', [{ document: 'document:two', title: 'A/B: The Long Way' }]);
     expect(hubUrl('hub:one')).toBe('/star-harbor');
+    expect(hubCreateUrl()).toBe('/hubs/new');
     expect(welcomeUrl('hub:one')).toBe('/star-harbor/welcome');
     expect(settingsUrl('hub:one')).toBe('/star-harbor/settings');
     expect(articleUrl('hub:one', 'document:two')).toBe('/star-harbor/A%2FB%3A%20The%20Long%20Way');
@@ -35,6 +36,11 @@ describe('frontend route links', () => {
     expect(routeFromPath('/login?returnTo=%2Fstar-harbor')).toEqual({ kind: 'login' });
     expect(routeFromPath('/account/settings#account')).toEqual({ kind: 'account-settings' });
     expect(routeFromPath('/star-harbor/Opening/edit?from=article')).toEqual({ kind: 'article-edit', hub: 'star-harbor', document: 'Opening' });
+  });
+  test('routes a new hub to its dedicated page and selects welcome only when progress is missing', () => {
+    expect(routeFromPath('/hubs/new')).toEqual({ kind: 'hub-create' });
+    expect(hubRouteForProgress('star-harbor', null)).toEqual({ kind: 'welcome', hub: 'star-harbor' });
+    expect(hubRouteForProgress('star-harbor', 'not-started')).toEqual({ kind: 'hub', hub: 'star-harbor' });
   });
   test('resolves decoded readable route parameters and exact breadcrumb levels', () => {
     expect(routeFromPath('/star-harbor/A%2FB%3A%20The%20Long%20Way/edit')).toEqual({

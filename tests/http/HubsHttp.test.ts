@@ -28,7 +28,7 @@ describe('protected Hubs HTTP boundary', () => {
           ...(session ? { cookie: `__Host-wikiplotter_session=${session}` } : {}) },
         body: JSON.stringify(body) });
 
-    const creation = { name: 'Star Harbor', label: 'Chapter One', user: other };
+    const creation = { name: 'Star Harbor', user: other };
     expect((await handle(request('/hubs/create', creation))).status).toBe(401);
     expect((await handle(request('/hubs/create', creation, ownerSession, 'http://evil.test'))).status).toBe(403);
     const made = await handle(request('/hubs/create', creation, ownerSession));

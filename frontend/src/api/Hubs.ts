@@ -34,7 +34,7 @@ export const HubsApi = {
     rememberArticleDirectory(hub, result.documents);
     return result;
   },
-  create: (name: string, label: string) => postJson<HubCreated>('/hubs/create', { name, label }),
+  create: (name: string) => postJson<HubCreated>('/hubs/create', { name }),
   rename: (hub: string, name: string) => postJson<{ hub: string }>('/hubs/rename', { hub, name }),
   async updateSlug(hub: string, slug: string) {
     const result = await postJson<{ slug: string }>('/hubs/slug', { hub, slug });

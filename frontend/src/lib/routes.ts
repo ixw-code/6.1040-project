@@ -1,5 +1,5 @@
 export type Route =
-  | { kind: 'home' | 'login' | 'register' | 'account-settings' | 'account-data' | 'media-library' | 'not-found' }
+  | { kind: 'home' | 'login' | 'register' | 'account-settings' | 'account-data' | 'media-library' | 'hub-create' | 'not-found' }
   | { kind: 'media-preview'; asset: string }
   | { kind: 'hub' | 'welcome' | 'hub-settings' | 'article-new'; hub: string }
   | { kind: 'article' | 'article-edit'; hub: string; document: string };
@@ -24,7 +24,12 @@ export const hubUrl = (hub: string) => {
   if (!slug) throw new Error(`No backend-resolved slug is available for hub ${hub}`);
   return `/${part(slug)}`;
 };
+export const hubCreateUrl = () => '/hubs/new';
 export const welcomeUrl = (hub: string) => `${hubUrl(hub)}/welcome`;
+export function hubRouteForProgress(hub: string, checkpoint: string | null):
+  { kind: 'welcome' | 'hub'; hub: string } {
+  return checkpoint === null ? { kind: 'welcome', hub } : { kind: 'hub', hub };
+}
 export const settingsUrl = (hub: string) => `${hubUrl(hub)}/settings`;
 export const articleUrl = (hub: string, document: string, knownTitle?: string) => {
   const title = knownTitle ?? articleTitleById.get(articleMapKey(hub, document));
@@ -46,6 +51,7 @@ export function routeFromPath(path: string): Route {
     if (segments.length === 1 && segments[0] === 'register') return { kind: 'register' };
     if (segments[0] === 'account' && segments[1] === 'settings') return { kind: 'account-settings' };
     if (segments[0] === 'account' && segments[1] === 'data') return { kind: 'account-data' };
+    if (segments[0] === 'hubs' && segments[1] === 'new' && segments.length === 2) return { kind: 'hub-create' };
     if (segments.length === 1 && segments[0] === 'assets') return { kind: 'media-library' };
     if (segments.length === 2 && segments[0] === 'assets') return { kind: 'media-preview', asset: segments[1]! };
     const [hub, rest, third, fourth] = segments;

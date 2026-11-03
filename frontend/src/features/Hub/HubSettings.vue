@@ -1,166 +1,286 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { HubsApi, type CheckpointRow } from "@/api/Hubs.ts";
 import { hubUrl, settingsUrl } from "@/lib/routes.ts";
-import { confirmAndRun } from "@/lib/confirm.ts";
+import { askConfirmation } from "@/lib/confirm.ts";
 import { navigate } from "@/lib/navigation.ts";
+import { hubDeleteConfirmationMatches } from "./hub-settings.ts";
+
 const props = defineProps<{ hub: string; slug: string; name: string }>();
-const name = ref(props.name),
-  slug = ref(props.slug),
-  checkpoints = ref<CheckpointRow[]>([]),
-  sequence = ref("");
-const label = ref(""),
-  labels = ref<Record<string, string>>({}),
-  busy = ref(false),
-  error = ref(""),
-  success = ref("");
+const savedName = ref(props.name);
+const savedSlug = ref(props.slug);
+const name = ref(props.name);
+const slug = ref(props.slug);
+const editingName = ref(false);
+const editingSlug = ref(false);
+const checkpoints = ref<CheckpointRow[]>([]);
+const sequence = ref("");
+const label = ref("");
+const labels = ref<Record<string, string>>({});
+const busy = ref(false);
+const pageError = ref("");
+const nameError = ref("");
+const slugError = ref("");
+const success = ref("");
+const deleteDialogOpen = ref(false);
+const deleteConfirmation = ref("");
+const deleteError = ref("");
+const detailsChanged = computed(() =>
+  name.value.trim() !== savedName.value || slug.value.trim() !== savedSlug.value,
+);
+const canDeleteHub = computed(() =>
+  hubDeleteConfirmationMatches(deleteConfirmation.value, savedName.value),
+);
+
+async function loadCheckpoints() {
+  const [sequenceData, list] = await Promise.all([
+    HubsApi.sequences(props.hub),
+    HubsApi.checkpoints(props.hub),
+  ]);
+  sequence.value = sequenceData.sequences[0]?.sequence ?? list.sequence;
+  checkpoints.value = list.checkpoints;
+  labels.value = Object.fromEntries(list.checkpoints.map((row) => [row.checkpoint, row.label]));
+}
+
 onMounted(async () => {
   try {
-    const [s, list] = await Promise.all([
-      HubsApi.sequences(props.hub),
-      HubsApi.checkpoints(props.hub),
-    ]);
-    sequence.value = s.sequences[0]?.sequence ?? list.sequence;
-    checkpoints.value = list.checkpoints;
-    labels.value = Object.fromEntries(
-      checkpoints.value.map((c) => [c.checkpoint, c.label]),
-    );
-  } catch (e) {
-    error.value =
-      e instanceof Error ? e.message : "Could not load hub settings";
+    await loadCheckpoints();
+  } catch (cause) {
+    pageError.value = cause instanceof Error ? cause.message : "Could not load hub settings";
   }
 });
-async function change(work: () => Promise<unknown>, message: string) {
-  if (busy.value) return;
+
+function cancelNameEdit() {
+  name.value = savedName.value;
+  nameError.value = "";
+  editingName.value = false;
+}
+
+function cancelSlugEdit() {
+  slug.value = savedSlug.value;
+  slugError.value = "";
+  editingSlug.value = false;
+}
+
+async function saveDetails() {
+  if (busy.value || !detailsChanged.value) return;
   busy.value = true;
-  error.value = "";
+  pageError.value = "";
+  nameError.value = "";
+  slugError.value = "";
   success.value = "";
   try {
-    await work();
-    success.value = message;
-    const c = await HubsApi.checkpoints(props.hub);
-    checkpoints.value = c.checkpoints;
-    labels.value = Object.fromEntries(
-      c.checkpoints.map((x) => [x.checkpoint, x.label]),
-    );
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : "Action denied";
+    if (!name.value.trim()) {
+      nameError.value = "Hub name is required.";
+      return;
+    }
+    const nextSlug = slug.value.trim();
+    if (nextSlug.length < 3 || nextSlug.length > 80 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(nextSlug)) {
+      slugError.value = "Use a valid lowercase URL slug.";
+      return;
+    }
+    const confirmed = await askConfirmation({
+      title: "Save hub details?",
+      message: "Save these hub name and URL changes?",
+      confirmLabel: "Save changes",
+      cancelLabel: "Cancel",
+    });
+    if (!confirmed) return;
+
+    const nextName = name.value.trim();
+    if (nextName !== savedName.value) {
+      try {
+        await HubsApi.rename(props.hub, nextName);
+        savedName.value = nextName;
+        editingName.value = false;
+      } catch (cause) {
+        if (cause instanceof Error && cause.message === "CONFLICT") {
+          nameError.value = "Name already taken. Please try again.";
+        } else pageError.value = cause instanceof Error ? cause.message : "Could not rename hub";
+        return;
+      }
+    }
+    if (nextSlug !== savedSlug.value) {
+      try {
+        const result = await HubsApi.updateSlug(props.hub, nextSlug);
+        savedSlug.value = result.slug;
+        editingSlug.value = false;
+      } catch (cause) {
+        if (cause instanceof Error && cause.message === "CONFLICT") {
+          slugError.value = "Name already taken. Please try again.";
+        } else pageError.value = cause instanceof Error ? cause.message : "Could not update hub URL";
+        return;
+      }
+    }
+    editingName.value = false;
+    editingSlug.value = false;
+    history.replaceState(null, "", settingsUrl(props.hub));
+    window.location.reload();
   } finally {
     busy.value = false;
   }
 }
-function rename() {
-  return change(async () => {
-    await HubsApi.rename(props.hub, name.value);
-    window.location.reload();
-  }, "Hub renamed");
+
+async function changeCheckpoint(work: () => Promise<unknown>, message: string) {
+  if (busy.value) return;
+  busy.value = true;
+  pageError.value = "";
+  success.value = "";
+  try {
+    await work();
+    await loadCheckpoints();
+    success.value = message;
+  } catch (cause) {
+    pageError.value = cause instanceof Error ? cause.message : "Action denied";
+  } finally {
+    busy.value = false;
+  }
 }
-function updateSlug() {
-  return change(async () => {
-    const result = await HubsApi.updateSlug(props.hub, slug.value);
-    slug.value = result.slug;
-    history.replaceState(null, "", settingsUrl(props.hub));
-    window.location.reload();
-  }, "Slug updated");
-}
+
 function relabel(checkpoint: string) {
-  return change(
-    () =>
-      HubsApi.relabelCheckpoint(
-        props.hub,
-        checkpoint,
-        labels.value[checkpoint] ?? "",
-      ),
+  return changeCheckpoint(
+    () => HubsApi.relabelCheckpoint(props.hub, checkpoint, labels.value[checkpoint] ?? ""),
     "Checkpoint updated",
   );
 }
+
 function append() {
-  return change(async () => {
+  return changeCheckpoint(async () => {
     await HubsApi.appendCheckpoint(props.hub, sequence.value, label.value);
     label.value = "";
   }, "Checkpoint added");
 }
-async function remove() {
-  await confirmAndRun(
-    {
-      title: "Delete hub?",
-      message:
-        "This permanently deletes the hub, its articles, checkpoints, and reader progress. This action cannot be undone.",
-      confirmLabel: "Delete",
-      cancelLabel: "Cancel",
-    },
-    async () => {
-      await change(async () => {
-        await HubsApi.delete(props.hub);
-        await navigate("/");
-      }, "Hub deleted");
-    },
-  );
+
+function openDeleteDialog() {
+  deleteConfirmation.value = "";
+  deleteError.value = "";
+  deleteDialogOpen.value = true;
+}
+
+function closeDeleteDialog() {
+  if (busy.value) return;
+  deleteDialogOpen.value = false;
+  deleteConfirmation.value = "";
+  deleteError.value = "";
+}
+
+async function removeHub() {
+  if (!canDeleteHub.value || busy.value) return;
+  busy.value = true;
+  deleteError.value = "";
+  try {
+    await HubsApi.delete(props.hub);
+    await navigate("/");
+  } catch (cause) {
+    deleteError.value = cause instanceof Error ? cause.message : "Could not delete hub";
+  } finally {
+    busy.value = false;
+  }
 }
 </script>
+
 <template>
-  <section class="panel content-panel settings-panel">
-    <h1>{{ props.name }} settings</h1>
+  <section class="panel content-panel settings-panel hub-settings-panel">
+    <a class="hub-back-link" :href="hubUrl(hub)">Back to hub</a>
+    <header class="hub-settings-header">
+      <h1>{{ savedName }} settings</h1>
+    </header>
     <p class="muted">Only the original hub creator can make changes.</p>
-    <p v-if="error" role="alert" class="error-text">{{ error }}</p>
+    <p v-if="pageError" role="alert" class="error-text">{{ pageError }}</p>
     <p v-if="success" role="status" class="success-text">{{ success }}</p>
+
     <section class="settings-section">
       <h2>Hub details</h2>
-      <form @submit.prevent="rename">
-        <label>Display name<input v-model="name" required /></label
-        ><button :disabled="busy" class="button-outline">Rename hub</button>
-      </form>
-      <form @submit.prevent="updateSlug">
-        <label
-          >New URL slug<input
-            v-model="slug"
-            placeholder="lowercase-hub-slug"
+      <div class="hub-detail-field">
+        <div class="hub-detail-label">Hub name</div>
+        <div class="hub-detail-control">
+          <input
+            v-if="editingName"
+            id="hub-name-field"
+            v-model="name"
+            maxlength="100"
             required
-            pattern="[a-z0-9-]+"
-        /></label>
-        <p class="muted small">
-          Changing the slug does not change the internal hub identity.
-        </p>
-        <button :disabled="busy" class="button-outline">Update slug</button>
-      </form>
+            :disabled="busy"
+            aria-label="Hub name"
+          />
+          <div v-else class="hub-readonly-field" role="textbox" aria-readonly="true" aria-label="Hub name">{{ savedName }}</div>
+          <button
+            class="text-button hub-change-button"
+            type="button"
+            :disabled="busy"
+            @click="editingName ? cancelNameEdit() : (editingName = true)"
+          >{{ editingName ? "Cancel" : "Change" }}</button>
+        </div>
+      </div>
+
+      <div class="hub-slug-description">
+        <span class="muted">Hub homepage lives at /{{ savedSlug }}</span>
+        <button
+          class="text-button hub-change-button"
+          type="button"
+          :disabled="busy"
+          @click="editingSlug ? cancelSlugEdit() : (editingSlug = true)"
+        >{{ editingSlug ? "Cancel" : "Change" }}</button>
+        <input
+          v-if="editingSlug"
+          id="hub-slug-field"
+          v-model="slug"
+          class="hub-slug-inline-input"
+          placeholder="lowercase-hub-slug"
+          pattern="[a-z0-9\-]+"
+          required
+          :disabled="busy"
+          aria-label="Hub URL slug"
+        />
+      </div>
+      <p class="hub-field-error" :class="{ visible: nameError || slugError }" role="alert">
+        {{ nameError || slugError || " " }}
+      </p>
+
+      <div class="hub-save-actions">
+        <button class="primary" :disabled="busy || !detailsChanged" @click="saveDetails">
+          {{ busy ? "Saving…" : "Save changes" }}
+        </button>
+      </div>
     </section>
+
     <section class="settings-section">
       <h2>Checkpoints</h2>
       <div v-for="row in checkpoints" :key="row.checkpoint" class="setting-row">
-        <span>{{ row.position + 1 }}.</span
-        ><span v-if="row.position === 0"
-          >{{ row.label }} <small>(fixed)</small></span
-        ><template v-else
-          ><input
-            v-model="labels[row.checkpoint]"
-            :aria-label="`Rename ${row.label}`"
-          /><button
-            class="button-outline"
-            :disabled="busy"
-            @click="relabel(row.checkpoint)"
-          >
-            Save
-          </button></template
-        >
+        <span>{{ row.position + 1 }}.</span>
+        <span v-if="row.position === 0">{{ row.label }} <small>(fixed)</small></span>
+        <template v-else>
+          <input v-model="labels[row.checkpoint]" :aria-label="`Rename ${row.label}`" />
+          <button class="button-outline" :disabled="busy" @click="relabel(row.checkpoint)">Save</button>
+        </template>
       </div>
       <form class="inline-actions" @submit.prevent="append">
-        <input v-model="label" placeholder="New checkpoint" required /><button
-          class="primary"
-          :disabled="busy"
-        >
-          Add checkpoint
-        </button>
+        <input v-model="label" placeholder="New checkpoint" required />
+        <button class="primary" :disabled="busy">Add checkpoint</button>
       </form>
     </section>
+
     <section class="settings-section danger-zone">
-      <h2>Delete hub</h2>
-      <p class="muted">
-        This permanently removes the hub and its associated articles.
-      </p>
-      <button class="danger" :disabled="busy" @click="remove">
-        Delete hub
-      </button>
+      <p class="muted hub-delete-description">Deleting this hub permanently removes its articles, checkpoints, and reader progress. Uploaded media stays with its uploader. This cannot be undone.</p>
+      <div class="hub-delete-actions">
+        <button class="danger" :disabled="busy" @click="openDeleteDialog">Delete hub</button>
+      </div>
     </section>
-    <p><a :href="hubUrl(hub)">Back to hub</a></p>
   </section>
+
+  <div v-if="deleteDialogOpen" class="confirm-backdrop" role="presentation" @click.self="closeDeleteDialog">
+    <section class="confirm-dialog panel hub-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-hub-title">
+      <h2 id="delete-hub-title">Delete hub?</h2>
+      <p>Deleting this hub permanently removes its articles, checkpoints, and reader progress. Uploaded media stays with its uploader. This cannot be undone.</p>
+      <label for="delete-hub-confirmation">Type <strong>{{ savedName }}</strong> to confirm.</label>
+      <input id="delete-hub-confirmation" v-model="deleteConfirmation" autocomplete="off" :disabled="busy" @keydown.enter.prevent="removeHub" />
+      <p v-if="deleteError" class="error-text" role="alert">{{ deleteError }}</p>
+      <div class="confirm-actions">
+        <button class="button-outline" :disabled="busy" @click="closeDeleteDialog">Cancel</button>
+        <button class="danger" :disabled="!canDeleteHub || busy" @click="removeHub">
+          {{ busy ? "Deleting…" : "Delete hub" }}
+        </button>
+      </div>
+    </section>
+  </div>
 </template>

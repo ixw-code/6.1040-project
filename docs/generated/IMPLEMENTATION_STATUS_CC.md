@@ -6,6 +6,7 @@
 | --- | --- |
 | 1A — Account deletion backend | Added trusted-session self-deletion with an ownership blocker. The application coordinator journals cleanup of sessions, provider registration, saved progress, and owned media. Recovery replays completed steps safely before account or application operations continue. Article documents remain unchanged; existing reader placeholders cover missing media. |
 | 1B — Account deletion frontend | Added a protected delete flow in account settings with typed confirmation, ownership-blocker messaging, retryable errors, and logout redirect after success. |
+| 2A — Hub flow and navigation | Added a dedicated name-only hub creation page, starts new hubs with only NotStarted, shows duplicate-name/slug errors inline, and resolves hub progress before rendering the hub page. |
 
 ## 1A backend changes
 
@@ -14,9 +15,8 @@
 | `design/concepts/Registering.md` | Clarifies that unregistering releases the provider identity and later sign-in requires explicit fresh registration. |
 | `design/compositions/Accounts.md` | Defines session-derived deletion, the pre-mutation owned-hub refusal, cleanup scope, retained article references, and replay/recovery behavior. |
 | `src/compositions/Accounts.ts` | Adds `Accounts.DeleteAccount`; derives the user from the session, refuses owned hubs, ends sessions, and unregisters the user. |
-| `src/assembly/accounts.ts` | Runs deletion through the existing operation journal; clears user progress and removes owned media bytes before metadata. Recovery treats already-removed records as complete. |
+| `src/assembly/accounts.ts` | Runs deletion through the existing operation journal, clears user progress and media safely, and exposes a session-derived eligibility check; deletion repeats the ownership check before mutation. |
 | `src/http/accounts.ts` | Replaces the 501 response with authenticated, CSRF-protected deletion; returns a clear hub blocker, reports recovery failures, and clears session/progress cookies after success. |
-| `src/assembly/accounts.ts` | Adds a read-only eligibility check derived from the authenticated session; deletion still repeats the ownership check before mutation. |
 | `src/http/edge.ts` | Runs account API requests through the application gate. Verified-provider callbacks enter the gate after external identity verification. |
 | `tests/compositions/Accounts.test.ts` | Covers blocker/no-mutation, full cleanup, retained article references, invalidated sessions, and fresh provider registration. |
 | `tests/http/AccountsHttp.test.ts` | Covers session-only authorization, forged user IDs, blocker messaging, interrupted cleanup/retry, session invalidation, and fresh registration through the provider callback. |
@@ -38,9 +38,29 @@ Owned hub detection happens before the operation journal or any cleanup mutation
 
 The eligibility check uses only the trusted session cookie and returns no hub details. The existing `POST /api/accounts/delete` endpoint remains the final authorization boundary and repeats the ownership check to handle changes after preflight. No concept, composition, or generated-client changes were needed. Existing unavailable-media placeholders remain the fallback for article references to deleted media.
 
+## Milestone 2A — Hub flow and navigation
+
+| File | Responsibility updated |
+| --- | --- |
+| `frontend/src/features/Home/HomePage.vue` | Changes Start a Hub from an expanding homepage form to a link to the dedicated creation page. |
+| `frontend/src/features/Hub/HubCreatePage.vue` | Adds the name-only creation page using the registration card layout, with an inline conflict message and redirect to the new hub. |
+| `frontend/src/App.vue` | Adds `/hubs/new`; checks progress while the route is loading and replaces a progress-less hub URL with its welcome URL before rendering. Shows a retry state if progress cannot be checked. |
+| `frontend/src/features/Hub/HubHome.vue` | Removes its late mounted redirect because App resolves progress before rendering this page. |
+| `frontend/src/features/Hub/HubSettings.vue` | Groups hub details, checkpoints, and deletion into settings sections; stages name/slug edits behind Change controls and a confirmed Save action; requires the exact hub name to delete and explains cleanup consequences. Back link, name label, inline slug editor, and delete alignment follow the requested layout. |
+| `frontend/src/features/Hub/hub-settings.ts`, `frontend/tests/hubs.test.ts` | Encodes and tests exact-name confirmation for hub deletion. |
+| `frontend/src/components/HubChrome.vue` | Closes the reading-progress popup when the user clicks outside it. |
+| `frontend/src/api/Hubs.ts`, `frontend/src/lib/routes.ts` | Makes hub creation name-only and adds creation/progress route helpers. |
+| `frontend/src/styles/features.css`, `frontend/src/styles/layout.css`, `frontend/src/styles/responsive.css` | Styles the registration-like creation page, compact centered progress selector, and hub settings layout/dialog; removes the old homepage form styles. |
+| `design/compositions/Hubs.md`, `src/compositions/Hubs.ts` | Updates CreateHub to create a NotStarted-only sequence; creators add ordinary checkpoints later. |
+| `src/assembly/hubs.ts`, `src/http/hubs.ts` | Accepts name-only creation and preserves recovery of already-journaled legacy creations. |
+| `tests/fixture-application.ts` and hub/reader HTTP, composition, acceptance tests | Updates creation fixtures and verifies new hubs begin with NotStarted only. |
+| `frontend/tests/routes.test.ts` | Covers `/hubs/new` and welcome-versus-hub routing for missing progress versus NotStarted. |
+
+URL changes: `/hubs/new` is the dedicated creation page. Existing hub URLs remain `/<slug>`; when progress is missing, the app replaces that URL with `/<slug>/welcome` before rendering. `POST /api/hubs/create` keeps its path but now accepts `{ name }` without a first-checkpoint label.
+
 ## Verification
 
-- `bun --env-file=.env.test.local test` — passed: **105 tests across 33 files, 675 assertions** on isolated standalone MongoDB test databases.
+- `bun --env-file=.env.test.local test` — passed: **106 tests across 33 files, 679 assertions** on isolated standalone MongoDB test databases.
 - Focused account run — passed: **11 tests across 3 files, 112 assertions**.
 - `bun run check:design` — passed for all 15 design files.
 - `bun run check:framework` — passed for both application configurations, with 10 existing advisories each.
@@ -51,8 +71,13 @@ The eligibility check uses only the trusted session cookie and returns no hub de
 - `bun run build:frontend:prod` — passed; Vite emitted the existing Node built-in externalization warnings from sync-engine browser dependencies.
 - `bun test frontend/tests/accounts.test.ts` — passed: **4 tests, 13 assertions**.
 - `bun --env-file=.env.test.local test tests/http/AccountsHttp.test.ts` — passed: **5 tests, 64 assertions**.
-- `bun --env-file=.env.test.local test` — passed: **105 tests across 33 files, 675 assertions**.
+- Milestone 2A: `bun run typecheck:frontend`, `bun run check:design`, `bun run check:framework`, and `bun run check:artifacts` passed; framework checks report 10 existing advisories per configuration.
+- Milestone 2A production frontend build passed with existing sync-engine Node built-in externalization warnings.
 - `git diff --check` — passed after the implementation changes.
+- Follow-up hub UI refinement: `bun run typecheck:frontend`, `bun test frontend/tests` (**22 tests, 69 assertions**), `bun run build:frontend:prod`, and `git diff --check` all passed. The production build reports the existing sync-engine Node built-in externalization warnings.
+- Follow-up settings polish: widened the centered progress selector to 60% of its popup line, moved the blue Back to hub link above the settings header, made the Hub name label regular weight, placed the slug input inline beside Change, and right-aligned Delete below its consequence text. Frontend typecheck, tests, build, and diff check passed again.
+- Hub details spacing: tightened the name/slug spacing and placed both validation messages in one shared error line directly below the slug. Frontend typecheck, tests, and diff check passed.
+- Slug input pattern: escaped the hyphen for HTML `pattern` Unicode-set parsing, eliminating the browser regexp error while retaining lowercase letters, digits, and hyphens. Frontend typecheck, tests, production build, and diff check passed.
 
 ## Suggested commit message
 
@@ -66,3 +91,13 @@ The eligibility check uses only the trusted session cookie and returns no hub de
 ## Remaining Code Complete work
 
 - Resolve the existing TypeScript error in `tests/compositions/MediaAssets.test.ts` separately.
+
+## Suggested Milestone 2A commit message
+
+`feat(hubs): improve hub creation and entry flow`
+
+- Add a dedicated name-only hub creation page and start each hub at NotStarted.
+- Show name and slug conflicts beside their fields without shifting settings layout.
+- Resolve saved progress before rendering hub pages and route new readers to welcome.
+- Match hub creation and settings controls to existing account UI; close the progress popup on outside click and require typed hub-name confirmation for deletion.
+- Update the Hubs composition and navigation tests for the revised flow.

@@ -2,7 +2,7 @@
 
 Hubs handles hub creation, settings, checkpoints, and deletion. HubCataloguing owns hub metadata and creator identity; Checkpointing owns each hub's ordered checkpoint sequence.
 
-Any registered user may create a hub, but only its creator may modify or delete it. [CreateHub](reaction:Hubs.CreateHub) creates the hub, its checkpoint sequence, and the initial checkpoint. [RenameHub](reaction:Hubs.RenameHub) changes the display name without changing its slug, while [UpdateSlug](reaction:Hubs.UpdateSlug) changes the URL slug independently. [GetHubAccess](reaction:Hubs.GetHubAccess) checks whether the current user is the creator through [IsCreator](view:Hubs.IsCreator).
+Any registered user may create a hub, but only its creator may modify or delete it. [CreateHub](reaction:Hubs.CreateHub) takes a name and creates the hub with a checkpoint sequence containing only NotStarted. The creator can add ordinary checkpoints later. [RenameHub](reaction:Hubs.RenameHub) changes the display name without changing its slug, while [UpdateSlug](reaction:Hubs.UpdateSlug) changes the URL slug independently. [GetHubAccess](reaction:Hubs.GetHubAccess) checks whether the current user is the creator through [IsCreator](view:Hubs.IsCreator).
 
 ```endpoints
 Hubs.CreateHub at /hubs/create
