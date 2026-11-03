@@ -214,6 +214,20 @@ async function save() {
     documentId.value = response.document;
     savedTitle.value = title.value;
     original = serialize();
+    if (!props.document) {
+      let returnToHubHome = false;
+      try {
+        const { documents } = await HubsApi.browse(props.hub);
+        returnToHubHome = !documents.some((row) => row.document === response.document);
+      } catch {
+        // Keep the newly created article away from a URL that the reader cannot resolve.
+        returnToHubHome = true;
+      }
+      if (returnToHubHome) {
+        await navigate(hubUrl(props.hub), true);
+        return;
+      }
+    }
     await navigate(articleUrl(props.hub, response.document, title.value), true);
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Article save failed";
