@@ -3,14 +3,13 @@ import { onMounted, ref } from "vue";
 import { AccountsApi, type Account } from "@/api/Accounts.ts";
 import {
   HubsApi,
-  notStartedCheckpoint,
   selectedCheckpointLabel,
-  type CheckpointRow,
 } from "@/api/Hubs.ts";
 import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import { MediaAssetsApi, type Asset } from "@/api/MediaAssets.ts";
 import { hubUrl, assetUrl } from "@/lib/routes.ts";
 import DeleteAccountDialog from "./DeleteAccountDialog.vue";
+import ReaderProgressControl from "@/components/ReaderProgressControl.vue";
 const props = defineProps<{ account: Account; tab: "settings" | "data" }>();
 const username = ref(props.account.username),
   editing = ref(false),
@@ -26,9 +25,6 @@ const reading = ref<{
     [],
   ),
   uploads = ref<Asset[]>([]);
-const activeProgressHub = ref(""),
-  progressChoices = ref<CheckpointRow[]>([]),
-  progressDraft = ref("");
 const deleteDialogOpen = ref(false);
 onMounted(async () => {
   if (props.tab === "data") {
@@ -61,44 +57,11 @@ onMounted(async () => {
     }
   }
 });
-async function manageProgress(hub: string) {
-  try {
-    activeProgressHub.value = hub;
-    progressChoices.value = (await HubsApi.checkpoints(hub)).checkpoints;
-    progressDraft.value =
-      reading.value.find((row) => row.hub === hub)?.checkpoint ??
-      notStartedCheckpoint(progressChoices.value) ??
-      "";
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : "Cannot load checkpoints";
-  }
-}
-async function changeProgress(clear: boolean) {
-  busy.value = true;
-  error.value = "";
-  try {
-    if (clear) await ReaderProgressApi.clear(activeProgressHub.value);
-    else
-      await ReaderProgressApi.record(
-        activeProgressHub.value,
-        progressDraft.value,
-      );
-    const entry = reading.value.find(
-      (row) => row.hub === activeProgressHub.value,
-    );
-    if (entry) {
-      entry.checkpoint = clear ? null : progressDraft.value;
-      entry.checkpointLabel = selectedCheckpointLabel(
-        entry.checkpoint,
-        progressChoices.value,
-      );
-    }
-    activeProgressHub.value = "";
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : "Could not update progress";
-  } finally {
-    busy.value = false;
-  }
+function updateProgress(hub: string, progress: { checkpoint: string; label: string | null }) {
+  const entry = reading.value.find((row) => row.hub === hub);
+  if (!entry) return;
+  entry.checkpoint = progress.checkpoint;
+  entry.checkpointLabel = progress.label;
 }
 async function updateName() {
   busy.value = true;
@@ -190,42 +153,17 @@ function accountDeleted() {
       ><template v-else
         ><h2>Reading progress</h2>
         <p v-if="!reading.length" class="muted">No saved hub progress yet.</p>
-        <div v-for="hub in reading" :key="hub.hub" class="data-row">
-          <a :href="hubUrl(hub.hub)">{{ hub.name }}</a
-          ><span class="muted">{{
-            hub.checkpointLabel ?? "Checkpoint unavailable"
-          }}</span
-          ><button class="text-button" @click="manageProgress(hub.hub)">
-            Manage
-          </button>
-        </div>
-        <div v-if="activeProgressHub" class="panel manage-progress">
-          <h3>Set reading progress</h3>
-          <select v-model="progressDraft">
-            <option
-              v-for="row in progressChoices"
-              :key="row.checkpoint"
-              :value="row.checkpoint"
-            >
-              {{ row.label }}
-            </option>
-          </select>
-          <div class="inline-actions">
-            <button
-              class="primary"
-              :disabled="busy || !progressDraft"
-              @click="changeProgress(false)"
-            >
-              Save</button
-            ><button
-              class="button-outline"
-              :disabled="busy"
-              @click="changeProgress(true)"
-            >
-              Clear</button
-            ><button class="text-button" @click="activeProgressHub = ''">
-              Cancel
-            </button>
+        <div class="reading-progress-list" aria-label="Saved reading progress">
+          <div v-for="hub in reading" :key="hub.hub" class="data-row">
+            <a :href="hubUrl(hub.hub)">{{ hub.name }}</a>
+            <span class="muted">{{ hub.checkpointLabel ?? "Checkpoint unavailable" }}</span>
+            <ReaderProgressControl
+              :hub="hub.hub"
+              :name="hub.name"
+              :checkpoint="hub.checkpoint"
+              reload-page-after-clear
+              @changed="updateProgress(hub.hub, $event)"
+            />
           </div>
         </div>
         <h2>Authored articles</h2>

@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, onErrorCaptured, ref, computed } from 'vue';
 import { HubsApi } from '@/api/Hubs.ts'; import { AccountsApi, type Account } from '@/api/Accounts.ts';
 import { ReaderProgressApi } from '@/api/ReaderProgress.ts';
-import type { Hub } from '@/api.ts'; import { hubRouteForProgress, routeFromLocation, welcomeUrl, type Route } from '@/lib/routes.ts';
+import type { Hub } from '@/api.ts'; import { currentReturnPath, hubCreateUrl, hubRouteForProgress, loginUrl, routeFromLocation, settingsUrl, welcomeUrl, type Route } from '@/lib/routes.ts';
 import GlobalHeader from '@/components/GlobalHeader.vue'; import HubChrome from '@/components/HubChrome.vue';
 import HomePage from '@/features/Home/HomePage.vue';
 import HubWelcome from '@/features/Hub/HubWelcome.vue'; import HubHome from '@/features/Hub/HubHome.vue'; import HubSettings from '@/features/Hub/HubSettings.vue';
@@ -55,7 +55,7 @@ async function load() {
      const index = segments.findIndex(Boolean);
      if (index >= 0) segments[index] = encodeURIComponent(byId.slug);
      history.replaceState(null, '', segments.join('/') + window.location.search + window.location.hash);
-     lastPath = window.location.pathname;
+     lastPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
      route.value = { ...currentRoute, hub: byId.slug };
     }
    }
@@ -71,7 +71,7 @@ async function load() {
     if (destinationRoute.kind === 'welcome') {
      const destination = welcomeUrl(currentHub.hub);
      history.replaceState(null, '', destination + window.location.search + window.location.hash);
-     lastPath = window.location.pathname;
+     lastPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     }
     route.value = destinationRoute;
    } catch (cause) {
@@ -94,7 +94,7 @@ async function load() {
       const index = segments.findIndex(Boolean);
       if (index >= 0 && segments[index + 1] !== undefined) segments[index + 1] = encodeURIComponent(found.title);
       history.replaceState(null, '', segments.join('/') + window.location.search + window.location.hash);
-      lastPath = window.location.pathname;
+      lastPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
      }
     }
    } catch { /* The reader/editor reports the progress or access refusal. */ }
@@ -106,30 +106,35 @@ async function load() {
  }
 }
 function refreshPage() { window.location.reload(); }
+function signInHref(returnTo = currentReturnPath()) { return loginUrl(returnTo); }
 function retryCurrentRoute() { loading.value = true; void load(); }
 async function logout() { if (!await confirmNavigation()) return; try { await AccountsApi.logout(); account.value=null; location.href='/'; }
 catch(e) { error.value=e instanceof Error ? e.message : 'Logout failed'; } }
-let lastPath = window.location.pathname;
+let lastPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 let popGuard = false;
 async function syncRoute() {
  loading.value = true;
  error.value = '';
  renderFailure.value = '';
  route.value = routeFromLocation();
- lastPath = window.location.pathname;
+ lastPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
  await load();
 }
 function syncReplacedRoute() {
  renderFailure.value = '';
  route.value = routeFromLocation();
- lastPath = window.location.pathname;
+ lastPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 }
 async function initialRoute() {
  if (route.value.kind === 'article-edit') {
   const accepted = await askConfirmation({ title: 'Spoiler warning',
    message: 'The editor shows the complete article, including content beyond your reading progress.',
    confirmLabel: 'Continue editing', cancelLabel: 'Cancel' });
-  if (!accepted) { history.replaceState(null, '', window.location.pathname.replace(/\/edit$/, '')); route.value = routeFromLocation(); lastPath = window.location.pathname; }
+  if (!accepted) {
+   history.replaceState(null, '', `${window.location.pathname.replace(/\/edit$/, '')}${window.location.search}${window.location.hash}`);
+   route.value = routeFromLocation();
+   lastPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  }
  }
  await load();
 }
@@ -144,7 +149,7 @@ function onClick(event: MouseEvent) {
 }
 async function onPopState() {
  if (popGuard) { popGuard = false; void syncRoute(); return; }
- const target = window.location.pathname;
+ const target = `${window.location.pathname}${window.location.search}${window.location.hash}`;
  const destination = routeFromLocation();
  if (hasUnsavedChanges()) {
   history.pushState(null, '', lastPath);
@@ -192,7 +197,7 @@ onUnmounted(() => { document.removeEventListener('click', onClick); window.remov
   <MediaPreview v-else-if="route.kind==='media-preview' && account" :asset="route.asset" />
   <HubCreatePage v-else-if="route.kind==='hub-create' && account" />
   <section v-else-if="route.kind==='hub-create'" class="panel content-panel center-container">
-   <h1>Sign in to start a hub</h1><p>Hub creation is available to registered users.</p><a class="button-outline" href="/login">Log in</a>
+   <h1>Sign in to start a hub</h1><p>Hub creation is available to registered users.</p><a class="button-outline" :href="signInHref(hubCreateUrl())">Log in</a>
   </section>
   <template v-else-if="activeHub"><main class="hub-content center-container">
    <HubWelcome v-if="route.kind==='welcome'" :hub="activeHub.hub" :name="activeHub.name" />
@@ -204,9 +209,9 @@ onUnmounted(() => { document.removeEventListener('click', onClick); window.remov
    <section v-else-if="route.kind==='hub-settings'" class="panel content-panel">
     <h1>Hub settings unavailable</h1><p v-if="!account">Sign in to manage a hub you created.</p>
     <p v-else>Only the original hub creator can manage this hub.</p>
-    <a :href="account ? '/' : '/login'">{{ account ? 'Browse hubs' : 'Log in' }}</a>
+    <a :href="account ? '/' : signInHref(settingsUrl(activeHub.hub))">{{ account ? 'Browse hubs' : 'Log in' }}</a>
    </section>
-   <section v-else class="panel content-panel"><h1>Sign in required</h1><p>Sign in to manage this resource.</p><a href="/login">Log in</a></section>
+   <section v-else class="panel content-panel"><h1>Sign in required</h1><p>Sign in to manage this resource.</p><a :href="signInHref()">Log in</a></section>
   </main></template>
   <main v-else class="center-container"><section class="panel content-panel"><h1>{{ isHubPage ? 'Hub not found' : 'Page not found' }}</h1><a href="/">Browse hubs</a></section></main>
  </template>

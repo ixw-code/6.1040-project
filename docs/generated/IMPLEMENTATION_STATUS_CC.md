@@ -48,7 +48,7 @@ The eligibility check uses only the trusted session cookie and returns no hub de
 | `frontend/src/features/Hub/HubHome.vue` | Removes its late mounted redirect because App resolves progress before rendering this page. |
 | `frontend/src/features/Hub/HubSettings.vue` | Groups hub details, checkpoints, and deletion into settings sections; stages name/slug edits behind Change controls and a confirmed Save action; requires the exact hub name to delete and explains cleanup consequences. Back link, name label, inline slug editor, and delete alignment follow the requested layout. |
 | `frontend/src/features/Hub/hub-settings.ts`, `frontend/tests/hubs.test.ts` | Encodes and tests exact-name confirmation for hub deletion. |
-| `frontend/src/components/HubChrome.vue` | Closes the reading-progress popup when the user clicks outside it. |
+| `frontend/src/components/HubChrome.vue` | Hosts the shared reading-progress control in hub navigation. |
 | `frontend/src/api/Hubs.ts`, `frontend/src/lib/routes.ts` | Makes hub creation name-only and adds creation/progress route helpers. |
 | `frontend/src/styles/features.css`, `frontend/src/styles/layout.css`, `frontend/src/styles/responsive.css` | Styles the registration-like creation page, compact centered progress selector, and hub settings layout/dialog; removes the old homepage form styles. |
 | `design/compositions/Hubs.md`, `src/compositions/Hubs.ts` | Updates CreateHub to create a NotStarted-only sequence; creators add ordinary checkpoints later. |
@@ -79,6 +79,34 @@ URL changes: `/hubs/new` is the dedicated creation page. Existing hub URLs remai
 - Hub details spacing: tightened the name/slug spacing and placed both validation messages in one shared error line directly below the slug. Frontend typecheck, tests, and diff check passed.
 - Slug input pattern: escaped the hyphen for HTML `pattern` Unicode-set parsing, eliminating the browser regexp error while retaining lowercase letters, digits, and hyphens. Frontend typecheck, tests, production build, and diff check passed.
 
+## Milestone 2B — Progress and return navigation
+
+| File | Responsibility updated |
+| --- | --- |
+| `frontend/src/components/ReaderProgressControl.vue` | Extracts the shared progress icon and popup for hub chrome and saved-progress rows; teleports the popup outside scroll containers while anchoring it to the icon; warns before advancing, closes on outside click, and confirms unsaved changes before clearing. |
+| `frontend/src/components/HubChrome.vue`, `frontend/src/features/Account/AccountPage.vue` | Reuses the shared control in hubs and account data; the saved-progress list is bounded and scrollable. Clearing from hub navigation goes to welcome; clearing from Account Data reloads the current settings page. |
+| `frontend/src/features/Hub/HubWelcome.vue`, `frontend/src/lib/readerProgress.ts` | Centers initial progress selection and warns when joining at a later checkpoint; shares the checkpoint-position advancement check. |
+| `frontend/src/lib/routes.ts`, `frontend/src/api/Accounts.ts`, `frontend/src/lib/navigation.ts` | Sanitizes same-origin return destinations, avoids returning to login/registration routes, and supports route replacement after a confirmation already succeeded. |
+| `frontend/src/components/GlobalHeader.vue`, `frontend/src/features/Home/HomePage.vue`, `frontend/src/features/Account/SignInPage.vue`, `frontend/src/features/Account/RegisterPage.vue`, `frontend/src/App.vue` | Preserves the current internal path, query, and hash for login and registration, including the Start a Hub login prompt; resumes the original route after authentication. |
+| `src/http/accounts.ts`, `tests/http/AccountsHttp.test.ts` | Includes the safe return path on the registration page and retains it through registration; server-side validation rejects external and auth-loop destinations. |
+| `frontend/src/features/Article/ArticleEditor.vue`, `frontend/src/App.vue` | Preserves query and hash when canonicalizing editor routes, canceling edit entry, and restoring Back/Forward state. |
+| `frontend/src/styles/layout.css`, `frontend/tests/routes.test.ts`, `frontend/tests/checkpoints.test.ts` | Centers welcome progress controls, matches label/dropdown sizing, increases dropdown height by about 3 px, and tests safe return paths and progress advancement. |
+
+Redirect behavior: the unauthenticated Start a Hub link enters `/login?returnTo=%2Fhubs%2Fnew`. Global-header login links carry the current path, query, and hash. The OAuth callback redirects an unregistered identity to `/register?returnTo=…`; the sealed pending-registration cookie retains the same value, and successful registration returns there. Both frontend and server reject external paths, protocol-relative paths, backslashes, and login/registration destinations that could loop. Clearing progress in hub navigation replaces the current URL with `/<slug>/welcome`; clearing from Account Data reloads the current Account Data route. The app replaces a progress-less direct hub URL with its welcome URL before rendering. Back/Forward continues through `popstate`; unsaved-change cancellation restores the full previous path, query, and hash. Refresh loads the route from the current URL.
+
+URL changes: no route paths changed. Login links now carry a `returnTo` query, and the OAuth callback adds the same query to `/register` so an expired registration can resume the intended internal page.
+
+Milestone 2B verification:
+
+- `bun run typecheck:frontend` — passed.
+- `bun test frontend/tests` — passed: **24 tests, 80 assertions**.
+- `bun run build:frontend:prod` — passed with the existing sync-engine Node built-in externalization warnings.
+- `bun --env-file=.env.test.local test tests/http/AccountsHttp.test.ts` — passed: **5 tests, 66 assertions**, including registration return-path preservation.
+- `git diff --check` — passed.
+- `bun run typecheck:backend` — still reports the existing unrelated `_id` string filter error in `tests/compositions/MediaAssets.test.ts:54`.
+- Follow-up: teleported the progress popup to `body` so it is not clipped by Account Data’s scroll box; it repositions with scrolling and viewport changes. Frontend typecheck, tests, production build, and diff check passed.
+- Follow-up: clearing a progress row from Account Data now reloads the current settings page; hub-page clear actions still route to welcome. Frontend checks passed.
+
 ## Suggested commit message
 
 `feat(accounts): complete protected account deletion flow`
@@ -101,3 +129,12 @@ URL changes: `/hubs/new` is the dedicated creation page. Existing hub URLs remai
 - Resolve saved progress before rendering hub pages and route new readers to welcome.
 - Match hub creation and settings controls to existing account UI; close the progress popup on outside click and require typed hub-name confirmation for deletion.
 - Update the Hubs composition and navigation tests for the revised flow.
+
+## Suggested Milestone 2B commit message
+
+`feat(navigation): preserve progress and auth return flows`
+
+- Reuse one spoiler-aware reading-progress popup in hubs and account data.
+- Warn before advancing checkpoints and send cleared progress to the hub welcome page.
+- Preserve safe internal return paths through login and fresh registration.
+- Keep query/hash state across history navigation and test routing safeguards.

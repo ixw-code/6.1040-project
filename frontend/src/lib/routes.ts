@@ -8,6 +8,36 @@ const part = (id: string) => encodeURIComponent(id);
 const slugByHub = new Map<string, string>();
 const articleTitleById = new Map<string, string>();
 const articleMapKey = (hub: string, document: string) => `${hub}\u0000${document}`;
+const frontendOrigin = 'http://wikiplotter.local';
+
+/** Accept only same-origin absolute paths for login return destinations. */
+export function safeInternalPath(raw: string | null | undefined, fallback = '/'): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return fallback;
+  try {
+    const url = new URL(raw, frontendOrigin);
+    return url.origin === frontendOrigin ? `${url.pathname}${url.search}${url.hash}` : fallback;
+  } catch { return fallback; }
+}
+
+export function safeReturnPath(raw: string | null | undefined, fallback = '/'): string {
+  const destination = safeInternalPath(raw, fallback);
+  const kind = routeFromPath(destination).kind;
+  return kind === 'login' || kind === 'register' ? fallback : destination;
+}
+
+export function currentReturnPath(): string {
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const kind = routeFromPath(current).kind;
+  if (kind === 'login' || kind === 'register') {
+    return safeReturnPath(new URLSearchParams(window.location.search).get('returnTo'));
+  }
+  return safeReturnPath(current);
+}
+
+export function loginUrl(returnTo = currentReturnPath()): string {
+  return `/login?${new URLSearchParams({ returnTo: safeReturnPath(returnTo) })}`;
+}
+
 export function rememberHubDirectory(hubs: { hub: string; slug: string }[]) {
   slugByHub.clear();
   for (const hub of hubs) slugByHub.set(hub.hub, hub.slug);

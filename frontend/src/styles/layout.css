@@ -327,7 +327,7 @@
 
 .progress-popover {
     position: absolute;
-    z-index: 9;
+    z-index: 30;
     right: 0;
     top: 47px;
     background: #fff;
@@ -355,13 +355,17 @@
     text-align: center;
 }
 
+.progress-popover .progress-current-label {
+    font-size: 0.9rem;
+}
+
 .progress-popover>select {
     display: block;
     width: 60%;
     max-width: 100%;
     margin: 12px auto 14px;
-    padding: 6px 16px 6px 7px;
-    font-size: 0.83rem;
+    padding: 7px 16px 7px 7px;
+    font-size: 0.9rem;
 }
 
 .checkpoint-strip {
@@ -435,7 +439,17 @@
 .welcome-panel form {
     max-width: 290px;
     margin: 40px auto 0;
-    text-align: left;
+    text-align: center;
+}
+
+.welcome-panel form label {
+    text-align: center;
+}
+
+.welcome-panel form select {
+    display: block;
+    width: 100%;
+    margin: 8px auto 0;
 }
 
 .welcome-panel form button {
@@ -604,4 +618,16 @@
 
 .data-row .grow .muted {
     margin: 3px 0;
+}
+
+.reading-progress-list {
+    max-height: 350px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-top: 1px solid #e4eaf0;
+    border-bottom: 1px solid #e4eaf0;
+}
+
+.reading-progress-list .data-row:first-child {
+    border-top: 0;
 }

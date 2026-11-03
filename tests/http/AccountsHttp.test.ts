@@ -39,7 +39,8 @@ describe('Accounts HTTP boundary', () => {
   test('requires explicit Create account after verified callback, then issues and revokes a session', async () => {
     const server = listen();
     try {
-      const start = await request(server, '/api/accounts/login?provider=GOOGLE');
+      const returnTo = '/star-harbor/Opening?from=hub';
+      const start = await request(server, `/api/accounts/login?provider=GOOGLE&returnTo=${encodeURIComponent(returnTo)}`);
       expect(start.status).toBe(303);
       const flow = issued(start, '__Host-wikiplotter_flow');
       const state = new URL(start.headers.get('location')!).searchParams.get('state');
@@ -47,7 +48,7 @@ describe('Accounts HTTP boundary', () => {
         headers: { cookie: flow },
       });
       expect(callback.status).toBe(303);
-      expect(callback.headers.get('location')).toBe(`${origin}/register`);
+      expect(callback.headers.get('location')).toBe(`${origin}/register?returnTo=${encodeURIComponent(returnTo)}`);
       const pending = issued(callback, '__Host-wikiplotter_pending');
       expect(await mongo.db().collection('registering.users').countDocuments()).toBe(0);
       expect(await (await request(server, '/api/accounts/current', { headers: { cookie: pending } })).json())
@@ -65,6 +66,7 @@ describe('Accounts HTTP boundary', () => {
         body: JSON.stringify({ username: 'Alice', provider: 'COMMONS', providerSubject: 'forged' }),
       });
       expect(registered.status).toBe(201);
+      expect(await registered.clone().json()).toMatchObject({ redirectTo: returnTo });
       const session = issued(registered, '__Host-wikiplotter_session');
       expect(registered.headers.getSetCookie().find((value) => value.startsWith('__Host-wikiplotter_session=')))
         .toContain('Secure; HttpOnly; SameSite=Lax');
@@ -253,7 +255,7 @@ describe('Accounts HTTP boundary', () => {
         headers: { cookie: flow },
       });
       expect(callback.status).toBe(303);
-      expect(callback.headers.get('location')).toBe(`${origin}/register`);
+      expect(callback.headers.get('location')).toBe(`${origin}/register?returnTo=%2F`);
       const pending = issued(callback, '__Host-wikiplotter_pending');
       const registered = await request(server, '/api/accounts/register', {
         method: 'POST', headers: { origin, cookie: pending, 'content-type': 'application/json' },

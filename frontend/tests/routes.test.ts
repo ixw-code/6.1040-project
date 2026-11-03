@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { hubCreateUrl, hubRouteForProgress, hubUrl, welcomeUrl, settingsUrl, articleUrl, articleCancelUrl, editUrl, newArticleUrl, assetUrl,
-  rememberArticleDirectory, rememberHubDirectory, rememberHubSlug, routeFromPath, articleBreadcrumbs } from '../src/lib/routes.ts';
+  rememberArticleDirectory, rememberHubDirectory, rememberHubSlug, routeFromPath, articleBreadcrumbs,
+  loginUrl, safeInternalPath, safeReturnPath } from '../src/lib/routes.ts';
 import { legacyMediaSource } from '../src/lib/legacyMedia.ts';
 
 describe('frontend route links', () => {
@@ -36,6 +37,17 @@ describe('frontend route links', () => {
     expect(routeFromPath('/login?returnTo=%2Fstar-harbor')).toEqual({ kind: 'login' });
     expect(routeFromPath('/account/settings#account')).toEqual({ kind: 'account-settings' });
     expect(routeFromPath('/star-harbor/Opening/edit?from=article')).toEqual({ kind: 'article-edit', hub: 'star-harbor', document: 'Opening' });
+  });
+  test('keeps login return paths internal and preserves route query and hash', () => {
+    expect(safeInternalPath('/star-harbor/Opening?from=hub#section'))
+      .toBe('/star-harbor/Opening?from=hub#section');
+    expect(safeInternalPath('https://attacker.example/path')).toBe('/');
+    expect(safeInternalPath('//attacker.example/path')).toBe('/');
+    expect(safeInternalPath('/\\\\attacker.example/path')).toBe('/');
+    expect(safeReturnPath('/login?returnTo=%2Fstar-harbor')).toBe('/');
+    expect(safeReturnPath('/register')).toBe('/');
+    expect(loginUrl('https://attacker.example/path'))
+      .toBe('/login?returnTo=%2F');
   });
   test('routes a new hub to its dedicated page and selects welcome only when progress is missing', () => {
     expect(routeFromPath('/hubs/new')).toEqual({ kind: 'hub-create' });

@@ -3,6 +3,8 @@ import { onMounted, ref } from "vue";
 import { HubsApi, notStartedCheckpoint, type CheckpointRow } from "@/api/Hubs.ts";
 import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import { hubUrl } from "@/lib/routes.ts";
+import { askConfirmation } from "@/lib/confirm.ts";
+import { isProgressAdvance } from "@/lib/readerProgress.ts";
 const props = defineProps<{ hub: string; name: string }>();
 const choices = ref<CheckpointRow[]>([]),
   selected = ref(""),
@@ -18,6 +20,15 @@ onMounted(async () => {
   }
 });
 async function save() {
+  if (isProgressAdvance(choices.value, null, selected.value)) {
+    const accepted = await askConfirmation({
+      title: "Spoiler warning",
+      message: "Starting at a later checkpoint may reveal more article content. Continue only if you have already read through this checkpoint.",
+      confirmLabel: "Set progress",
+      cancelLabel: "Cancel",
+    });
+    if (!accepted) return;
+  }
   busy.value = true;
   error.value = "";
   try {

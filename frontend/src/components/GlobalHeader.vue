@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import type { Account } from "@/api/Accounts.ts";
+import { loginUrl } from "@/lib/routes.ts";
 const props = defineProps<{ account: Account | null }>();
 const emit = defineEmits<{ logout: [] }>();
 const menu = ref(false);
 const profileWrap = ref<HTMLElement | null>(null);
-const loginHref = `/login?${new URLSearchParams({ returnTo: `${location.pathname}${location.search}` })}`;
+const loginHref = ref(loginUrl());
 function closeMenu() { menu.value = false; }
+function updateLoginHref() { loginHref.value = loginUrl(); }
 function closeOnOutsideClick(event: PointerEvent) {
   if (!profileWrap.value?.contains(event.target as Node)) closeMenu();
 }
@@ -18,11 +20,17 @@ onMounted(() => {
   document.addEventListener("pointerdown", closeOnOutsideClick);
   window.addEventListener("popstate", closeMenu);
   window.addEventListener("wikiplotter:navigate", closeMenu);
+  window.addEventListener("popstate", updateLoginHref);
+  window.addEventListener("wikiplotter:navigate", updateLoginHref);
+  window.addEventListener("wikiplotter:replace-route", updateLoginHref);
 });
 onUnmounted(() => {
   document.removeEventListener("pointerdown", closeOnOutsideClick);
   window.removeEventListener("popstate", closeMenu);
   window.removeEventListener("wikiplotter:navigate", closeMenu);
+  window.removeEventListener("popstate", updateLoginHref);
+  window.removeEventListener("wikiplotter:navigate", updateLoginHref);
+  window.removeEventListener("wikiplotter:replace-route", updateLoginHref);
 });
 </script>
 <template>

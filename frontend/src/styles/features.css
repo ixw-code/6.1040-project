@@ -640,16 +640,6 @@
     margin: 0;
 }
 
-.manage-progress {
-    padding: 18px;
-    margin: 15px 0;
-}
-
-.manage-progress select {
-    margin-bottom: 15px;
-    max-width: 310px;
-}
-
 .confirm-backdrop {
     position: fixed;
     inset: 0;

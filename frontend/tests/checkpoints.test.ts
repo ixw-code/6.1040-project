@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { notStartedCheckpoint, requirementCheckpointValue, selectedCheckpointLabel, type CheckpointRow } from '../src/api/Hubs.ts';
 import { needsProgressSelection } from '../src/api/ReaderProgress.ts';
+import { isProgressAdvance } from '../src/lib/readerProgress.ts';
 
 const sequence: CheckpointRow[] = [
   { checkpoint: 'chapter-1', label: 'Chapter 1', position: 1 },
@@ -28,5 +29,12 @@ describe('checkpoint UI values', () => {
     expect(selectedCheckpointLabel('chapter-1', sequence)).toBe('Chapter 1');
     expect(selectedCheckpointLabel(null, sequence)).toBeNull();
     expect(selectedCheckpointLabel('unknown', sequence)).toBeNull();
+  });
+
+  test('warns only when progress moves to a later checkpoint', () => {
+    expect(isProgressAdvance(sequence, 'chapter-1', 'chapter-2')).toBe(true);
+    expect(isProgressAdvance(sequence, 'chapter-2', 'chapter-1')).toBe(false);
+    expect(isProgressAdvance(sequence, null, 'not-started')).toBe(false);
+    expect(isProgressAdvance(sequence, null, 'chapter-1')).toBe(true);
   });
 });

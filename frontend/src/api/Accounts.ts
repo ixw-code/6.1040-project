@@ -1,4 +1,5 @@
 import { getJson, postJson } from './http.ts';
+import { safeReturnPath } from '@/lib/routes.ts';
 
 export type Account = { user: string; username: string; provider: 'GOOGLE' | 'COMMONS' };
 export type CurrentAccount = { account: Account | null; pending: boolean };
@@ -50,7 +51,7 @@ async function checkDeleteEligibility(): Promise<DeleteEligibility> {
 export const AccountsApi = {
   current: () => getJson<CurrentAccount>('/api/accounts/current'),
   loginUrl(provider: Account['provider'], returnTo: string) {
-    return `/api/accounts/login?${new URLSearchParams({ provider, returnTo })}`;
+    return `/api/accounts/login?${new URLSearchParams({ provider, returnTo: safeReturnPath(returnTo) })}`;
   },
   register: (username: string) => postJson<RegistrationResult>('/accounts/register', { username }),
   logout: () => postJson<{ ended: boolean }>('/accounts/logout'),

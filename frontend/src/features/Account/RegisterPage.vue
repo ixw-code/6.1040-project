@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { AccountsApi } from "@/api/Accounts.ts";
+import { currentReturnPath, loginUrl, safeReturnPath } from "@/lib/routes.ts";
 defineProps<{ pending: boolean }>();
+const signInHref = loginUrl(currentReturnPath());
 const username = ref(""),
   busy = ref(false),
   error = ref("");
@@ -10,7 +12,7 @@ async function create() {
   error.value = "";
   try {
     const result = await AccountsApi.register(username.value);
-    location.href = result.redirectTo || "/";
+    location.href = safeReturnPath(result.redirectTo);
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not create account";
   } finally {
@@ -40,7 +42,7 @@ async function create() {
         <button :disabled="busy" class="primary full">Create account</button>
       </form>
       <p v-else>
-        Your sign-in has expired. <a href="/login">Sign in again.</a>
+        Your sign-in has expired. <a :href="signInHref">Sign in again.</a>
       </p>
     </section>
   </main>

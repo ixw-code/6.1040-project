@@ -2,7 +2,8 @@
 import googleLogo from "/images/logos/google.svg";
 import commonsLogo from "/images/logos/commons.svg";
 import { AccountsApi } from "@/api/Accounts.ts";
-const destination = new URLSearchParams(location.search).get("returnTo") ?? "/";
+import { currentReturnPath } from "@/lib/routes.ts";
+const destination = currentReturnPath();
 </script>
 <template>
   <main class="auth-layout">

@@ -51,7 +51,7 @@ onMounted(async () => {
   rememberArticleTitle(props.hub, data.document, data.title);
   const canonicalEditPath = editUrl(props.hub, data.document, data.title);
   if (window.location.pathname !== canonicalEditPath) {
-   history.replaceState(null, '', canonicalEditPath);
+   history.replaceState(null, '', `${canonicalEditPath}${window.location.search}${window.location.hash}`);
    window.dispatchEvent(new Event('wikiplotter:replace-route'));
   }
   title.value = data.title; savedTitle.value = data.title; documentRules.value = data.required ?? []; documentUnclassified.value = data.required === null;

@@ -65,7 +65,8 @@ function redirect(location: string, headers = baseHeaders()): Response {
 function safeReturnTo(raw: string | null, origin: string): string {
   if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return '/';
   const url = new URL(raw, origin);
-  return url.origin === origin ? `${url.pathname}${url.search}${url.hash}` : '/';
+  if (url.origin !== origin || url.pathname === '/login' || url.pathname === '/register') return '/';
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 function textField(value: unknown): value is string {
@@ -164,10 +165,13 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
             provider: callbackKind, providerSubject: subject,
           });
           if (account.error === 'ACCOUNT_NOT_FOUND') {
+            const returnTo = safeReturnTo(flow.returnTo as string, origin);
             setCookie(headers, pendingName, sealer.seal({
-              provider: callbackKind, subject, returnTo: flow.returnTo,
+              provider: callbackKind, subject, returnTo,
             }, pendingLifetime), 600);
-            return redirect(new URL('/register', origin).href, headers);
+            const registration = new URL('/register', origin);
+            registration.searchParams.set('returnTo', returnTo);
+            return redirect(registration.href, headers);
           }
           if (account.error === 'RECOVERY_PENDING') {
             return json({ error: 'RECOVERY_PENDING' }, 503, headers);
