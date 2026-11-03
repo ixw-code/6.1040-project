@@ -1,6 +1,6 @@
 # Wikiplotter
 
-Wikiplotter is a spoiler-aware wiki for narrative fiction. Each series has a hub with an ordered set of reading checkpoints. Readers record their progress, while contributors organize articles into versioned content blocks and assign checkpoint requirements to articles, titles, text, and images. The intended experience is a wiki that reveals information as the reader advances, based on contributors' spoiler classifications.
+Wikiplotter is a spoiler-aware wiki for narrative fiction. Each series has a hub with an ordered set of reading checkpoints. Readers record their progress, while contributors organize articles into ordered content blocks and assign checkpoint requirements to articles, titles, text, and media. The intended experience is a wiki that reveals information as the reader advances, based on contributors' spoiler classifications.
 
 ### A reader's journey:
 Bob finishes chapter 50 and visits the series hub to look up an artifact mentioned earlier in the series. As this is his first time visiting, before he is allowed to view any pages, he is prompted to select his latest completed chapter. The site refreshes and he can now browse all the articles and content available up to that point in the story. Whether browsing or reading an article, any later revelations remain hidden, including any revealing article titles or passages. When Bob reaches chapter 70, he can update his progress at the click of a button and the site will refresh with newly available information up until that point. There's no stress involved with navigating vague spoiler warnings.
@@ -23,13 +23,10 @@ See [CODE_COMPLETE.md](./docs/decisions/CODE_COMPLETE.md) for the full specifica
 
 The project is built with Vue, TypeScript, Bun, sync-engine **1.1.0**, and MongoDB.
 
-### Demo 
-**Click the thumbnail below!**
-<p align="center">
-  <a href="placeholder link" target="_blank" rel="noopener noreferrer">
-    <img src="./docs/assets/thumbnails/complete-demo.png" alt="Wikiplotter Complete Demo">
-  </a>
-</p>
+### Demo and design summary
+
+- **Live application:** [wikiplotter.mit-sdg.dev](https://wikiplotter.mit-sdg.dev)
+- **Final P4 design summary:** [Code Complete decisions](./docs/decisions/CODE_COMPLETE.md)
 
 ## Getting Started
 
@@ -64,7 +61,7 @@ Database names are validated against `WIKIPLOTTER_ENV` to prevent cross-environm
 
 Configure MongoDB credentials and the following authentication variables:
 
-- `PUBLIC_ORIGIN`: The exact URL used to access Wikiplotter, including scheme and port (e.g. `http://localhost:5174` locally or `https://wikiplotter.com` in production).
+- `PUBLIC_ORIGIN`: The exact URL used to access Wikiplotter, including scheme and port (e.g. `http://localhost:5174` locally or `https://wikiplotter.mit-sdg.dev` in production).
 - `AUTH_COOKIE_KEY`: A secret used to sign authentication cookies. Generate a separate key for each environment:
 
   ```sh
@@ -89,9 +86,9 @@ Starts the local MongoDB container, Bun backend, and Vite frontend.
 
 ```sh
 bun run check
-``` 
+```
 
-Builds server and frontend in development, running design/framework/type and frontend checks on the build as well as validates the isolated test suite.
+Runs design, framework, artifact, and type checks, builds the frontend in development mode, and runs the isolated test suite.
 
 ### Testing
 

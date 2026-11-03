@@ -18,7 +18,7 @@ These concepts were tied together simply using compositions like HubManagement, 
 See the demo for the alpha below:
 <p align="center">
   <a href="https://drive.google.com/file/d/1YOJrL5zgmGN7S9tEPsCWyqzui64yi_4r/view?usp=drive_link" target="_blank" rel="noopener noreferrer">
-    <img src="./docs/assets/thumbnails/alpha-demo.png" alt="Wikiplotter Alpha Demo">
+    <img src="../assets/thumbnails/alpha-demo.png" alt="Wikiplotter Alpha Demo">
   </a>
 </p>
 
@@ -47,7 +47,7 @@ See the demo for the Beta below:
 
 <p align="center">
   <a href="https://drive.google.com/file/d/112hfS25D1E4obQiywFr-kQ4Vh8hAKH2F/view?usp=drive_link" target="_blank" rel="noopener noreferrer">
-    <img src="./docs/assets/thumbnails/beta-demo.png" alt="Wikiplotter Beta Demo">
+    <img src="../assets/thumbnails/beta-demo.png" alt="Wikiplotter Beta Demo">
   </a>
 </p>
 
@@ -68,12 +68,15 @@ Several decisions shaped the scope of the final iteration:
 
 **Deferred features:** Search, commenting, article version history, contribution roles, profile customization, and richer editor functionality.
 
-### Demo - TBA
-See the latest demo below: 
+### Code Complete Demo
+
+The Code Complete application is available at [wikiplotter.mit-sdg.dev](https://wikiplotter.mit-sdg.dev).
+
+See the demo video below:
 
 <p align="center">
-  <a href="placeholder link" target="_blank" rel="noopener noreferrer">
-    <img src="./docs/assets/thumbnails/complete-demo.png" alt="Wikiplotter Complete Demo">
+  <a href="" target="_blank" rel="noopener noreferrer">
+    <img src="../assets/thumbnails/complete-demo.png" alt="Wikiplotter Complete Demo">
   </a>
 </p>
 

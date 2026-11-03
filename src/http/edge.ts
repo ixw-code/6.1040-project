@@ -24,6 +24,7 @@ export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnv
     (await readerIdentity?.(request)) ?? await readReader(request)) : undefined;
   const identityRoutes = new Set(['/api/progress/get', '/api/progress/record', '/api/progress/clear',
     '/api/hubs/browse', '/api/articles/read']);
+  const readerRoutes = new Set([...identityRoutes, '/api/hubs/list']);
   const handle = async (request: Request) => {
     const health = healthResponse(request);
     if (health) return health;
@@ -57,6 +58,11 @@ export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnv
     if (mediaRoutes.has(url.pathname)) {
       return media ? (await media(request))! : new Response(JSON.stringify({ error: 'AUTH_UNCONFIGURED' }), {
         status: 503, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+      });
+    }
+    if ((url.pathname === '/api' || url.pathname.startsWith('/api/')) && !readerRoutes.has(url.pathname)) {
+      return new Response(JSON.stringify({ error: 'NOT_FOUND' }), {
+        status: 404, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
       });
     }
     const identityResponse = await readerIdentity?.(request);

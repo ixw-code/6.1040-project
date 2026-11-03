@@ -121,6 +121,19 @@ describe('reader HTTP adapter', () => {
     }
   });
 
+  test('returns an API 404 for unknown routes instead of passing them to the reader adapter', async () => {
+    const server = listen();
+    try {
+      const response = await fetch(`http://127.0.0.1:${server.port}/api/unknown`, {
+        headers: { accept: 'text/html' },
+      });
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({ error: 'NOT_FOUND' });
+    } finally {
+      server.stop();
+    }
+  });
+
   test('rejects fixture authoring operations at the HTTP boundary', async () => {
     const server = listen();
     try {
