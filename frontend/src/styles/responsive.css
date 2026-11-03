@@ -226,6 +226,16 @@
     min-width: 85px;
   }
 
+  .hub-settings-panel .hub-checkpoint-row {
+    grid-template-columns: 85px minmax(0, 1fr);
+  }
+
+  .hub-settings-panel .hub-checkpoint-actions,
+  .hub-settings-panel .hub-checkpoint-row>button {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
   .account-panel .setting-row {
     gap: 10px;
   }

@@ -17,6 +17,7 @@ const checkpoints = ref<CheckpointRow[]>([]);
 const sequence = ref("");
 const label = ref("");
 const labels = ref<Record<string, string>>({});
+const editingCheckpoints = ref<Record<string, boolean>>({});
 const busy = ref(false);
 const pageError = ref("");
 const nameError = ref("");
@@ -40,6 +41,7 @@ async function loadCheckpoints() {
   sequence.value = sequenceData.sequences[0]?.sequence ?? list.sequence;
   checkpoints.value = list.checkpoints;
   labels.value = Object.fromEntries(list.checkpoints.map((row) => [row.checkpoint, row.label]));
+  editingCheckpoints.value = {};
 }
 
 onMounted(async () => {
@@ -139,14 +141,36 @@ async function changeCheckpoint(work: () => Promise<unknown>, message: string) {
 
 function relabel(checkpoint: string) {
   return changeCheckpoint(
-    () => HubsApi.relabelCheckpoint(props.hub, checkpoint, labels.value[checkpoint] ?? ""),
+    async () => {
+      await HubsApi.relabelCheckpoint(props.hub, checkpoint, labels.value[checkpoint] ?? "");
+      editingCheckpoints.value[checkpoint] = false;
+    },
     "Checkpoint updated",
   );
 }
 
-function append() {
+function cancelCheckpointEdit(row: CheckpointRow) {
+  labels.value[row.checkpoint] = row.label;
+  editingCheckpoints.value[row.checkpoint] = false;
+}
+
+async function append() {
+  if (busy.value) return;
+  const checkpointLabel = label.value.trim();
+  if (!checkpointLabel) {
+    pageError.value = "A checkpoint label is required.";
+    return;
+  }
+  const confirmed = await askConfirmation({
+    title: "Add checkpoint?",
+    message: `Add "${checkpointLabel}" as a checkpoint? Readers will be able to select it as their current progress.`,
+    confirmLabel: "Add checkpoint",
+    cancelLabel: "Cancel",
+  });
+  if (!confirmed) return;
+
   return changeCheckpoint(async () => {
-    await HubsApi.appendCheckpoint(props.hub, sequence.value, label.value);
+    await HubsApi.appendCheckpoint(props.hub, sequence.value, checkpointLabel);
     label.value = "";
   }, "Checkpoint added");
 }
@@ -246,17 +270,35 @@ async function removeHub() {
 
     <section class="settings-section">
       <h2>Checkpoints</h2>
-      <div v-for="row in checkpoints" :key="row.checkpoint" class="setting-row">
+      <div v-for="row in checkpoints" :key="row.checkpoint" class="setting-row hub-checkpoint-row">
         <span>{{ row.position + 1 }}.</span>
         <span v-if="row.position === 0">{{ row.label }} <small>(fixed)</small></span>
         <template v-else>
-          <input v-model="labels[row.checkpoint]" :aria-label="`Rename ${row.label}`" />
-          <button class="button-outline" :disabled="busy" @click="relabel(row.checkpoint)">Save</button>
+          <input
+            v-if="editingCheckpoints[row.checkpoint]"
+            v-model="labels[row.checkpoint]"
+            :aria-label="`Rename ${row.label}`"
+            :disabled="busy"
+          />
+          <div v-else class="hub-checkpoint-readonly" role="textbox" aria-readonly="true">
+            {{ row.label }}
+          </div>
+          <div v-if="editingCheckpoints[row.checkpoint]" class="hub-checkpoint-actions">
+            <button class="button-outline" :disabled="busy" @click="relabel(row.checkpoint)">Save</button>
+            <button class="text-button hub-change-button" :disabled="busy" @click="cancelCheckpointEdit(row)">Cancel</button>
+          </div>
+          <button
+            v-else
+            class="text-button hub-change-button"
+            :disabled="busy"
+            @click="editingCheckpoints[row.checkpoint] = true"
+          >Change</button>
         </template>
       </div>
-      <form class="inline-actions" @submit.prevent="append">
-        <input v-model="label" placeholder="New checkpoint" required />
-        <button class="primary" :disabled="busy">Add checkpoint</button>
+      <form class="setting-row hub-checkpoint-row hub-checkpoint-add-row" @submit.prevent="append">
+        <span>{{ checkpoints.length + 1 }}.</span>
+        <input v-model="label" placeholder="New checkpoint" aria-label="New checkpoint" required :disabled="busy" />
+        <button class="text-button hub-change-button" :disabled="busy">Add Checkpoint</button>
       </form>
     </section>
 
