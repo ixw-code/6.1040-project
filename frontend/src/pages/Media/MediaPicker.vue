@@ -5,10 +5,12 @@ import {
   type Asset,
   type AssetKind,
 } from "@/api/MediaAssets.ts";
+import LoadingSpinner from "@/components/LoadingSpinner.vue";
 const emit = defineEmits<{ selected: [asset: Asset]; close: [] }>();
 const tab = ref<"uploads" | "upload">("uploads"),
   list = ref<Asset[]>([]),
   busy = ref(false),
+  loading = ref(true),
   error = ref("");
 const urls = ref<Record<string, string>>({});
 const owned: string[] = [];
@@ -35,6 +37,8 @@ async function load() {
     );
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not load uploads";
+  } finally {
+    loading.value = false;
   }
 }
 onMounted(() => {
@@ -107,6 +111,7 @@ async function upload(event: Event) {
             placeholder="⌕ Search uploads… (coming later)"
             title="Media search is not available yet"
           />
+          <LoadingSpinner v-if="loading" small />
           <div class="asset-list">
             <button
               v-for="asset in ready()"
@@ -124,7 +129,7 @@ async function upload(event: Event) {
               ><span>{{ asset.filename }}</span>
             </button>
           </div>
-          <p v-if="!ready().length" class="muted">
+          <p v-if="!loading && !error && !ready().length" class="muted">
             No uploads yet.
           </p> </template
         ><template v-else
@@ -142,7 +147,7 @@ async function upload(event: Event) {
           </button></template
         >
         <p v-if="error" class="error-text">{{ error }}</p>
-        <p v-if="busy" role="status">Uploading…</p>
+        <LoadingSpinner v-if="busy" small />
       </div>
       <footer class="modal-footer">
         <button class="button-outline" @click="emit('close')">Cancel</button>

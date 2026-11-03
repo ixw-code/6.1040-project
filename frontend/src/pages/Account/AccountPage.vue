@@ -7,16 +7,19 @@ import {
 } from "@/api/Hubs.ts";
 import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import { MediaAssetsApi, type Asset } from "@/api/MediaAssets.ts";
-import { hubUrl } from "@/lib/routes.ts";
+import { hubUrl, settingsUrl } from "@/lib/routes.ts";
 import DeleteAccountDialog from "./DeleteAccountDialog.vue";
 import ReaderProgressControl from "@/components/ReaderProgressControl.vue";
-import MediaThumbnail from "@/features/Media/MediaThumbnail.vue";
+import LoadingSpinner from "@/components/LoadingSpinner.vue";
+import MediaThumbnail from "@/pages/Media/MediaThumbnail.vue";
 const props = defineProps<{ account: Account; tab: "settings" | "data" }>();
 const username = ref(props.account.username),
   editing = ref(false),
   busy = ref(false),
   error = ref(""),
-  success = ref("");
+  success = ref(""),
+  dataLoading = ref(true),
+  dataError = ref("");
 const reading = ref<{
     hub: string;
     name: string;
@@ -25,16 +28,23 @@ const reading = ref<{
   }[]>(
     [],
   ),
-  uploads = ref<Asset[]>([]);
+  uploads = ref<Asset[]>([]),
+  createdHubs = ref<{ hub: string; name: string; slug: string }[]>([]);
 const accountMediaPreview = computed(() => uploads.value.slice(0, 4));
 const deleteDialogOpen = ref(false);
 onMounted(async () => {
   if (props.tab === "data") {
+    dataLoading.value = true;
+    dataError.value = "";
     try {
-      const hubs = await HubsApi.list();
+      const [hubDirectory, created, media] = await Promise.all([
+        HubsApi.list(),
+        HubsApi.created(),
+        MediaAssetsApi.list(),
+      ]);
       reading.value = (
         await Promise.all(
-          hubs.hubs.map(async (hub) => {
+          hubDirectory.hubs.map(async (hub) => {
             const [progress, sequence] = await Promise.all([
               ReaderProgressApi.get(hub.hub),
               HubsApi.checkpoints(hub.hub),
@@ -52,10 +62,13 @@ onMounted(async () => {
           }),
         )
       ).filter((row) => row.checkpoint !== null);
-      uploads.value = await MediaAssetsApi.list();
+      createdHubs.value = created.hubs;
+      uploads.value = media;
     } catch (e) {
-      error.value =
+      dataError.value =
         e instanceof Error ? e.message : "Could not load account data";
+    } finally {
+      dataLoading.value = false;
     }
   }
 });
@@ -154,11 +167,13 @@ function accountDeleted() {
       </template
       ><template v-else
         ><h2>Reading progress</h2>
-        <p v-if="!reading.length" class="muted">No saved hub progress yet.</p>
-        <div class="reading-progress-list" aria-label="Saved reading progress">
-          <div v-for="hub in reading" :key="hub.hub" class="data-row">
-            <a :href="hubUrl(hub.hub)">{{ hub.name }}</a>
-            <span class="muted">{{ hub.checkpointLabel ?? "Checkpoint unavailable" }}</span>
+        <LoadingSpinner v-if="dataLoading" />
+        <p v-else-if="dataError" class="error-text" role="alert">{{ dataError }}</p>
+        <p v-else-if="!reading.length" class="muted">No saved hub progress yet.</p>
+        <div v-else class="account-bounded-list" aria-label="Saved reading progress">
+          <div v-for="hub in reading" :key="hub.hub" class="account-list-row account-reading-row">
+            <a class="account-row-name" :href="hubUrl(hub.hub)" :title="hub.name">{{ hub.name }}</a>
+            <span class="account-row-detail muted">{{ hub.checkpointLabel ?? "Checkpoint unavailable" }}</span>
             <ReaderProgressControl
               :hub="hub.hub"
               :name="hub.name"
@@ -168,15 +183,22 @@ function accountDeleted() {
             />
           </div>
         </div>
-        <h2>Authored articles</h2>
-        <p class="muted">
-          An authored-article index is not exposed by the current backend. You
-          can manage your articles from their hub pages.
-        </p>
+        <h2>Created Hubs</h2>
+        <LoadingSpinner v-if="dataLoading" />
+        <p v-else-if="dataError" class="error-text" role="alert">{{ dataError }}</p>
+        <p v-else-if="!createdHubs.length" class="muted">You have not created any hubs yet.</p>
+        <div v-else class="account-bounded-list" aria-label="Created hubs">
+          <div v-for="hub in createdHubs" :key="hub.hub" class="account-list-row account-created-row">
+            <span class="account-row-name" :title="hub.name">{{ hub.name }}</span>
+            <a class="button-outline account-manage-button" :href="settingsUrl(hub.hub)">Manage</a>
+          </div>
+        </div>
         <h2>Uploaded media</h2>
-        <p v-if="!uploads.length" class="muted">No media uploaded yet.</p>
+        <LoadingSpinner v-if="dataLoading" />
+        <p v-else-if="dataError" class="error-text" role="alert">{{ dataError }}</p>
+        <p v-else-if="!uploads.length" class="muted">No media uploaded yet.</p>
         <div v-else class="account-media-list" aria-label="Uploaded media preview">
-          <div v-for="asset in accountMediaPreview" :key="asset.asset" class="account-media-row">
+          <div v-for="asset in accountMediaPreview" :key="asset.asset" class="account-list-row account-media-row">
             <MediaThumbnail :asset="asset" size="small" />
             <span class="account-media-filename" :title="asset.filename">{{ asset.filename }}</span>
             <span class="muted small">{{ asset.kind }}</span>

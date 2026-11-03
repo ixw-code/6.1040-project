@@ -351,8 +351,8 @@
     display: block;
     width: max-content;
     max-width: 100%;
-    margin: 0 auto;
-    text-align: center;
+    margin-inline: auto;
+    text-align: left;
 }
 
 .progress-popover .progress-current-label {
@@ -363,9 +363,9 @@
     display: block;
     width: 60%;
     max-width: 100%;
-    margin: 12px auto 14px;
-    padding: 7px 16px 7px 7px;
-    font-size: 0.9rem;
+    margin: 5px auto 14px;
+    padding: 7px 10px 7px 7px;
+    font-size: 1rem;
 }
 
 .checkpoint-strip {
@@ -540,7 +540,7 @@
 }
 
 .spoiler-info {
-    padding: 13px 16px;
+    padding: 10px 10px;
     background: #eef5fe;
     border-left: 3px solid #1670c7;
     color: #285071;
@@ -618,16 +618,4 @@
 
 .data-row .grow .muted {
     margin: 3px 0;
-}
-
-.reading-progress-list {
-    max-height: 350px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    border-top: 1px solid #e4eaf0;
-    border-bottom: 1px solid #e4eaf0;
-}
-
-.reading-progress-list .data-row:first-child {
-    border-top: 0;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { hubDeleteConfirmationMatches } from '../src/features/Hub/hub-settings.ts';
+import { hubDeleteConfirmationMatches } from '../src/pages/Hub/hub-settings.ts';
 
 describe('hub deletion confirmation', () => {
   test('requires the exact current hub name', () => {

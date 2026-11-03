@@ -4,11 +4,14 @@ Hubs handles hub creation, settings, checkpoints, and deletion. HubCataloguing o
 
 Any registered user may create a hub, but only its creator may modify or delete it. [CreateHub](reaction:Hubs.CreateHub) takes a name and creates the hub with a checkpoint sequence containing only NotStarted. The creator can add ordinary checkpoints later. [RenameHub](reaction:Hubs.RenameHub) changes the display name without changing its slug, while [UpdateSlug](reaction:Hubs.UpdateSlug) changes the URL slug independently. [GetHubAccess](reaction:Hubs.GetHubAccess) checks whether the current user is the creator through [IsCreator](view:Hubs.IsCreator).
 
+Authenticated users can retrieve their own created hubs, including their current names and slugs, through [ListCreatedHubs](reaction:Hubs.ListCreatedHubs). It derives the creator from the trusted session.
+
 ```endpoints
 Hubs.CreateHub at /hubs/create
 Hubs.RenameHub at /hubs/rename
 Hubs.UpdateSlug at /hubs/slug
 Hubs.GetHubAccess at /hubs/access
+Hubs.ListCreatedHubs at /hubs/created
 ```
 
 [GetSequences](reaction:Hubs.GetSequences) and [ListCheckpoints](reaction:Hubs.ListCheckpoints) retrieve checkpoint information through the [existing hub](view:Hubs.ExistingHub) and [hub sequence](view:Hubs.HubSequence) views. The [sequence list](former:Hubs.SequenceList) and [checkpoint choices](former:Hubs.CheckpointChoices) preserve their order.

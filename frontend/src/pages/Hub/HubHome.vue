@@ -5,6 +5,7 @@ import { articleUrl, newArticleUrl } from "@/lib/routes.ts";
 import { ArticlesApi } from "@/api/Articles.ts";
 import { MediaAssetsApi } from "@/api/MediaAssets.ts";
 import { legacyMediaSource } from "@/lib/legacyMedia.ts";
+import LoadingSpinner from "@/components/LoadingSpinner.vue";
 const props = defineProps<{
   hub: string;
   hubName: string;
@@ -67,7 +68,7 @@ onMounted(async () => {
       >
     </div>
     <p v-if="error" class="error-text">{{ error }}</p>
-    <p v-if="loading" class="muted">Loading articles…</p>
+    <LoadingSpinner v-if="loading" />
     <p v-else-if="!docs.length && !error" class="muted">
       There are no articles available at your selected checkpoint.
     </p>

@@ -6,7 +6,7 @@ import { SessionInvalid } from '@/concepts/Sessioning/Sessioning.ts';
 import { HubCataloguingConcept } from '@/concepts/HubCataloguing/HubCataloguing.ts';
 
 export const hubRoutes = new Set([
-  '/api/hubs/create', '/api/hubs/rename', '/api/hubs/slug', '/api/hubs/delete', '/api/hubs/access',
+  '/api/hubs/create', '/api/hubs/rename', '/api/hubs/slug', '/api/hubs/delete', '/api/hubs/access', '/api/hubs/created',
   '/api/hubs/sequences', '/api/checkpoints/list', '/api/checkpoints/append', '/api/checkpoints/relabel',
 ]);
 const publicRoutes = new Set(['/api/hubs/sequences', '/api/checkpoints/list']);
@@ -55,6 +55,7 @@ export function createHubsHttpHandler(db: Db, options: AuthOptions) {
     const input = await inputJson(request);
     if (!input) return json({ error: 'INVALID_REQUEST' }, 400);
     const keys = path === '/api/hubs/create' ? ['name']
+      : path === '/api/hubs/created' ? []
       : path === '/api/hubs/rename' ? ['hub', 'name']
       : path === '/api/hubs/slug' ? ['hub', 'slug']
       : path === '/api/checkpoints/append' ? ['hub', 'sequence', 'label']
@@ -75,7 +76,7 @@ export function createHubsHttpHandler(db: Db, options: AuthOptions) {
         if (error instanceof SessionInvalid) return json({ error: 'UNAUTHENTICATED' }, 401);
         throw error;
       }
-      if (path !== '/api/hubs/create' && path !== '/api/hubs/access') {
+      if (path !== '/api/hubs/create' && path !== '/api/hubs/access' && path !== '/api/hubs/created') {
         const metadata = (await catalog._get({ hub: input.hub as string }))[0];
         if (!metadata) return json({ error: 'HUB_NOT_FOUND' }, 404);
         if (metadata.creator !== user) return json({ error: 'FORBIDDEN' }, 403);

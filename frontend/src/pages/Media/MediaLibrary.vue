@@ -4,6 +4,7 @@ import { MediaAssetsApi, type Asset } from "@/api/MediaAssets.ts";
 import { assetUrl } from "@/lib/routes.ts";
 import MediaPicker from "./MediaPicker.vue";
 import MediaThumbnail from "./MediaThumbnail.vue";
+import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import { confirmAndRun } from "@/lib/confirm.ts";
 const assets = ref<Asset[]>([]),
   error = ref(""),
@@ -77,7 +78,7 @@ async function uploadsChanged() {
       <p v-if="success" role="status" class="success-text media-library-message">{{ success }}</p>
       <section class="media-library-assets" aria-labelledby="uploads-heading">
         <h2 id="uploads-heading">Your uploads</h2>
-        <p v-if="loading" role="status" class="muted">Loading uploads…</p>
+        <LoadingSpinner v-if="loading" />
         <div v-else-if="error" class="media-library-empty">
           <div>
             <p class="muted">Your uploads could not be loaded.</p>

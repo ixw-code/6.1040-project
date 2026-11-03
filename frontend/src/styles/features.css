@@ -207,6 +207,7 @@
 }
 
 .account-panel {
+    --account-row-height: 50px;
     max-width: 920px;
     margin: 35px auto;
 }
@@ -271,21 +272,73 @@
 }
 
 .account-media-list {
-    height: 175px;
+    max-height: calc(var(--account-row-height) * 3.5 + 2px);
     max-width: 100%;
     overflow: hidden;
     border-top: 1px solid #e4eaf0;
     border-bottom: 1px solid #e4eaf0;
 }
 
-.account-media-row {
-    height: 50px;
+.account-list-row {
+    height: var(--account-row-height);
+    min-height: var(--account-row-height);
     display: flex;
     align-items: center;
     gap: 12px;
     min-width: 0;
     padding: 5px 4px;
     border-bottom: 1px solid #e4eaf0;
+}
+
+.account-bounded-list {
+    max-height: calc(var(--account-row-height) * 4 + 2px);
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    border-top: 1px solid #e4eaf0;
+    border-bottom: 1px solid #e4eaf0;
+}
+
+.account-reading-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) auto;
+}
+
+.account-created-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.account-row-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-reading-row a.account-row-name {
+    margin: 0;
+}
+
+.account-row-detail {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.account-manage-button {
+    justify-self: end;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.account-manage-button:hover {
+    text-decoration: none;
+}
+
+.account-media-row {
+    display: flex;
 }
 
 .account-media-filename {
@@ -886,9 +939,59 @@
 }
 
 .loading-screen {
-    padding: 50px 15px;
-    text-align: center;
-    color: #73839a;
+    min-height: calc(100vh - 68px);
+    display: grid;
+    place-items: center;
+}
+
+.loading-spinner-region {
+    width: 100%;
+    min-height: 80px;
+    display: grid;
+    place-items: center;
+}
+
+.loading-spinner {
+    display: block;
+    width: 36px;
+    height: 36px;
+    border: 4px solid #dbe5f0;
+    border-top-color: #0b55b0;
+    border-right-color: #0b55b0;
+    border-radius: 50%;
+    animation: wikiplotter-spin 0.8s linear infinite;
+}
+
+.loading-spinner-small {
+    width: 22px;
+    height: 22px;
+    border-width: 3px;
+}
+
+@keyframes wikiplotter-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loading-spinner { animation: none; }
+}
+
+.not-found-page {
+    min-height: calc(100vh - 68px);
+}
+
+.auth-box.not-found-panel {
+    padding-top: 42px;
+}
+
+.not-found-panel h1 {
+    margin-top: 0;
+}
+
+.not-found-panel .primary {
+    display: inline-flex;
+    margin-top: 12px;
+    text-decoration: none;
 }
 
 .global-error {

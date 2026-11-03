@@ -87,6 +87,19 @@
     gap: 8px;
   }
 
+  .account-reading-row {
+    grid-template-columns: minmax(0, 1fr) minmax(64px, 0.7fr) auto;
+    gap: 6px;
+  }
+
+  .account-created-row {
+    gap: 8px;
+  }
+
+  .account-row-detail {
+    font-size: 0.76rem;
+  }
+
   .global-inner {
     padding: 0 15px;
   }

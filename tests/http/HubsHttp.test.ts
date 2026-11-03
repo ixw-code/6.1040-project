@@ -34,12 +34,24 @@ describe('protected Hubs HTTP boundary', () => {
     const made = await handle(request('/hubs/create', creation, ownerSession));
     expect(made.status).toBe(200);
     const { hub } = await made.json() as { hub: string };
+    const otherMade = await handle(request('/hubs/create', { name: 'Other Harbor' }, otherSession));
+    expect(otherMade.status).toBe(200);
+    const { hub: otherHub } = await otherMade.json() as { hub: string };
     expect((await new HubCataloguingConcept(db)._get({ hub }))[0]?.creator).toBe(owner);
     expect(await (await handle(request('/hubs/access', { hub }, ownerSession))).json()).toEqual({ canManage: true });
     expect(await (await handle(request('/hubs/access', { hub }, otherSession))).json()).toEqual({ canManage: false });
     expect((await handle(request('/hubs/access', { hub }))).status).toBe(401);
+    expect((await handle(request('/hubs/created', {}, ownerSession))).status).toBe(200);
+    expect(await (await handle(request('/hubs/created', { user: other }, ownerSession))).json())
+      .toEqual({ hubs: [{ hub, name: 'Star Harbor', slug: 'star-harbor' }] });
+    expect(await (await handle(request('/hubs/created', {}, otherSession))).json())
+      .toEqual({ hubs: [{ hub: otherHub, name: 'Other Harbor', slug: 'other-harbor' }] });
+    expect((await handle(request('/hubs/created', {}))).status).toBe(401);
     expect((await handle(request('/hubs/rename', { hub, name: 'Taken', user: owner }, otherSession))).status).toBe(403);
     expect((await handle(request('/hubs/slug', { hub, slug: 'new-harbor' }, ownerSession))).status).toBe(200);
+    expect((await handle(request('/hubs/rename', { hub, name: 'Renamed Harbor' }, ownerSession))).status).toBe(200);
+    expect(await (await handle(request('/hubs/created', {}, ownerSession))).json())
+      .toEqual({ hubs: [{ hub, name: 'Renamed Harbor', slug: 'new-harbor' }] });
     expect((await handle(request('/hubs/delete', { hub }, otherSession))).status).toBe(403);
     expect((await handle(request('/hubs/delete', { hub }, ownerSession))).status).toBe(200);
     expect(await new HubCataloguingConcept(db)._get({ hub })).toEqual([]);

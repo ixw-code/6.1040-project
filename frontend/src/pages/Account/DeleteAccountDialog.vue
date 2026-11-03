@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { AccountRequestError, AccountsApi } from '@/api/Accounts.ts';
 import { confirmationMatches } from './delete-account.ts';
+import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 const emit = defineEmits<{ close: []; deleted: [] }>();
 const confirmation = ref('');
@@ -50,7 +51,7 @@ void checkEligibility();
     <section class="confirm-dialog panel delete-account-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-account-title">
       <h2 id="delete-account-title">Delete account</h2>
       <template v-if="checking">
-        <p role="status">Checking account deletion eligibility…</p>
+        <LoadingSpinner small />
         <div class="confirm-actions">
           <button class="button-outline" @click="emit('close')">Cancel</button>
         </div>

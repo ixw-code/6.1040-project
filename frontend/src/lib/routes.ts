@@ -71,6 +71,12 @@ export const articleCancelUrl = (hub: string, document: string, savedTitle: stri
 export const editUrl = (hub: string, document: string, knownTitle?: string) => `${articleUrl(hub, document, knownTitle)}/edit`;
 export const newArticleUrl = (hub: string) => `${hubUrl(hub)}/articles/new`;
 export const assetUrl = (asset: string) => `/assets/${part(asset)}`;
+export function findHubForRoute(hubs: { hub: string; slug: string }[], value: string) {
+  return hubs.find((hub) => hub.hub === value || hub.slug === value);
+}
+export function findArticleForRoute(documents: { document: string; title: string }[], value: string) {
+  return documents.find((document) => document.document === value || document.title === value);
+}
 export function routeFromPath(path: string): Route {
   try {
     // `navigate()` receives pathname + search + hash. These are not route segments.
@@ -79,8 +85,8 @@ export function routeFromPath(path: string): Route {
     if (!segments.length) return { kind: 'home' };
     if (segments.length === 1 && segments[0] === 'login') return { kind: 'login' };
     if (segments.length === 1 && segments[0] === 'register') return { kind: 'register' };
-    if (segments[0] === 'account' && segments[1] === 'settings') return { kind: 'account-settings' };
-    if (segments[0] === 'account' && segments[1] === 'data') return { kind: 'account-data' };
+    if (segments.length === 2 && segments[0] === 'account' && segments[1] === 'settings') return { kind: 'account-settings' };
+    if (segments.length === 2 && segments[0] === 'account' && segments[1] === 'data') return { kind: 'account-data' };
     if (segments[0] === 'hubs' && segments[1] === 'new' && segments.length === 2) return { kind: 'hub-create' };
     if (segments.length === 1 && segments[0] === 'assets') return { kind: 'media-library' };
     if (segments.length === 2 && segments[0] === 'assets') return { kind: 'media-preview', asset: segments[1]! };

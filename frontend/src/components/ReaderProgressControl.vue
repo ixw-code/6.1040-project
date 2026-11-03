@@ -6,6 +6,7 @@ import { askConfirmation, confirmationState, confirmNavigation } from "@/lib/con
 import { isProgressAdvance } from "@/lib/readerProgress.ts";
 import { navigateAfterConfirmation } from "@/lib/navigation.ts";
 import { welcomeUrl } from "@/lib/routes.ts";
+import LoadingSpinner from "@/components/LoadingSpinner.vue";
 
 const props = defineProps<{ hub: string; name?: string; checkpoint?: string | null; reloadPageAfterClear?: boolean }>();
 const emit = defineEmits<{ changed: [progress: { checkpoint: string; label: string | null }] }>();
@@ -146,8 +147,8 @@ onBeforeUnmount(() => {
     <Teleport to="body">
     <div v-if="open" ref="popover" class="progress-popover" :style="popoverStyle">
       <h3>Reading progress</h3>
-      <p class="muted small">Choose your latest completed checkpoint.</p>
-      <template v-if="loading"><p class="muted" role="status">Loading checkpoints…</p></template>
+      <p class="muted small spoiler-info">Choose your latest completed checkpoint.<br/>Spoilers are filtered automtically to your current progress.</p>
+      <template v-if="loading"><LoadingSpinner small /></template>
       <template v-else-if="loaded">
         <label class="progress-current-label" :for="checkpointId">Current progress</label>
         <select :id="checkpointId" v-model="draft" class="checkpoint-select">

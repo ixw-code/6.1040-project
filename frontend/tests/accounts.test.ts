@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { AccountRequestError, AccountsApi } from '../src/api/Accounts.ts';
-import { confirmationMatches } from '../src/features/Account/delete-account.ts';
+import { confirmationMatches } from '../src/pages/Account/delete-account.ts';
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });

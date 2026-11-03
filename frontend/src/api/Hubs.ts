@@ -29,6 +29,11 @@ export const HubsApi = {
     rememberHubDirectory(result.hubs);
     return result;
   },
+  async created() {
+    const result = await postJson<{ hubs: { hub: string; name: string; slug: string }[] }>('/hubs/created', {});
+    for (const hub of result.hubs) rememberHubSlug(hub.hub, hub.slug);
+    return result;
+  },
   async browse(hub: string) {
     const result = readerValue(await readerClient.hubs.browse({ hub, reader: 'cookie' }));
     rememberArticleDirectory(hub, result.documents);

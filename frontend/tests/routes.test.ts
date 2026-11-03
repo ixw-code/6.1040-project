@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { hubCreateUrl, hubRouteForProgress, hubUrl, welcomeUrl, settingsUrl, articleUrl, articleCancelUrl, editUrl, newArticleUrl, assetUrl,
   rememberArticleDirectory, rememberHubDirectory, rememberHubSlug, routeFromPath, articleBreadcrumbs,
-  loginUrl, safeInternalPath, safeReturnPath } from '../src/lib/routes.ts';
+  findArticleForRoute, findHubForRoute, loginUrl, safeInternalPath, safeReturnPath } from '../src/lib/routes.ts';
 import { legacyMediaSource } from '../src/lib/legacyMedia.ts';
 
 describe('frontend route links', () => {
@@ -37,6 +37,19 @@ describe('frontend route links', () => {
     expect(routeFromPath('/login?returnTo=%2Fstar-harbor')).toEqual({ kind: 'login' });
     expect(routeFromPath('/account/settings#account')).toEqual({ kind: 'account-settings' });
     expect(routeFromPath('/star-harbor/Opening/edit?from=article')).toEqual({ kind: 'article-edit', hub: 'star-harbor', document: 'Opening' });
+  });
+  test('routes unrecognized frontend paths to the not-found view', () => {
+    expect(routeFromPath('/one/two/three/four/five')).toEqual({ kind: 'not-found' });
+    expect(routeFromPath('/account/data/random')).toEqual({ kind: 'not-found' });
+    expect(routeFromPath('/account/settings/extra')).toEqual({ kind: 'not-found' });
+  });
+  test('resolves hub and article routes against current eligible directories', () => {
+    const hubs = [{ hub: 'hub:one', slug: 'renamed-harbor' }];
+    expect(findHubForRoute(hubs, 'renamed-harbor')).toEqual(hubs[0]);
+    expect(findHubForRoute(hubs, 'old-harbor')).toBeUndefined();
+    const documents = [{ document: 'doc:one', title: 'Current Title' }];
+    expect(findArticleForRoute(documents, 'Current Title')).toEqual(documents[0]);
+    expect(findArticleForRoute(documents, 'Missing Article')).toBeUndefined();
   });
   test('keeps login return paths internal and preserves route query and hash', () => {
     expect(safeInternalPath('/star-harbor/Opening?from=hub#section'))
