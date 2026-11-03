@@ -19,10 +19,16 @@ const open = ref(false);
 const loaded = ref(false);
 const loading = ref(false);
 const busy = ref(false);
+const checkpointSelectorExpanded = ref(false);
 const error = ref("");
 const current = ref<string | null>(props.checkpoint ?? null);
 const checkpoints = ref<CheckpointRow[]>([]);
 const draft = ref("");
+
+function collapseCheckpointSelector(event: Event) {
+  checkpointSelectorExpanded.value = false;
+  (event.currentTarget as HTMLSelectElement).blur();
+}
 
 function closeOnOutsideClick(event: MouseEvent) {
   const target = event.target as Node;
@@ -151,7 +157,15 @@ onBeforeUnmount(() => {
       <template v-if="loading"><LoadingSpinner small /></template>
       <template v-else-if="loaded">
         <label class="progress-current-label" :for="checkpointId">Current progress</label>
-        <select :id="checkpointId" v-model="draft" class="checkpoint-select">
+        <select
+          :id="checkpointId"
+          v-model="draft"
+          class="checkpoint-select"
+          :size="checkpointSelectorExpanded ? 3 : 1"
+          @focus="checkpointSelectorExpanded = true"
+          @blur="checkpointSelectorExpanded = false"
+          @change="collapseCheckpointSelector"
+        >
           <option v-for="row in checkpoints" :key="row.checkpoint" :value="row.checkpoint">{{ row.label }}</option>
         </select>
         <div class="popover-actions">

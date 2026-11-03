@@ -8,8 +8,15 @@ import { isProgressAdvance } from "@/lib/readerProgress.ts";
 const props = defineProps<{ hub: string; name: string }>();
 const choices = ref<CheckpointRow[]>([]),
   selected = ref(""),
+  checkpointSelectorExpanded = ref(false),
   error = ref(""),
   busy = ref(false);
+
+function collapseCheckpointSelector(event: Event) {
+  checkpointSelectorExpanded.value = false;
+  (event.currentTarget as HTMLSelectElement).blur();
+}
+
 onMounted(async () => {
   try {
     const data = await HubsApi.checkpoints(props.hub);
@@ -50,7 +57,14 @@ async function save() {
     </p>
     <form @submit.prevent="save">
       <label for="welcome-choice">Select your current checkpoint</label
-      ><select id="welcome-choice" v-model="selected">
+      ><select
+        id="welcome-choice"
+        v-model="selected"
+        :size="checkpointSelectorExpanded ? 2 : 1"
+        @focus="checkpointSelectorExpanded = true"
+        @blur="checkpointSelectorExpanded = false"
+        @change="collapseCheckpointSelector"
+      >
         <option
           v-for="row in choices"
           :key="row.checkpoint"

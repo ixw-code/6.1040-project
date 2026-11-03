@@ -207,7 +207,7 @@ async function removeHub() {
   <section class="panel content-panel settings-panel hub-settings-panel">
     <a class="hub-back-link" :href="hubUrl(hub)">← Back to hub</a>
     <header class="hub-settings-header">
-      <h1>{{ savedName }} settings</h1>
+      <h1>{{ savedName }} Settings</h1>
     </header>
     <p class="muted">Only the original hub creator can make changes.</p>
     <p v-if="pageError" role="alert" class="error-text">{{ pageError }}</p>
@@ -270,30 +270,32 @@ async function removeHub() {
 
     <section class="settings-section">
       <h2>Checkpoints</h2>
-      <div v-for="row in checkpoints" :key="row.checkpoint" class="setting-row hub-checkpoint-row">
-        <span>{{ row.position + 1 }}.</span>
-        <span v-if="row.position === 0">{{ row.label }} <small>(fixed)</small></span>
-        <template v-else>
-          <input
-            v-if="editingCheckpoints[row.checkpoint]"
-            v-model="labels[row.checkpoint]"
-            :aria-label="`Rename ${row.label}`"
-            :disabled="busy"
-          />
-          <div v-else class="hub-checkpoint-readonly" role="textbox" aria-readonly="true">
-            {{ row.label }}
-          </div>
-          <div v-if="editingCheckpoints[row.checkpoint]" class="hub-checkpoint-actions">
-            <button class="button-outline" :disabled="busy" @click="relabel(row.checkpoint)">Save</button>
-            <button class="text-button hub-change-button" :disabled="busy" @click="cancelCheckpointEdit(row)">Cancel</button>
-          </div>
-          <button
-            v-else
-            class="text-button hub-change-button"
-            :disabled="busy"
-            @click="editingCheckpoints[row.checkpoint] = true"
-          >Change</button>
-        </template>
+      <div class="hub-checkpoint-list">
+        <div v-for="row in checkpoints" :key="row.checkpoint" class="setting-row hub-checkpoint-row">
+          <span>{{ row.position + 1 }}.</span>
+          <span v-if="row.position === 0">{{ row.label }} <small>(fixed)</small></span>
+          <template v-else>
+            <input
+              v-if="editingCheckpoints[row.checkpoint]"
+              v-model="labels[row.checkpoint]"
+              :aria-label="`Rename ${row.label}`"
+              :disabled="busy"
+            />
+            <div v-else class="hub-checkpoint-readonly" role="textbox" aria-readonly="true">
+              {{ row.label }}
+            </div>
+            <div v-if="editingCheckpoints[row.checkpoint]" class="hub-checkpoint-actions">
+              <button class="button-outline" :disabled="busy" @click="relabel(row.checkpoint)">Save</button>
+              <button class="text-button hub-change-button" :disabled="busy" @click="cancelCheckpointEdit(row)">Cancel</button>
+            </div>
+            <button
+              v-else
+              class="text-button hub-change-button"
+              :disabled="busy"
+              @click="editingCheckpoints[row.checkpoint] = true"
+            >Change</button>
+          </template>
+        </div>
       </div>
       <form class="setting-row hub-checkpoint-row hub-checkpoint-add-row" @submit.prevent="append">
         <span>{{ checkpoints.length + 1 }}.</span>

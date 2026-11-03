@@ -15,7 +15,7 @@ const props = defineProps<{
     <div class="home-hero">
       <div class="home-hero-inner">
         <h1>Explore freely.<br />Spoilers no more.</h1>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+        <p>Enjoy a stress-free wiki experience.</p>
         <input
           placeholder="⌕  Search hubs… (coming later)"
           aria-label="Search hubs (coming later)"
@@ -48,7 +48,6 @@ const props = defineProps<{
           <div class="tile-placeholder" aria-hidden="true"></div>
           <div class="tile-detail">
             <h3>{{ hub.name }}</h3>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
           </div>
         </a>
       </div>
