@@ -24,6 +24,17 @@ const ReadableArticle = view('readable document', ({ hub, tokens }, { document }
   ),
 ).many();
 
+const ExistingArticle = view('existing reading document', ({ hub, document }) =>
+  where(Documenting._documents({ scope: hub }).is({ document })),
+).holds();
+
+const ArticleByTitle = view('reading document by title', ({ hub, title }, { document }) =>
+  where(
+    Documenting._documents({ scope: hub }).is({ document }),
+    Documenting._title({ scope: hub, document }).is({ title }),
+  ),
+).optional();
+
 const EligibleBlock = view('eligible block', ({ hub, document, tokens }, { block, kind, body, alt }) =>
   where(
     Documenting._blocks({ scope: hub, document }).is({ block, kind, body, alt }),
@@ -81,12 +92,26 @@ const BrowseHub = endpoint('/hubs/browse', ({ hub, reader, tokens }) =>
   ), { input: { required: ['hub', 'reader'] }, validators: { input: validHubReader } },
 );
 
-const ReadArticle = endpoint('/articles/read', ({ hub, reader, document, tokens }) =>
+const ReadArticle = endpoint('/articles/read', ({ hub, reader, document, tokens, resolvedDocument }) =>
   receive({ hub, reader, document }).then(
     where(ReaderSelection({ hub, reader }).is({ tokens }), ReadableArticle({ hub, tokens }).is({ document }))
-      .then(respond({ content: ArticleContent({ hub, document, tokens }) })).named('readable-document'),
-    where(ReaderSelection({ hub, reader }).is({ tokens }), no(ReadableArticle({ hub, tokens }).is({ document })))
-      .then(respond({ content: null })).named('unavailable-document'),
+      .then(respond({ content: ArticleContent({ hub, document, tokens }), hidden: false })).named('readable-document-id'),
+    where(ReaderSelection({ hub, reader }).is({ tokens }), no(ExistingArticle({ hub, document })),
+      ArticleByTitle({ hub, title: document }).is({ document: resolvedDocument }),
+      ReadableArticle({ hub, tokens }).is({ document: resolvedDocument }))
+      .then(respond({ content: ArticleContent({ hub, document: resolvedDocument, tokens }), hidden: false }))
+      .named('readable-document-title'),
+    where(ReaderSelection({ hub, reader }).is({ tokens }), ExistingArticle({ hub, document }),
+      no(ReadableArticle({ hub, tokens }).is({ document })))
+      .then(respond({ content: null, hidden: true })).named('hidden-document-id'),
+    where(ReaderSelection({ hub, reader }).is({ tokens }), no(ExistingArticle({ hub, document })),
+      ArticleByTitle({ hub, title: document }).is({ document: resolvedDocument }),
+      no(ReadableArticle({ hub, tokens }).is({ document: resolvedDocument })))
+      .then(respond({ content: null, hidden: true })).named('hidden-document-title'),
+    where(ReaderSelection({ hub, reader }).is({ tokens }), no(ExistingArticle({ hub, document })),
+      no(ArticleByTitle({ hub, title: document })),
+      no(ReadableArticle({ hub, tokens }).is({ document })))
+      .then(respond({ content: null, hidden: false })).named('missing-document'),
     where(no(ExistingHub({ hub })))
       .then(respond({ error: 'HUB_NOT_FOUND' })).named('hub-missing'),
     where(ExistingHub({ hub }), no(ReaderSelection({ hub, reader })))
@@ -96,6 +121,7 @@ const ReadArticle = endpoint('/articles/read', ({ hub, reader, document, tokens 
 
 export const composition = {
   ListHubs, BrowseHub, ReadArticle, ExistingHub, ReaderSelection, ReadableArticle,
+  ExistingArticle, ArticleByTitle,
   EligibleBlock, HubDirectory, ArticleDirectory, ArticleContent,
 };
 
@@ -117,12 +143,26 @@ const BrowseGuest = endpoint('/internal/guest/browse', ({ hub, checkpoint, token
   ), { input: { required: ['hub', 'checkpoint'] } },
 );
 
-const ReadGuest = endpoint('/internal/guest/read', ({ hub, checkpoint, document, tokens }) =>
+const ReadGuest = endpoint('/internal/guest/read', ({ hub, checkpoint, document, tokens, resolvedDocument }) =>
   receive({ hub, checkpoint, document }).then(
     where(GuestSelection({ hub, checkpoint }).is({ tokens }), ReadableArticle({ hub, tokens }).is({ document }))
-      .then(respond({ content: ArticleContent({ hub, document, tokens }) })).named('readable-document'),
-    where(GuestSelection({ hub, checkpoint }).is({ tokens }), no(ReadableArticle({ hub, tokens }).is({ document })))
-      .then(respond({ content: null })).named('unavailable-document'),
+      .then(respond({ content: ArticleContent({ hub, document, tokens }), hidden: false })).named('readable-document-id'),
+    where(GuestSelection({ hub, checkpoint }).is({ tokens }), no(ExistingArticle({ hub, document })),
+      ArticleByTitle({ hub, title: document }).is({ document: resolvedDocument }),
+      ReadableArticle({ hub, tokens }).is({ document: resolvedDocument }))
+      .then(respond({ content: ArticleContent({ hub, document: resolvedDocument, tokens }), hidden: false }))
+      .named('readable-document-title'),
+    where(GuestSelection({ hub, checkpoint }).is({ tokens }), ExistingArticle({ hub, document }),
+      no(ReadableArticle({ hub, tokens }).is({ document })))
+      .then(respond({ content: null, hidden: true })).named('hidden-document-id'),
+    where(GuestSelection({ hub, checkpoint }).is({ tokens }), no(ExistingArticle({ hub, document })),
+      ArticleByTitle({ hub, title: document }).is({ document: resolvedDocument }),
+      no(ReadableArticle({ hub, tokens }).is({ document: resolvedDocument })))
+      .then(respond({ content: null, hidden: true })).named('hidden-document-title'),
+    where(GuestSelection({ hub, checkpoint }).is({ tokens }), no(ExistingArticle({ hub, document })),
+      no(ArticleByTitle({ hub, title: document })),
+      no(ReadableArticle({ hub, tokens }).is({ document })))
+      .then(respond({ content: null, hidden: false })).named('missing-document'),
     where(no(ExistingHub({ hub }))).then(respond({ error: 'HUB_NOT_FOUND' })).named('hub-missing'),
     where(ExistingHub({ hub }), no(GuestSelection({ hub, checkpoint })))
       .then(respond({ error: 'PROGRESS_NOT_SET' })).named('selection-missing'),
@@ -130,6 +170,7 @@ const ReadGuest = endpoint('/internal/guest/read', ({ hub, checkpoint, document,
 );
 
 export const guestComposition = {
-  BrowseGuest, ReadGuest, ExistingHub, GuestSelection, ReadableArticle, EligibleBlock,
+  BrowseGuest, ReadGuest, ExistingHub, GuestSelection, ReadableArticle, ExistingArticle,
+  ArticleByTitle, EligibleBlock,
   ArticleDirectory, ArticleContent,
 };

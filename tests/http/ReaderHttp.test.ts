@@ -84,11 +84,27 @@ describe('reader HTTP adapter', () => {
       expect(await post(server, '/api/hubs/browse', { hub, reader: 'alice' }))
         .toEqual({ status: 200, body: { documents: [{ document: documentId, title: 'Public map' }] } });
       expect(await post(server, '/api/articles/read', { hub, reader: 'alice', document: documentId }))
-        .toEqual({ status: 200, body: { content: {
+        .toEqual({ status: 200, body: { hidden: false, content: {
           document: documentId, title: 'Public map', blocks: [
             { block: blocks[0]!.block, kind: 'IMAGE', body: '/public-map.png', alt: 'Map' },
           ],
         } } });
+      expect(await post(server, '/api/articles/read', { hub, reader: 'alice', document: 'Public map' }))
+        .toMatchObject({ status: 200, body: { hidden: false, content: { document: documentId, title: 'Public map' } } });
+      const hidden = await setup.invoke('/fixtures/articles/create', { hub, title: 'Secret chapter', blocks: [
+        { kind: 'TEXT', body: 'SECRET_BODY', alt: '' },
+      ] });
+      if (!hidden.ok) throw new Error('Could not install hidden test document');
+      const hiddenId = (hidden.value as { document: string; blocks: { block: string }[] }).document;
+      const hiddenBlock = (hidden.value as { document: string; blocks: { block: string }[] }).blocks[0]!.block;
+      expect(await setup.invoke('/fixtures/requirements/tag', { hub, item: hiddenId, required: [second] }))
+        .toMatchObject({ ok: true });
+      expect(await setup.invoke('/fixtures/requirements/tag', { hub, item: hiddenBlock, required: [] }))
+        .toMatchObject({ ok: true });
+      expect(await post(server, '/api/articles/read', { hub, reader: 'alice', document: 'Secret chapter' }))
+        .toEqual({ status: 200, body: { content: null, hidden: true } });
+      expect(await post(server, '/api/articles/read', { hub, reader: 'alice', document: 'Missing chapter' }))
+        .toEqual({ status: 200, body: { content: null, hidden: false } });
       expect(await post(server, '/api/progress/clear', { hub, reader: 'alice' }))
         .toEqual({ status: 200, body: { cleared: true } });
       expect(await post(server, '/api/progress/get', { hub, reader: 'alice' }))

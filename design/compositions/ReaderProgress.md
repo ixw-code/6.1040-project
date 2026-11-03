@@ -1,10 +1,10 @@
 # ReaderProgress
 
-ReaderProgress manages checkpoint selections for registered and anonymous readers. ProgressRecording stores registered users' progress, while anonymous progress is stored in a signed cookie managed by the HTTP boundary. Sessioning identifies registered users; request bodies cannot specify a reader identity.
+ReaderProgress uses ProgressRecording for registered users and a signed HTTP-boundary cookie for guests. Sessioning supplies registered identity; request bodies cannot choose the reader.
 
-The [existing hub](view:ReaderProgress.ExistingHub) and [valid selection](view:ReaderProgress.ValidSelection) views verify hub and checkpoint membership. [ProgressResult](former:ReaderProgress.ProgressResult) distinguishes missing progress from an explicit NotStarted selection.
+[ExistingHub](view:ReaderProgress.ExistingHub) and [ValidSelection](view:ReaderProgress.ValidSelection) verify hub and checkpoint membership. [ProgressResult](former:ReaderProgress.ProgressResult) distinguishes missing progress from NotStarted.
 
-[GetProgress](reaction:ReaderProgress.GetProgress) retrieves the current selection from ProgressRecording or the verified guest cookie. [RecordProgress](reaction:ReaderProgress.RecordProgress) validates and stores a checkpoint for the current reader. [ClearProgress](reaction:ReaderProgress.ClearProgress) removes that reader's selection for one hub without affecting other progress.
+[GetProgress](reaction:ReaderProgress.GetProgress) retrieves the registered or guest selection. [RecordProgress](reaction:ReaderProgress.RecordProgress) validates and stores it; [ClearProgress](reaction:ReaderProgress.ClearProgress) clears one hub without affecting other progress.
 
 ```endpoints
 ReaderProgress.GetProgress at /progress/get
@@ -12,10 +12,10 @@ ReaderProgress.RecordProgress at /progress/record
 ReaderProgress.ClearProgress at /progress/clear
 ```
 
-[ImportAnonymousProgress](reaction:ReaderProgress.ImportAnonymousProgress) is invoked internally by Accounts after login or registration. It validates guest selections against existing hubs and checkpoints, then calls ProgressRecording.recordIfAbsent for each valid selection. Existing account progress takes precedence, including NotStarted. Invalid selections are skipped, and repeated imports cannot overwrite stored progress.
+[Accounts invokes ImportAnonymousProgress](reaction:ReaderProgress.ImportAnonymousProgress) after login or registration. It validates guest hubs and checkpoints, then calls ProgressRecording.recordIfAbsent. Existing account progress, including NotStarted, wins; invalid selections are skipped and retries cannot overwrite progress.
 
 ```endpoints
 ReaderProgress.ImportAnonymousProgress at /internal/progress/import
 ```
 
-The HTTP boundary handles cookie validation, expiration, and updates. The anonymous cookie is cleared only after a successful import, allowing failed imports to be retried.
+The HTTP boundary validates, expires, and updates the cookie. It clears anonymous progress only after a successful import, so failures can be retried.

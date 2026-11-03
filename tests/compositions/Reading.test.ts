@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { createApplication } from '@tests/fixture-application.ts';
 import { useMongoTestDb } from '@tests/mongo-test-db.ts';
+import { createGuestReader } from '@/assembly/guest-reader.ts';
 
 type Gateway = ReturnType<typeof createApplication>['gateway'];
 type Block = { block: string; kind: 'TEXT' | 'IMAGE'; body: string; alt: string };
@@ -61,7 +62,7 @@ describe('Reading local gateway', () => {
       .toEqual({ ok: true, value: { documents: [{ document: publicDoc.document, title: 'Public map' }] } });
     expect(await gateway.invoke('/articles/read', {
       hub: north.hub, reader: 'alice', document: publicDoc.document,
-    })).toEqual({ ok: true, value: { content: {
+    })).toEqual({ ok: true, value: { hidden: false, content: {
       document: publicDoc.document, title: 'Public map', blocks: [
         { block: publicDoc.blocks[0]!.block, kind: 'IMAGE', body: 'data:image/png;base64,PUBLIC_MAP', alt: 'PUBLIC_MAP_ALT' },
       ],
@@ -99,9 +100,11 @@ describe('Reading local gateway', () => {
     const read = () => gateway.invoke('/articles/read', { hub, reader: 'alice', document: publicDoc.document });
     await select(gateway, hub, 'alice', start);
     const atStart = await read();
-    expect(atStart).toEqual({ ok: true, value: { content: { document: publicDoc.document, title: 'Open guide', blocks: [
+    expect(atStart).toEqual({ ok: true, value: { hidden: false, content: { document: publicDoc.document, title: 'Open guide', blocks: [
       { block: publicDoc.blocks[0]!.block, kind: 'TEXT', body: 'PUBLIC_TEXT', alt: '' },
     ] } } });
+    expect(await gateway.invoke('/articles/read', { hub, reader: 'alice', document: 'Open guide' }))
+      .toEqual(atStart);
     expect(await browse()).toEqual({ ok: true, value: { documents: [
       { document: publicDoc.document, title: 'Open guide' },
     ] } });
@@ -111,10 +114,16 @@ describe('Reading local gateway', () => {
       hiddenDoc.document, untaggedDoc.document,
       publicDoc.blocks[1]!.block, publicDoc.blocks[2]!.block, publicDoc.blocks[3]!.block,
     ]) expect(JSON.stringify({ atStart, directory: await browse() })).not.toContain(secret);
-    expect(await gateway.invoke('/articles/read', { hub, reader: 'alice', document: hiddenDoc.document }))
-      .toEqual({ ok: true, value: { content: null } });
+    const hiddenById = await gateway.invoke('/articles/read', { hub, reader: 'alice', document: hiddenDoc.document });
+    expect(hiddenById).toEqual({ ok: true, value: { content: null, hidden: true } });
+    const hiddenByTitle = await gateway.invoke('/articles/read', { hub, reader: 'alice', document: 'SECOND_DOCUMENT_SECRET' });
+    expect(hiddenByTitle).toEqual({ ok: true, value: { content: null, hidden: true } });
+    for (const secret of ['SECOND_DOCUMENT_SECRET', 'SECOND_DOCUMENT_BODY_SECRET', hiddenDoc.document,
+      hiddenDoc.blocks[0]!.block]) expect(JSON.stringify(hiddenByTitle)).not.toContain(secret);
     expect(await gateway.invoke('/articles/read', { hub, reader: 'alice', document: untaggedDoc.document }))
-      .toEqual({ ok: true, value: { content: null } });
+      .toEqual({ ok: true, value: { content: null, hidden: true } });
+    expect(await gateway.invoke('/articles/read', { hub, reader: 'alice', document: 'No such article' }))
+      .toEqual({ ok: true, value: { content: null, hidden: false } });
 
     await select(gateway, hub, 'alice', first);
     const atFirst = await read();
@@ -158,13 +167,13 @@ describe('Reading local gateway', () => {
       .toMatchObject({ ok: false, error: { kind: 'domain', value: 'PROGRESS_NOT_SET' } });
     expect(await gateway.invoke('/articles/read', {
       hub: north.hub, reader: 'alice', document: imageOnly.document,
-    })).toEqual({ ok: true, value: { content: null } });
+    })).toEqual({ ok: true, value: { content: null, hidden: false } });
     expect(await gateway.invoke('/articles/read', {
       hub: south.hub, reader: 'alice', document: 'missing',
-    })).toEqual({ ok: true, value: { content: null } });
+    })).toEqual({ ok: true, value: { content: null, hidden: false } });
     expect(await gateway.invoke('/articles/read', {
       hub: south.hub, reader: 'alice', document: imageOnly.document,
-    })).toEqual({ ok: true, value: { content: {
+    })).toEqual({ ok: true, value: { hidden: false, content: {
       document: imageOnly.document, title: 'Southern image', blocks: [
         { block: imageOnly.blocks[0]!.block, kind: 'IMAGE', body: '/south.png', alt: 'Southern view' },
       ],
@@ -181,5 +190,34 @@ describe('Reading local gateway', () => {
     expect(await gateway.invoke('/articles/read', {
       hub: south.hub, reader: 'alice', document: '',
     })).toMatchObject({ ok: false, error: { kind: 'framework', code: 'INVALID_INPUT' } });
+  });
+
+  test('guest reads distinguish hidden, visible, and missing articles by title and ID', async () => {
+    const db = mongo.db();
+    const { gateway } = createApplication(db);
+    const { hub, start, first } = await createHub(gateway, 'Guest reading');
+    const visible = await createDocument(gateway, hub, 'Guest public article', [
+      { kind: 'TEXT', body: 'PUBLIC_GUEST_BODY', alt: '' },
+    ]);
+    const hidden = await createDocument(gateway, hub, 'Guest hidden article', [
+      { kind: 'TEXT', body: 'PRIVATE_GUEST_BODY', alt: '' },
+    ]);
+    await tag(gateway, hub, visible.document, []);
+    await tag(gateway, hub, hidden.document, [first]);
+    await tag(gateway, hub, hidden.blocks[0]!.block, []);
+    const guest = createGuestReader(db);
+    const read = (document: string) => guest.invoke('/internal/guest/read', { hub, checkpoint: start, document });
+
+    const visibleById = await read(visible.document);
+    const visibleByTitle = await read('Guest public article');
+    expect(visibleById).toEqual(visibleByTitle);
+    expect(visibleById).toMatchObject({ ok: true, value: { hidden: false,
+      content: { document: visible.document, title: 'Guest public article' } } });
+    expect(await read(hidden.document)).toEqual({ ok: true, value: { content: null, hidden: true } });
+    const hiddenByTitle = await read('Guest hidden article');
+    expect(hiddenByTitle).toEqual({ ok: true, value: { content: null, hidden: true } });
+    expect(JSON.stringify(hiddenByTitle)).not.toContain('PRIVATE_GUEST_BODY');
+    expect(JSON.stringify(hiddenByTitle)).not.toContain(hidden.document);
+    expect(await read('Missing guest article')).toEqual({ ok: true, value: { content: null, hidden: false } });
   });
 });

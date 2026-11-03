@@ -247,6 +247,16 @@ eligible block — inputs (hub, document, tokens); outputs (block, kind, body, a
     RequirementTagging._eligible (item: block, tokens) has (eligible: true)
 ```
 
+### existing reading document
+
+Authored path: `Reading.ExistingArticle`.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
+
+```view
+existing reading document — inputs (hub, document); outputs (); bindings ()
+  where Documenting._documents (scope: hub) has (document)
+```
+
 ### readable document
 
 Authored path: `Reading.ReadableArticle`.
@@ -280,6 +290,18 @@ reader progress selection — inputs (hub, checkpoint); outputs (); bindings (se
     view "reader progress hub" with (hub)
     Checkpointing._sequences (scope: hub) has (sequence)
     Checkpointing._checkpoints (scope: hub, sequence) has (checkpoint)
+```
+
+### reading document by title
+
+Authored path: `Reading.ArticleByTitle`.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
+
+```view
+reading document by title — inputs (hub, title); outputs (document); bindings () — answers at most one (document)
+  where
+    Documenting._documents (scope: hub) has (document)
+    Documenting._title (document, scope: hub) has (title)
 ```
 
 ### reading hub
@@ -622,6 +644,39 @@ then
   RequestBoundary.respond (hubs: former "reading hub directory", requestId)
 ```
 
+### Reading.ReadArticle:hidden-document-id
+
+Authored path: `Reading.ReadArticle`.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
+- Covered by [Reading](../../design/compositions/Reading.md), line 24.
+
+```reaction
+when RequestBoundary.request (document, hub, path: "/articles/read", reader, requestId)
+where
+  view "reading selection" with (hub, reader) has (tokens)
+  view "existing reading document" with (document, hub)
+  no view "readable document" with (hub, tokens) has (document)
+then
+  RequestBoundary.respond (content: null, hidden: true, requestId)
+```
+
+### Reading.ReadArticle:hidden-document-title
+
+Authored path: `Reading.ReadArticle`.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
+- Covered by [Reading](../../design/compositions/Reading.md), line 24.
+
+```reaction
+when RequestBoundary.request (document, hub, path: "/articles/read", reader, requestId)
+where
+  view "reading selection" with (hub, reader) has (tokens)
+  no view "existing reading document" with (document, hub)
+  view "reading document by title" with (hub, title: document) has (document: resolvedDocument)
+  no view "readable document" with (hub, tokens) has (document: resolvedDocument)
+then
+  RequestBoundary.respond (content: null, hidden: true, requestId)
+```
+
 ### Reading.ReadArticle:hub-missing
 
 Authored path: `Reading.ReadArticle`.
@@ -636,7 +691,24 @@ then
   RequestBoundary.respond (error: "HUB_NOT_FOUND", requestId)
 ```
 
-### Reading.ReadArticle:readable-document
+### Reading.ReadArticle:missing-document
+
+Authored path: `Reading.ReadArticle`.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
+- Covered by [Reading](../../design/compositions/Reading.md), line 24.
+
+```reaction
+when RequestBoundary.request (document, hub, path: "/articles/read", reader, requestId)
+where
+  view "reading selection" with (hub, reader) has (tokens)
+  no view "existing reading document" with (document, hub)
+  no view "reading document by title" with (hub, title: document)
+  no view "readable document" with (hub, tokens) has (document)
+then
+  RequestBoundary.respond (content: null, hidden: false, requestId)
+```
+
+### Reading.ReadArticle:readable-document-id
 
 Authored path: `Reading.ReadArticle`.
 - Covered by [Reading](../../design/compositions/Reading.md), line 19.
@@ -648,7 +720,24 @@ where
   view "reading selection" with (hub, reader) has (tokens)
   view "readable document" with (hub, tokens) has (document)
 then
-  RequestBoundary.respond (content: former "reading document content" with (document, hub, tokens), requestId)
+  RequestBoundary.respond (content: former "reading document content" with (document, hub, tokens), hidden: false, requestId)
+```
+
+### Reading.ReadArticle:readable-document-title
+
+Authored path: `Reading.ReadArticle`.
+- Covered by [Reading](../../design/compositions/Reading.md), line 19.
+- Covered by [Reading](../../design/compositions/Reading.md), line 24.
+
+```reaction
+when RequestBoundary.request (document, hub, path: "/articles/read", reader, requestId)
+where
+  view "reading selection" with (hub, reader) has (tokens)
+  no view "existing reading document" with (document, hub)
+  view "reading document by title" with (hub, title: document) has (document: resolvedDocument)
+  view "readable document" with (hub, tokens) has (document: resolvedDocument)
+then
+  RequestBoundary.respond (content: former "reading document content" with (document: resolvedDocument, hub, tokens), hidden: false, requestId)
 ```
 
 ### Reading.ReadArticle:selection-missing
@@ -664,21 +753,6 @@ where
   no view "reading selection" with (hub, reader)
 then
   RequestBoundary.respond (error: "PROGRESS_NOT_SET", requestId)
-```
-
-### Reading.ReadArticle:unavailable-document
-
-Authored path: `Reading.ReadArticle`.
-- Covered by [Reading](../../design/compositions/Reading.md), line 19.
-- Covered by [Reading](../../design/compositions/Reading.md), line 24.
-
-```reaction
-when RequestBoundary.request (document, hub, path: "/articles/read", reader, requestId)
-where
-  view "reading selection" with (hub, reader) has (tokens)
-  no view "readable document" with (hub, tokens) has (document)
-then
-  RequestBoundary.respond (content: null, requestId)
 ```
 
 ## Endpoint input contracts

@@ -6,6 +6,7 @@ import {
   requirementCheckpointValue,
   type CheckpointRow,
 } from "@/api/Hubs.ts";
+import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import {
   articleCancelUrl,
   articleUrl,
@@ -215,16 +216,14 @@ async function save() {
     savedTitle.value = title.value;
     original = serialize();
     if (!props.document) {
-      let returnToHubHome = false;
       try {
-        const { documents } = await HubsApi.browse(props.hub);
-        returnToHubHome = !documents.some((row) => row.document === response.document);
+        const { checkpoint } = await ReaderProgressApi.get(props.hub);
+        if (checkpoint === null) {
+          await navigate(hubUrl(props.hub), true);
+          return;
+        }
       } catch {
-        // Keep the newly created article away from a URL that the reader cannot resolve.
-        returnToHubHome = true;
-      }
-      if (returnToHubHome) {
-        await navigate(hubUrl(props.hub), true);
+        error.value = "Article was created, but its visibility could not be checked.";
         return;
       }
     }

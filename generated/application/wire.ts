@@ -15,11 +15,26 @@ export type AppWideError = never;
 export type WikiplotterWire = {
   "/articles/read": {
     input: {
-      "document": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Documenting"]["_blocks"]>[0], ["document"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Documenting"]["_title"]>[0], ["document"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RequirementTagging"]["_eligible"]>[0], ["item"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_documents"]>>>, ["document"]>]>>;
+      "document": Jsonify<OneOf<[AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_documents"]>>>, ["document"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_title"]>>>, ["title"]>]>>;
       "hub": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["HubCataloguing"]["_hubs"]>>>, ["hub"]>>;
       "reader": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["ProgressRecording"]["_checkpoint"]>[0], ["reader"]>>;
     };
     output: {
+      "content": null;
+      "hidden": true;
+    } | {
+      "content": null | {
+        "blocks": {
+          "alt": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_blocks"]>>>, ["alt"]>>;
+          "block": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RequirementTagging"]["_eligible"]>[0], ["item"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_blocks"]>>>, ["block"]>]>>;
+          "body": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_blocks"]>>>, ["body"]>>;
+          "kind": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_blocks"]>>>, ["kind"]>>;
+        }[];
+        "document": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Documenting"]["_title"]>[0], ["document"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RequirementTagging"]["_eligible"]>[0], ["item"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_documents"]>>>, ["document"]>]>>;
+        "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_title"]>>>, ["title"]>>;
+      };
+      "hidden": false;
+    } | {
       "content": {
         "blocks": {
           "alt": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_blocks"]>>>, ["alt"]>>;
@@ -29,7 +44,8 @@ export type WikiplotterWire = {
         }[];
         "document": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Documenting"]["_title"]>[0], ["document"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RequirementTagging"]["_eligible"]>[0], ["item"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_documents"]>>>, ["document"]>]>>;
         "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Documenting"]["_title"]>>>, ["title"]>>;
-      } | null;
+      };
+      "hidden": false;
     };
     error: { error: AppWideError | "HUB_NOT_FOUND" | "INVALID_INPUT" | "PROGRESS_NOT_SET" };
   };

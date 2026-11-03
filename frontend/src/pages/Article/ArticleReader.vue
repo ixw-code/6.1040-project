@@ -24,7 +24,7 @@ const props = defineProps<{
   signedIn: boolean;
   canDelete: boolean;
 }>();
-const emit = defineEmits<{ notFound: [] }>();
+const emit = defineEmits<{ notFound: []; hidden: [document: string] }>();
 type VisibleBlock = { block: string; kind: string; body: string; alt: string };
 const title = ref(""),
   blocks = ref<VisibleBlock[]>([]),
@@ -42,6 +42,10 @@ onMounted(async () => {
       return;
     }
     const result = await ArticlesApi.read(props.hub, props.document);
+    if (result.hidden) {
+      emit("hidden", props.document);
+      return;
+    }
     if (!result.content) {
       emit("notFound");
       return;

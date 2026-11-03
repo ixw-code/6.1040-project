@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, onErrorCaptured, ref, computed } from "vue";
 import { HubsApi } from "@/api/Hubs.ts";
+import { ArticlesApi } from "@/api/Articles.ts";
 import { AccountsApi, type Account } from "@/api/Accounts.ts";
 import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import type { Hub } from "@/api.ts";
@@ -26,6 +27,7 @@ import HubHome from "@/pages/Hub/HubHome.vue";
 import HubSettings from "@/pages/Hub/HubSettings.vue";
 import HubCreatePage from "@/pages/Hub/HubCreatePage.vue";
 import ArticleReader from "@/pages/Article/ArticleReader.vue";
+import ArticleHiddenPage from "@/pages/Article/ArticleHiddenPage.vue";
 import ArticleEditor from "@/pages/Article/ArticleEditor.vue";
 import SignInPage from "@/pages/Account/SignInPage.vue";
 import RegisterPage from "@/pages/Account/RegisterPage.vue";
@@ -56,7 +58,7 @@ const activeHub = computed(() => {
     ? hubs.value.find((h) => h.slug === current.hub || h.hub === current.hub)
     : undefined;
 });
-const isHubPage = computed(() => "hub" in route.value);
+const isHubPage = computed(() => "hub" in route.value && route.value.kind !== "article-hidden");
 const requiresAccount = computed(() =>
   [
     "account-settings",
@@ -234,7 +236,15 @@ async function load() {
             lastPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
           }
         } else if (articleRoute.kind === "article") {
-          route.value = { kind: "not-found" };
+          const result = await ArticlesApi.read(currentHub.hub, articleRoute.document);
+          if (generation !== loadGeneration) return;
+          if (result.hidden) {
+            route.value = { kind: "article-hidden", hub: articleRoute.hub, document: articleRoute.document };
+          } else if (result.content) {
+            route.value = { ...articleRoute, document: result.content.document };
+          } else {
+            route.value = { kind: "not-found" };
+          }
         }
       } catch (cause) {
         if (generation !== loadGeneration) return;
@@ -265,6 +275,11 @@ function showNotFound() {
   route.value = { kind: "not-found" };
   hubProgressError.value = "";
   routeLoadError.value = "";
+}
+function showArticleHidden(document: string) {
+  const current = route.value;
+  if (current.kind !== "article" || current.document !== document) return;
+  route.value = { ...current, kind: "article-hidden" };
 }
 function signInHref(returnTo = currentReturnPath()) {
   return loginUrl(returnTo);
@@ -499,6 +514,10 @@ onUnmounted(() => {
         <p>Hub creation is available to registered users.</p>
         <a class="button-outline" :href="signInHref(hubCreateUrl())">Log in</a>
       </section>
+      <ArticleHiddenPage
+        v-else-if="route.kind === 'article-hidden' && activeHub"
+        :hub="activeHub.hub"
+      />
       <template v-else-if="activeHub"
         ><main class="hub-content center-container">
           <HubWelcome
@@ -526,6 +545,7 @@ onUnmounted(() => {
             :signed-in="!!account"
             :can-delete="canManageHub"
             @not-found="showNotFound"
+            @hidden="showArticleHidden"
           />
           <ArticleEditor
             v-else-if="route.kind === 'article-new' && account"

@@ -40,6 +40,12 @@ describe('reader identity HTTP boundary', () => {
     if (!article.ok) throw Error('article');
     const document = (article.value as { document: string }).document;
     await gateway.invoke('/fixtures/requirements/tag', { hub, item: document, required: [] });
+    const hiddenArticle = await gateway.invoke('/fixtures/articles/create', {
+      hub, title: 'Hidden at this checkpoint', blocks: [],
+    });
+    if (!hiddenArticle.ok) throw Error('hidden article');
+    const hiddenDocument = (hiddenArticle.value as { document: string }).document;
+    await gateway.invoke('/fixtures/requirements/tag', { hub, item: hiddenDocument, required: [first!.checkpoint] });
     const server = listen();
     try {
       expect((await post(server, '/api/hubs/browse', { hub, reader: 'forged' })).status).toBe(400);
@@ -53,6 +59,10 @@ describe('reader identity HTTP boundary', () => {
         .toMatchObject({ status: 404, body: { error: 'NOT_FOUND' } });
       expect((await post(server, '/api/hubs/browse', { hub }, recorded.cookie)).body)
         .toEqual({ documents: [{ document, title: 'Visible' }] });
+      expect((await post(server, '/api/articles/read', { hub, document: 'Hidden at this checkpoint' }, recorded.cookie)).body)
+        .toEqual({ content: null, hidden: true });
+      expect((await post(server, '/api/articles/read', { hub, document: 'Missing article' }, recorded.cookie)).body)
+        .toEqual({ content: null, hidden: false });
       expect((await post(server, '/api/progress/get', { hub }, `${recorded.cookie}x`)).body)
         .toEqual({ checkpoint: null });
       const moved = await post(server, '/api/progress/record', { hub, checkpoint: first!.checkpoint }, recorded.cookie);

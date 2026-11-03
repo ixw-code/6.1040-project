@@ -2,7 +2,7 @@ export type Route =
   | { kind: 'home' | 'login' | 'register' | 'account-settings' | 'account-data' | 'media-library' | 'hub-create' | 'not-found' }
   | { kind: 'media-preview'; asset: string }
   | { kind: 'hub' | 'welcome' | 'hub-settings' | 'article-new'; hub: string }
-  | { kind: 'article' | 'article-edit'; hub: string; document: string };
+  | { kind: 'article' | 'article-edit' | 'article-hidden'; hub: string; document: string };
 
 const part = (id: string) => encodeURIComponent(id);
 const slugByHub = new Map<string, string>();
@@ -80,7 +80,8 @@ export function findArticleForRoute(documents: { document: string; title: string
 export function routeFromPath(path: string): Route {
   try {
     // `navigate()` receives pathname + search + hash. These are not route segments.
-    const pathname = new URL(path, 'http://wikiplotter.local').pathname;
+    const url = new URL(path, 'http://wikiplotter.local');
+    const pathname = url.pathname;
     const segments = pathname.split('/').filter(Boolean).map(decodeURIComponent);
     if (!segments.length) return { kind: 'home' };
     if (segments.length === 1 && segments[0] === 'login') return { kind: 'login' };
@@ -111,7 +112,7 @@ export function routeFromLocation(): Route {
     history.replaceState(null, '', path);
     return routeFromPath(path);
   }
-  return routeFromPath(window.location.pathname);
+  return routeFromPath(`${window.location.pathname}${window.location.search}`);
 }
 export function articleBreadcrumbs(hubName: string, articleName?: string, editing = false): string[] {
   return [hubName, ...(articleName ? [articleName] : []), ...(editing ? ['Editing'] : [])];

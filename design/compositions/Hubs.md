@@ -1,10 +1,10 @@
 # Hubs
 
-Hubs handles hub creation, settings, checkpoints, and deletion. HubCataloguing owns hub metadata and creator identity; Checkpointing owns each hub's ordered checkpoint sequence.
+Hubs coordinates HubCataloguing metadata and creator identity with Checkpointing sequences.
 
-Any registered user may create a hub, but only its creator may modify or delete it. [CreateHub](reaction:Hubs.CreateHub) takes a name and creates the hub with a checkpoint sequence containing only NotStarted. The creator can add ordinary checkpoints later. [RenameHub](reaction:Hubs.RenameHub) changes the display name without changing its slug, while [UpdateSlug](reaction:Hubs.UpdateSlug) changes the URL slug independently. [GetHubAccess](reaction:Hubs.GetHubAccess) checks whether the current user is the creator through [IsCreator](view:Hubs.IsCreator).
+Any registered user may create a hub; only its creator may manage or delete it. [CreateHub](reaction:Hubs.CreateHub) takes a name and initializes only NotStarted; the creator adds ordinary checkpoints later. [RenameHub](reaction:Hubs.RenameHub) preserves the slug, [UpdateSlug](reaction:Hubs.UpdateSlug) changes it independently, and [GetHubAccess](reaction:Hubs.GetHubAccess) uses [IsCreator](view:Hubs.IsCreator).
 
-Authenticated users can retrieve their own created hubs, including their current names and slugs, through [ListCreatedHubs](reaction:Hubs.ListCreatedHubs). It derives the creator from the trusted session.
+Authenticated users can list their created hubs and current names and slugs through [ListCreatedHubs](reaction:Hubs.ListCreatedHubs), which derives the creator from the trusted session.
 
 ```endpoints
 Hubs.CreateHub at /hubs/create
@@ -14,9 +14,9 @@ Hubs.GetHubAccess at /hubs/access
 Hubs.ListCreatedHubs at /hubs/created
 ```
 
-[GetSequences](reaction:Hubs.GetSequences) and [ListCheckpoints](reaction:Hubs.ListCheckpoints) retrieve checkpoint information through the [existing hub](view:Hubs.ExistingHub) and [hub sequence](view:Hubs.HubSequence) views. The [sequence list](former:Hubs.SequenceList) and [checkpoint choices](former:Hubs.CheckpointChoices) preserve their order.
+[GetSequences](reaction:Hubs.GetSequences) and [ListCheckpoints](reaction:Hubs.ListCheckpoints) use [ExistingHub](view:Hubs.ExistingHub) and [HubSequence](view:Hubs.HubSequence); [SequenceList](former:Hubs.SequenceList) and [CheckpointChoices](former:Hubs.CheckpointChoices) preserve order.
 
-[AppendCheckpoint](reaction:Hubs.AppendCheckpoint) adds a checkpoint, and [RelabelCheckpoint](reaction:Hubs.RelabelCheckpoint) renames an existing one. Both require the hub creator. NotStarted cannot be renamed, and checkpoint deletion or reordering is not supported.
+[AppendCheckpoint](reaction:Hubs.AppendCheckpoint) and [RelabelCheckpoint](reaction:Hubs.RelabelCheckpoint) require the creator. NotStarted cannot be renamed; checkpoint deletion and reordering are unsupported.
 
 ```endpoints
 Hubs.GetSequences at /hubs/sequences
@@ -25,10 +25,10 @@ Hubs.AppendCheckpoint at /checkpoints/append
 Hubs.RelabelCheckpoint at /checkpoints/relabel
 ```
 
-[DeleteHub](reaction:Hubs.DeleteHub) requires the creator and removes the hub's articles, requirements, reader progress, checkpoint sequence, and hub record. The hub record is deleted last. Uploaded assets remain owned by their uploaders.
+[DeleteHub](reaction:Hubs.DeleteHub) requires the creator and removes articles, requirements, progress, and checkpoints before deleting the hub record. Uploaded assets remain with their uploaders.
 
 ```endpoints
 Hubs.DeleteHub at /hubs/delete
 ```
 
-Multi-step hub operations use the application coordinator and operation journal to recover interrupted creation or deletion. They do not rely on MongoDB transactions.
+The application coordinator journals and recovers interrupted hub creation or deletion; operations do not rely on MongoDB transactions.

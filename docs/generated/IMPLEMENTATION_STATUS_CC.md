@@ -33,20 +33,4 @@ The concept and composition design checks pass. Hub, account, article, progress,
 | Local HTTP routing | Unknown API route regression passes in `tests/http/ReaderHttp.test.ts`; frontend fallback tests preserve API/auth handling and reject traversal. |
 | Live deployment | Read-only GET `/` and `/account/data` with `Accept: text/html` returned HTTP 200; a referenced JavaScript bundle and `/health` also returned HTTP 200. An unknown `/api` path returned JSON `400 INVALID_REQUEST`, not frontend HTML. No account, media, or production database mutations were made. |
 | Working tree validation | `git diff --check` passed. |
-
-## Remaining checks and limitations
-
-- No browser-driven desktop or narrow-screen pass was performed; popup layering, scroll behavior, and visual loading states still need manual checking.
-- Live Google and MIT SDG Commons OAuth were not exercised. Provider tests use verified-provider mocks.
-- Production persistence and media storage were not inspected. The standalone MongoDB integration test passed locally, but the production database topology was not verified.
-- The live deployment has not received the local unknown-API 404 fix because deployment was not requested. It returns a JSON API error rather than SPA HTML, so this does not block the demo.
-
-## Suggested commit message
-
-```text
-chore(p4): validate and stabilize code-complete release
-
-- Return JSON 404 responses for unknown API routes without changing SPA or OAuth routing.
-- Correct README links and production URL, and repair the final design summary's demo references.
-- Verify design contracts, generated artifacts, typechecks, standalone MongoDB recovery, HTTP authorization, and the production frontend build.
 ```
