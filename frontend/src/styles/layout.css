@@ -23,8 +23,8 @@
 
 .wordmark {
     font:
-        700 1.65rem Georgia,
-        serif;
+        700 1.65rem Inter,
+        Arial, Helvetica, sans-serif;
     color: white;
     letter-spacing: -0.035em;
 }
@@ -230,7 +230,7 @@
 }
 
 .tile-detail h3 {
-    font-family: Georgia, serif;
+    font-family: Inter, Arial, Helvetica, sans-serif;
     font-size: 1.17rem;
     margin: 2px 0 7px;
 }
@@ -270,8 +270,8 @@
 
 .hub-title {
     font:
-        700 1.6rem Georgia,
-        serif;
+        700 1.6rem Inter,
+        Arial, Helvetica, sans-serif;
     color: #fff;
     white-space: nowrap;
     max-width: 40%;
@@ -506,7 +506,7 @@
 
 .article-aside h3 {
     margin: 2px 0 10px;
-    font-family: Georgia, serif;
+    font-family: Inter, Arial, Helvetica, sans-serif;
 }
 
 .article-aside hr {
