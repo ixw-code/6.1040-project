@@ -132,16 +132,68 @@
     color: #768094;
 }
 
-.account-panel .settings-section {
+.account-settings-section {
+    border-top: 1px solid #e0e5eb;
+    margin-top: 29px;
     padding-top: 20px;
 }
 
-.account-panel .security-actions {
+.account-settings-section h2 {
+    margin: 0;
+}
+
+.account-delete-row {
+    justify-content: space-between;
+    align-items: center;
+}
+
+.account-delete-row p {
+    margin: 5px 0 0;
+}
+
+.account-delete-row .danger {
+    flex-shrink: 0;
+}
+
+.account-settings-actions {
     display: flex;
-    justify-content: right;
-    gap: 14px;
-    margin-top: 18px;
-    margin-right: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.delete-account-dialog input {
+    display: block;
+    width: min(100%, 18rem);
+    margin-top: 0.5rem;
+    margin-right: auto;
+    margin-left: auto;
+    text-align: center;
+}
+
+.delete-account-dialog {
+    text-align: center;
+}
+
+.delete-account-dialog p {
+    line-height: 1.6;
+}
+
+.delete-consequences {
+    max-width: 34rem;
+    margin: 1rem auto 1.25rem;
+    padding: 1rem 1.15rem;
+    border-left: 3px solid #9eb0c7;
+    border-radius: 3px;
+    background: #f5f8fc;
+}
+
+.delete-account-dialog .confirm-actions {
+    justify-content: center;
+}
+
+.delete-confirmation-label {
+    display: block;
+    font-weight: 600;
 }
 
 .editor-panel {

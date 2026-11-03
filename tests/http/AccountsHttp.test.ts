@@ -123,6 +123,7 @@ describe('Accounts HTTP boundary', () => {
       expect((await request(server, '/api/accounts/delete', {
         method: 'POST', headers: { origin },
       })).status).toBe(401);
+      expect((await request(server, '/api/accounts/delete-eligibility')).status).toBe(401);
     } finally { server.stop(); }
   });
 
@@ -158,6 +159,12 @@ describe('Accounts HTTP boundary', () => {
     const { session: callerSession } = await sessioning.start({ user: caller });
     const server = listen();
     try {
+      const eligible = await request(server, '/api/accounts/delete-eligibility', {
+        headers: { cookie: `__Host-wikiplotter_session=${callerSession}` },
+      });
+      expect(eligible.status).toBe(200);
+      expect(await eligible.json()).toEqual({ eligible: true });
+
       const forged = await request(server, '/api/accounts/delete', {
         method: 'POST', headers: { origin, cookie: `__Host-wikiplotter_session=${callerSession}`,
           'content-type': 'application/json' }, body: JSON.stringify({ user: owner }),
@@ -170,6 +177,12 @@ describe('Accounts HTTP boundary', () => {
       expect(await registering._user({ user: caller })).toEqual([]);
       await expect(sessioning.use({ session: callerSession })).rejects.toBeTruthy();
 
+      const blockerFirst = await request(server, '/api/accounts/delete-eligibility', {
+        headers: { cookie: `__Host-wikiplotter_session=${ownerSession}` },
+      });
+      expect(blockerFirst.status).toBe(200);
+      expect(await blockerFirst.json()).toEqual({ eligible: false, error: 'HUBS_OWNED',
+        message: 'Unable to proceed with account deletion. Please resolve the hubs that you currently own first.' });
       const blocked = await request(server, '/api/accounts/delete', {
         method: 'POST', headers: { origin, cookie: `__Host-wikiplotter_session=${ownerSession}`,
           'content-type': 'application/json' }, body: JSON.stringify({ user: caller }),

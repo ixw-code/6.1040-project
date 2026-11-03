@@ -10,6 +10,7 @@ import {
 import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import { MediaAssetsApi, type Asset } from "@/api/MediaAssets.ts";
 import { hubUrl, assetUrl } from "@/lib/routes.ts";
+import DeleteAccountDialog from "./DeleteAccountDialog.vue";
 const props = defineProps<{ account: Account; tab: "settings" | "data" }>();
 const username = ref(props.account.username),
   editing = ref(false),
@@ -28,6 +29,7 @@ const reading = ref<{
 const activeProgressHub = ref(""),
   progressChoices = ref<CheckpointRow[]>([]),
   progressDraft = ref("");
+const deleteDialogOpen = ref(false);
 onMounted(async () => {
   if (props.tab === "data") {
     try {
@@ -119,6 +121,9 @@ async function logout() {
     error.value = e instanceof Error ? e.message : "Logout failed";
   }
 }
+function accountDeleted() {
+  window.location.assign("/");
+}
 </script>
 <template>
   <main class="center-container">
@@ -169,11 +174,19 @@ async function logout() {
             aria-label="Provider (read only)"
           />
         </div>
-        <div class="settings-section">
-          <div class="security-actions">
-            <button class="button-outline" @click="logout">Log out</button>
+        <section class="account-settings-section">
+          <h2>Security</h2>
+          <div class="setting-row account-delete-row">
+            <div>
+              <p class="muted">Permanently remove your account and its associated data and media.</p>
+            </div>
+            <button class="danger" @click="deleteDialogOpen = true">Delete Account</button>
           </div>
-        </div> </template
+        </section>
+        <div class="account-settings-actions">
+          <button class="button-outline" @click="logout">Log out</button>
+        </div>
+      </template
       ><template v-else
         ><h2>Reading progress</h2>
         <p v-if="!reading.length" class="muted">No saved hub progress yet.</p>
@@ -230,4 +243,5 @@ async function logout() {
       </template>
     </section>
   </main>
+  <DeleteAccountDialog v-if="deleteDialogOpen" @close="deleteDialogOpen = false" @deleted="accountDeleted" />
 </template>

@@ -112,7 +112,7 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
     throw new Error('PUBLIC_ORIGIN must be HTTPS, except for localhost development.');
   }
   const sealer = createCookieSealer(options.cookieKey, options.clock);
-  const { gateway, deleteAccount } = createAccounts(db);
+  const { gateway, checkDeleteEligibility, deleteAccount } = createAccounts(db);
 
   async function revokeOld(request: Request) {
     const old = cookie(request, sessionName);
@@ -185,6 +185,21 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
         });
       } catch {
         return json({ error: 'RECOVERY_PENDING' }, 503, headers);
+      }
+    }
+
+    if (path === '/api/accounts/delete-eligibility' && method === 'GET') {
+      const session = cookie(request, sessionName);
+      if (!session) return json({ error: 'UNAUTHENTICATED' }, 401);
+      try {
+        const result = await checkDeleteEligibility(session);
+        if (result.eligible) return json({ eligible: true });
+        return json({ eligible: false, error: 'HUBS_OWNED',
+          message: 'Unable to proceed with account deletion. Please resolve the hubs that you currently own first.' });
+      } catch (error) {
+        if (error instanceof SessionInvalid) return json({ error: 'UNAUTHENTICATED' }, 401);
+        return json({ error: 'RECOVERY_PENDING',
+          message: 'Account deletion eligibility is temporarily unavailable. Please try again.' }, 503);
       }
     }
 

@@ -31,6 +31,13 @@ export function createAccounts(db: Db) {
   const sessioning = new SessioningConcept(db);
   const storage = new GridFsMedia(db);
 
+  async function deletionStatus(session: string): Promise<{ user: string; eligible: boolean }> {
+    const { user } = await sessioning.use({ session });
+    if (!(await registering._user({ user })).length) throw new SessionInvalid();
+    const eligible = (await cataloguing._createdBy({ creator: user })).length === 0;
+    return { user, eligible };
+  }
+
   async function removeUserData(user: string): Promise<{ deleted: true }> {
     await sessioning.endUser({ user });
     if ((await registering._user({ user })).length) await registering.unregister({ user });
@@ -51,11 +58,17 @@ export function createAccounts(db: Db) {
   registerOperationRecovery(db, 'account.delete', (operation: PendingOperation) =>
     removeUserData(operation.actor));
 
+  async function checkDeleteEligibility(session: string): Promise<{ eligible: boolean }> {
+    return withApplicationLock(db, async () => {
+      const { eligible } = await deletionStatus(session);
+      return { eligible };
+    });
+  }
+
   async function deleteAccount(session: string): Promise<{ deleted: true } | { error: string }> {
     return withApplicationLock(db, async () => {
-      const { user } = await sessioning.use({ session });
-      if (!(await registering._user({ user })).length) throw new SessionInvalid();
-      if ((await cataloguing._createdBy({ creator: user })).length) throw new AccountOwnsHubs();
+      const { user, eligible } = await deletionStatus(session);
+      if (!eligible) throw new AccountOwnsHubs();
 
       return runOperation({
         db,
@@ -85,5 +98,5 @@ export function createAccounts(db: Db) {
     });
   }
 
-  return { application, gateway, deleteAccount };
+  return { application, gateway, checkDeleteEligibility, deleteAccount };
 }
