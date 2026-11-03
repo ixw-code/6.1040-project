@@ -17,7 +17,9 @@ Accounts.Logout at /accounts/logout
 Accounts.ChangeUsername at /accounts/set-username
 ```
 
-Account deletion is not yet implemented. The endpoint returns `ACCOUNT_DELETION_UNAVAILABLE`.
+[DeleteAccount](reaction:Accounts.DeleteAccount) uses the current session to identify the user and ignores any supplied user ID. It refuses with `HUBS_OWNED` before making changes if that user owns a hub.
+
+Otherwise, it ends the user's sessions, unregisters their provider identity, clears their reading progress, and deletes their uploaded media. Article records and media references remain; the reader shows its unavailable-media fallback when media is gone. Cleanup is serialized and recoverable: completed removals are skipped, media bytes are removed before metadata, and account or application operations wait for recovery. Success is returned only after cleanup completes; the provider identity can then be registered again.
 
 ```endpoints
 Accounts.DeleteAccount at /accounts/delete

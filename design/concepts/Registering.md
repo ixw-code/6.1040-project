@@ -8,6 +8,8 @@ Maintain application user identities and their verified provider associations.
 
 A person whose provider identity has been verified registers a username. Later sign-ins resolve the same user through that provider identity, and changing the username preserves the user identity.
 
+Unregistering removes the provider association with the User. A later sign-in with that provider identity follows the new-user flow and requires explicit registration again.
+
 ## Types
 
 ```types

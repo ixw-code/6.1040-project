@@ -65,7 +65,10 @@ export function createReaderHttpHandler(db: Db, authOptions = authOptionsFromEnv
   };
   return async (request: Request) => {
     const path = new URL(request.url).pathname;
-    if (path.startsWith('/auth/') || path.startsWith('/api/accounts/')) return handle(request);
+    // Provider callbacks perform external verification before entering the
+    // application lock inside the auth handler. Account APIs use the same lock
+    // as every other application operation so pending deletion recovery runs first.
+    if (path.startsWith('/auth/')) return handle(request);
     try { return await withApplicationLock(db, () => handle(request)); }
     catch {
       return new Response(JSON.stringify({ error: 'RECOVERY_PENDING' }), { status: 503,

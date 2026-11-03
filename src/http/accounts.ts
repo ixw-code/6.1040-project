@@ -4,6 +4,9 @@ import { createAccounts } from '@/assembly/accounts.ts';
 import { createCookieSealer } from '@/auth/sealed-cookie.ts';
 import { CommonsProvider, GoogleProvider, type VerifiedProvider } from '@/auth/providers.ts';
 import type { Provider } from '@/concepts/Registering/Registering.ts';
+import { SessionInvalid } from '@/concepts/Sessioning/Sessioning.ts';
+import { AccountOwnsHubs } from '@/assembly/accounts.ts';
+import { withApplicationLock } from '@/operations/Coordinator.ts';
 import { importAnonymousProgress, issueProgress, progressCookie, verifiedProgress } from '@/auth/progress-cookie.ts';
 
 const sessionName = '__Host-wikiplotter_session';
@@ -109,7 +112,7 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
     throw new Error('PUBLIC_ORIGIN must be HTTPS, except for localhost development.');
   }
   const sealer = createCookieSealer(options.cookieKey, options.clock);
-  const { gateway } = createAccounts(db);
+  const { gateway, deleteAccount } = createAccounts(db);
 
   async function revokeOld(request: Request) {
     const old = cookie(request, sessionName);
@@ -117,9 +120,13 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
   }
 
   async function accountResult(path: string, input: Record<string, unknown>) {
-    const result = await gateway.invoke(path, input);
-    if (!result.ok) return { error: resultError(result), value: undefined };
-    return { error: undefined, value: result.value as Record<string, unknown> };
+    try {
+      const result = await withApplicationLock(db, () => gateway.invoke(path, input));
+      if (!result.ok) return { error: resultError(result), value: undefined };
+      return { error: undefined, value: result.value as Record<string, unknown> };
+    } catch {
+      return { error: 'RECOVERY_PENDING', value: undefined };
+    }
   }
 
   return async function handle(request: Request, path: string, url: URL): Promise<Response> {
@@ -151,31 +158,41 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
       if (!provider) return json({ error: 'PROVIDER_UNAVAILABLE' }, 503, headers);
       const subject = await provider.redeem({ code, nonce: flow.nonce, verifier: flow.verifier });
       if (!subject) return json({ error: 'SIGN_IN_REFUSED' }, 401, headers);
-      const account = await accountResult('/accounts/login', {
-        provider: callbackKind, providerSubject: subject,
-      });
-      if (account.error === 'ACCOUNT_NOT_FOUND') {
-        setCookie(headers, pendingName, sealer.seal({
-          provider: callbackKind, subject, returnTo: flow.returnTo,
-        }, pendingLifetime), 600);
-        return redirect(new URL('/register', origin).href, headers);
+      try {
+        return await withApplicationLock(db, async () => {
+          const account = await accountResult('/accounts/login', {
+            provider: callbackKind, providerSubject: subject,
+          });
+          if (account.error === 'ACCOUNT_NOT_FOUND') {
+            setCookie(headers, pendingName, sealer.seal({
+              provider: callbackKind, subject, returnTo: flow.returnTo,
+            }, pendingLifetime), 600);
+            return redirect(new URL('/register', origin).href, headers);
+          }
+          if (account.error === 'RECOVERY_PENDING') {
+            return json({ error: 'RECOVERY_PENDING' }, 503, headers);
+          }
+          if (account.error || !textField(account.value?.session)) {
+            return json({ error: 'AUTH_FAILED' }, 500, headers);
+          }
+          await importAnonymousProgress(db, account.value.user as string,
+            verifiedProgress(progressCookie(request), options.cookieKey, options.clock));
+          await revokeOld(request);
+          setCookie(headers, sessionName, account.value.session, 7 * 24 * 60 * 60);
+          setCookie(headers, pendingName, '', 0);
+          issueProgress(headers, {}, options.cookieKey, options.clock);
+          return redirect(new URL(safeReturnTo(flow.returnTo as string, origin), origin).href, headers);
+        });
+      } catch {
+        return json({ error: 'RECOVERY_PENDING' }, 503, headers);
       }
-      if (account.error || !textField(account.value?.session)) {
-        return json({ error: 'AUTH_FAILED' }, 500, headers);
-      }
-      await importAnonymousProgress(db, account.value.user as string,
-        verifiedProgress(progressCookie(request), options.cookieKey, options.clock));
-      await revokeOld(request);
-      setCookie(headers, sessionName, account.value.session, 7 * 24 * 60 * 60);
-      setCookie(headers, pendingName, '', 0);
-      issueProgress(headers, {}, options.cookieKey, options.clock);
-      return redirect(new URL(safeReturnTo(flow.returnTo as string, origin), origin).href, headers);
     }
 
     if (path === '/api/accounts/current' && method === 'GET') {
       const session = cookie(request, sessionName);
       if (!session) return json({ account: null, pending: !!sealer.open(cookie(request, pendingName) ?? '') });
       const account = await accountResult('/accounts/current', { session });
+      if (account.error === 'RECOVERY_PENDING') return json({ error: 'RECOVERY_PENDING' }, 503);
       if (account.error || !account.value) {
         const headers = baseHeaders();
         setCookie(headers, sessionName, '', 0);
@@ -189,12 +206,35 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
       const session = cookie(request, sessionName);
       if (path === '/api/accounts/logout') {
         const ended = session ? await accountResult('/accounts/logout', { session }) : undefined;
+        if (ended?.error === 'RECOVERY_PENDING') return json({ error: 'RECOVERY_PENDING' }, 503);
         const headers = baseHeaders();
         setCookie(headers, sessionName, '', 0);
         setCookie(headers, pendingName, '', 0);
         return json({ ended: ended?.value?.ended === true }, 200, headers);
       }
-      if (path === '/api/accounts/delete') return json({ error: 'ACCOUNT_DELETION_UNAVAILABLE' }, 501);
+      if (path === '/api/accounts/delete') {
+        if (!session) return json({ error: 'UNAUTHENTICATED' }, 401);
+        try {
+          const result = await deleteAccount(session);
+          if ('error' in result) {
+            if (result.error === 'HUBS_OWNED') return json({ error: result.error,
+              message: 'Unable to proceed with account deletion. Please resolve the hubs that you currently own first.' }, 409);
+            if (result.error === 'SESSION_INVALID') return json({ error: 'UNAUTHENTICATED' }, 401);
+            return json({ error: result.error }, 503);
+          }
+          const headers = baseHeaders();
+          setCookie(headers, sessionName, '', 0);
+          setCookie(headers, pendingName, '', 0);
+          issueProgress(headers, {}, options.cookieKey, options.clock);
+          return json({ deleted: true }, 200, headers);
+        } catch (error) {
+          if (error instanceof AccountOwnsHubs) return json({ error: 'HUBS_OWNED',
+            message: 'Unable to proceed with account deletion. Please resolve the hubs that you currently own first.' }, 409);
+          if (error instanceof SessionInvalid) return json({ error: 'UNAUTHENTICATED' }, 401);
+          return json({ error: 'RECOVERY_PENDING',
+            message: 'Account deletion is still being recovered. Please try again shortly.' }, 503);
+        }
+      }
       if (request.headers.get('content-type')?.split(';')[0] !== 'application/json') {
         return json({ error: 'INVALID_REQUEST' }, 400);
       }
@@ -210,6 +250,7 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
         });
         if (registered.error || !textField(registered.value?.session)) {
           const error = registered.error ?? 'AUTH_FAILED';
+          if (error === 'RECOVERY_PENDING') return json({ error }, 503);
           return json({ error }, error === 'USERNAME_TAKEN' ? 409 : 400);
         }
         await importAnonymousProgress(db, registered.value.user as string,
@@ -230,6 +271,7 @@ export function createAuthHttpHandler(db: Db, options: AuthOptions) {
         const changed = await accountResult('/accounts/set-username', { session, username: body.username });
         if (changed.error || !changed.value) {
           const error = changed.error ?? 'AUTH_FAILED';
+          if (error === 'RECOVERY_PENDING') return json({ error }, 503);
           return json({ error }, error === 'USERNAME_TAKEN' ? 409 :
             error === 'SESSION_INVALID' ? 401 : 400);
         }

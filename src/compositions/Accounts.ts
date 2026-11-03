@@ -2,7 +2,7 @@ import { endpoint, receive, respond } from '@mit-sdg/sync-engine/boundary';
 import { no, view, where } from '@mit-sdg/sync-engine/language';
 import { concepts } from '@/assembly/concepts.ts';
 
-const { Registering, Sessioning } = concepts;
+const { HubCataloguing, Registering, Sessioning } = concepts;
 
 const ProviderAccount = view('registered provider account',
   ({ provider, providerSubject }, { user }) =>
@@ -56,4 +56,18 @@ const ChangeUsername = endpoint('/accounts/set-username', ({ session, username, 
   { input: { required: ['session', 'username'] } },
 );
 
-export const composition = { Login, Register, Current, Logout, ChangeUsername, ProviderAccount };
+const DeleteAccount = endpoint('/accounts/delete', ({ session, user }) =>
+  receive({ session })
+    .then(Sessioning.use({ session }).responds({ user }))
+    .then(
+      where(HubCataloguing._createdBy({ creator: user }))
+        .then(respond({ error: 'HUBS_OWNED' })).named('owns-hub'),
+      where(no(HubCataloguing._createdBy({ creator: user })))
+        .then(Sessioning.endUser({ user }))
+        .then(Registering.unregister({ user }).responds({ user }))
+        .then(respond({ deleted: true })).named('no-owned-hubs'),
+    ),
+  { input: { required: ['session'] } },
+);
+
+export const composition = { Login, Register, Current, Logout, ChangeUsername, DeleteAccount, ProviderAccount };
