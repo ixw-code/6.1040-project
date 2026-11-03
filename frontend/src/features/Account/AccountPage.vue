@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { AccountsApi, type Account } from "@/api/Accounts.ts";
 import {
   HubsApi,
@@ -7,9 +7,10 @@ import {
 } from "@/api/Hubs.ts";
 import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import { MediaAssetsApi, type Asset } from "@/api/MediaAssets.ts";
-import { hubUrl, assetUrl } from "@/lib/routes.ts";
+import { hubUrl } from "@/lib/routes.ts";
 import DeleteAccountDialog from "./DeleteAccountDialog.vue";
 import ReaderProgressControl from "@/components/ReaderProgressControl.vue";
+import MediaThumbnail from "@/features/Media/MediaThumbnail.vue";
 const props = defineProps<{ account: Account; tab: "settings" | "data" }>();
 const username = ref(props.account.username),
   editing = ref(false),
@@ -25,6 +26,7 @@ const reading = ref<{
     [],
   ),
   uploads = ref<Asset[]>([]);
+const accountMediaPreview = computed(() => uploads.value.slice(0, 4));
 const deleteDialogOpen = ref(false);
 onMounted(async () => {
   if (props.tab === "data") {
@@ -173,11 +175,14 @@ function accountDeleted() {
         </p>
         <h2>Uploaded media</h2>
         <p v-if="!uploads.length" class="muted">No media uploaded yet.</p>
-        <div v-for="asset in uploads" :key="asset.asset" class="data-row">
-          <span>{{ asset.filename }}</span
-          ><a :href="assetUrl(asset.asset)">Preview</a>
+        <div v-else class="account-media-list" aria-label="Uploaded media preview">
+          <div v-for="asset in accountMediaPreview" :key="asset.asset" class="account-media-row">
+            <MediaThumbnail :asset="asset" size="small" />
+            <span class="account-media-filename" :title="asset.filename">{{ asset.filename }}</span>
+            <span class="muted small">{{ asset.kind }}</span>
+          </div>
         </div>
-        <p><a href="/assets">Manage uploads</a></p>
+        <p class="account-media-view-all"><a class="account-media-view-all-link" href="/assets">View All</a></p>
       </template>
     </section>
   </main>

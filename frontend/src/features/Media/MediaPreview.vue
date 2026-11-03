@@ -26,7 +26,7 @@ onUnmounted(() => {
 <template>
   <main class="center-container">
     <section class="panel content-panel">
-      <p><a href="/assets">← Your uploads</a></p>
+      <p><a href="/assets">← Back to uploads</a></p>
       <h1>{{ row?.filename ?? "Asset preview" }}</h1>
       <p v-if="error" class="error-text">{{ error }}</p>
       <figure v-if="row && url" class="asset-preview">

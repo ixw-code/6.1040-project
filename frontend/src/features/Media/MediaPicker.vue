@@ -1,25 +1,18 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, computed } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import {
   MediaAssetsApi,
   type Asset,
   type AssetKind,
 } from "@/api/MediaAssets.ts";
 const emit = defineEmits<{ selected: [asset: Asset]; close: [] }>();
-const tab = ref<"search" | "upload">("search"),
+const tab = ref<"uploads" | "upload">("uploads"),
   list = ref<Asset[]>([]),
-  filter = ref(""),
   busy = ref(false),
   error = ref("");
 const urls = ref<Record<string, string>>({});
 const owned: string[] = [];
-const ready = computed(() =>
-  list.value.filter(
-    (a) =>
-      a.status === "READY" &&
-      a.filename.toLowerCase().includes(filter.value.toLowerCase()),
-  ),
-);
+const ready = () => list.value.filter((asset) => asset.status === "READY");
 onUnmounted(() => owned.forEach(URL.revokeObjectURL));
 async function load() {
   try {
@@ -99,23 +92,24 @@ async function upload(event: Event) {
         </button>
       </header>
       <div class="tabbar">
-        <button :class="{ chosen: tab === 'search' }" @click="tab = 'search'">
-          Search</button
+        <button :class="{ chosen: tab === 'uploads' }" @click="tab = 'uploads'">
+          Your uploads</button
         ><button :class="{ chosen: tab === 'upload' }" @click="tab = 'upload'">
           Upload
         </button>
       </div>
       <div class="media-content">
-        <template v-if="tab === 'search'"
+        <template v-if="tab === 'uploads'"
           ><label for="asset-search" class="sr-only">Search your uploads</label
           ><input
             id="asset-search"
-            v-model="filter"
-            placeholder="Search your uploads…"
+            disabled
+            placeholder="⌕ Search uploads… (coming later)"
+            title="Media search is not available yet"
           />
           <div class="asset-list">
             <button
-              v-for="asset in ready"
+              v-for="asset in ready()"
               :key="asset.asset"
               class="asset-choice"
               @click="emit('selected', asset)"
@@ -130,8 +124,8 @@ async function upload(event: Event) {
               ><span>{{ asset.filename }}</span>
             </button>
           </div>
-          <p v-if="!ready.length" class="muted">
-            No matching uploads yet.
+          <p v-if="!ready().length" class="muted">
+            No uploads yet.
           </p> </template
         ><template v-else
           ><label class="upload-target"
@@ -143,7 +137,7 @@ async function upload(event: Event) {
               accept="image/png,image/jpeg,image/webp,video/mp4,video/webm"
               :disabled="busy"
               @change="upload" /></label
-          ><button class="text-button" @click="tab = 'search'">
+          ><button class="text-button" @click="tab = 'uploads'">
             Choose from your uploads
           </button></template
         >

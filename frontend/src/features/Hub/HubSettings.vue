@@ -181,7 +181,7 @@ async function removeHub() {
 
 <template>
   <section class="panel content-panel settings-panel hub-settings-panel">
-    <a class="hub-back-link" :href="hubUrl(hub)">Back to hub</a>
+    <a class="hub-back-link" :href="hubUrl(hub)">← Back to hub</a>
     <header class="hub-settings-header">
       <h1>{{ savedName }} settings</h1>
     </header>
