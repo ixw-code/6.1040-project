@@ -91,7 +91,7 @@ Starts the local MongoDB container, Bun backend, and Vite frontend.
 bun run check
 ``` 
 
-Tests application build in development.
+Builds server and frontend in development, running design/framework/type and frontend checks on the build as well as validates the isolated test suite.
 
 ### Testing
 
@@ -102,7 +102,7 @@ bun run test
 bun run check:static
 ```
 
-Runs design/framework checks, typechecking, frontend build validation, and isolated tests using disposable `wikiplotter_test_*` databases. Runs sync-engine static design contract validation checks.
+Runs design/framework checks, typechecking, and isolated tests using disposable `wikiplotter_test_*` databases. Runs sync-engine static design contract validation checks. Use `bun run check:dev` for testing the frontend build in a development environment.
 
 ### Production
 

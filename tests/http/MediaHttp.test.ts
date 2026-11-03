@@ -32,6 +32,12 @@ describe('Media HTTP', () => {
     const started = (await post('start', upload, authorToken))!;
     expect(started.status).toBe(200);
     const { asset } = await started.json() as { asset: string };
+    const ownedAssets = (await post('my', {}, authorToken))!;
+    expect(ownedAssets.status).toBe(200);
+    expect(await ownedAssets.json()).toMatchObject([{ asset, filename: 'map.png', status: 'PENDING' }]);
+    expect(await (await post('get', { asset }, authorToken))!.json()).toMatchObject({
+      asset, filename: 'map.png', kind: 'IMAGE', status: 'PENDING',
+    });
     expect((await post('preview', { asset }, authorToken))!.status).toBe(400);
     expect((await post('preview', { asset }, readerToken))!.status).toBe(403);
     expect((await post('finish', { asset }, authorToken))!.status).toBe(200);
@@ -54,5 +60,12 @@ describe('Media HTTP', () => {
     expect(read.status).toBe(200);
     expect(Buffer.from(await read.arrayBuffer())).toEqual(png);
     expect((await post('delete', { asset }, authorToken))!.status).toBe(409);
+
+    const disposable = (await post('start', { ...upload, filename: 'disposable.png' }, authorToken))!;
+    const { asset: disposableAsset } = await disposable.json() as { asset: string };
+    expect((await post('finish', { asset: disposableAsset }, authorToken))!.status).toBe(200);
+    expect(await (await post('delete', { asset: disposableAsset }, authorToken))!.json())
+      .toEqual({ asset: disposableAsset });
+    expect((await post('get', { asset: disposableAsset }, authorToken))!.status).toBe(404);
   });
 });

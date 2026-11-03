@@ -51,7 +51,8 @@ describe('MediaAssets composition and GridFS', () => {
     const concept = new MediaAssetManagingConcept(db);
     const created = await concept.create({ uploader: 'user:1', filename: 'x', storageKey: 'key1', kind: 'IMAGE' });
     expect(await concept._get({ asset: created.asset })).toMatchObject([{ status: 'PENDING', kind: 'IMAGE' }]);
-    expect((await db.collection('media_assets').findOne({ _id: created.asset }))?.referenceRevision).toBeUndefined();
+    expect((await db.collection<{ _id: string; referenceRevision?: number }>('media_assets')
+      .findOne({ _id: created.asset }))?.referenceRevision).toBeUndefined();
     await concept.finalize({ asset: created.asset });
     await concept.finalize({ asset: created.asset });
     expect(await concept._get({ asset: created.asset })).toMatchObject([{ status: 'READY', kind: 'IMAGE' }]);

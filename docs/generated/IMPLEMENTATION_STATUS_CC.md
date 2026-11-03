@@ -7,6 +7,7 @@
 | 1A — Account deletion backend | Added trusted-session self-deletion with an ownership blocker. The application coordinator journals cleanup of sessions, provider registration, saved progress, and owned media. Recovery replays completed steps safely before account or application operations continue. Article documents remain unchanged; existing reader placeholders cover missing media. |
 | 1B — Account deletion frontend | Added a protected delete flow in account settings with typed confirmation, ownership-blocker messaging, retryable errors, and logout redirect after success. |
 | 2A — Hub flow and navigation | Added a dedicated name-only hub creation page, starts new hubs with only NotStarted, shows duplicate-name/slug errors inline, and resolves hub progress before rendering the hub page. |
+| 2B — Progress and return navigation | Reuses a spoiler-aware progress popup in hubs and account data, confirms before advancing progress, and safely resumes internal return paths after login or registration. |
 
 ## 1A backend changes
 
@@ -66,7 +67,7 @@ URL changes: `/hubs/new` is the dedicated creation page. Existing hub URLs remai
 - `bun run check:framework` — passed for both application configurations, with 10 existing advisories each.
 - `bun x sync-engine artifacts check` and `bun x sync-engine artifacts check --config generated.reader.config.ts` — passed.
 - `git diff --check` — passed.
-- `bun run typecheck:backend` — reports a TypeScript error in the untouched `tests/compositions/MediaAssets.test.ts` at its `_id` string filter; no new backend source or account test errors were reported.
+- Previous backend typecheck failure in `tests/compositions/MediaAssets.test.ts` was a test collection typing mismatch; fixed by declaring the stored string `_id` type. The latest full static check passes.
 - `bun run typecheck:frontend` — passed.
 - `bun run build:frontend:prod` — passed; Vite emitted the existing Node built-in externalization warnings from sync-engine browser dependencies.
 - `bun test frontend/tests/accounts.test.ts` — passed: **4 tests, 13 assertions**.
@@ -103,7 +104,7 @@ Milestone 2B verification:
 - `bun run build:frontend:prod` — passed with the existing sync-engine Node built-in externalization warnings.
 - `bun --env-file=.env.test.local test tests/http/AccountsHttp.test.ts` — passed: **5 tests, 66 assertions**, including registration return-path preservation.
 - `git diff --check` — passed.
-- `bun run typecheck:backend` — still reports the existing unrelated `_id` string filter error in `tests/compositions/MediaAssets.test.ts:54`.
+- `bun run typecheck:backend` — passed after fixing the `MediaAssets.test.ts` collection type.
 - Follow-up: teleported the progress popup to `body` so it is not clipped by Account Data’s scroll box; it repositions with scrolling and viewport changes. Frontend typecheck, tests, production build, and diff check passed.
 - Follow-up: clearing a progress row from Account Data now reloads the current settings page; hub-page clear actions still route to welcome. Frontend checks passed.
 
@@ -115,10 +116,6 @@ Milestone 2B verification:
 - Check hub ownership before prompting, then keep the delete-time authorization check.
 - Add the settings dialog with clear consequences, typed confirmation, and success redirect.
 - Cover deletion authorization, recovery, and frontend request handling.
-
-## Remaining Code Complete work
-
-- Resolve the existing TypeScript error in `tests/compositions/MediaAssets.test.ts` separately.
 
 ## Suggested Milestone 2A commit message
 
@@ -138,3 +135,12 @@ Milestone 2B verification:
 - Warn before advancing checkpoints and send cleared progress to the hub welcome page.
 - Preserve safe internal return paths through login and fresh registration.
 - Keep query/hash state across history navigation and test routing safeguards.
+
+## Current application validation
+
+- `bun run check:static` — passed design checks (15 files), framework checks (10 existing advisories per configuration), generated-artifact checks, backend typecheck, and frontend typecheck.
+- `bun --env-file=.env.test.local test` — passed: **109 tests across 34 files, 701 assertions** against the isolated test databases. This includes the HTTP suites for health, built frontend serving, accounts/auth callbacks, reader/progress, hub management, article management, media, and guest/session identity.
+- `bun run build:frontend:prod` — passed; Vite reports existing sync-engine `node:util` and `node:crypto` browser externalization warnings.
+- `git diff --check` — passed.
+
+Endpoint coverage review: added HTTP-level success coverage for `POST /api/assets/my`, `/api/assets/get`, and `/api/assets/delete`; these routes previously had composition coverage or refusal-path coverage only. The full suite now passes with the added checks.
