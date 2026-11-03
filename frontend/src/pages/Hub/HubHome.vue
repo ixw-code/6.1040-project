@@ -88,7 +88,6 @@ onMounted(async () => {
         </div>
         <div class="tile-detail">
           <h3>{{ doc.title }}</h3>
-          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
         </div></a
       >
     </div>
