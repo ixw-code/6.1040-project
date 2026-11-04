@@ -75,7 +75,7 @@ The Code Complete application is available at [wikiplotter.mit-sdg.dev](https://
 See the demo video below:
 
 <p align="center">
-  <a href="" target="_blank" rel="noopener noreferrer">
+  <a href="https://drive.google.com/file/d/1G-WCAlyzB76x-HOPWibF7in_LbveczAD/view" target="_blank" rel="noopener noreferrer">
     <img src="../assets/thumbnails/complete-demo.png" alt="Wikiplotter Complete Demo">
   </a>
 </p>

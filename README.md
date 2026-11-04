@@ -26,7 +26,7 @@ The project is built with Vue, TypeScript, Bun, sync-engine **1.1.0**, and Mongo
 ### Demo and design summary
 
 - **Live application:** [wikiplotter.mit-sdg.dev](https://wikiplotter.mit-sdg.dev)
-- **Final P4 design summary:** [Code Complete decisions](./docs/decisions/CODE_COMPLETE.md)
+- **Final design summary + Demo:** [Code Complete decisions](./docs/decisions/CODE_COMPLETE.md#code-complete-refinement)
 
 ## Getting Started
 
