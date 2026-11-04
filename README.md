@@ -7,10 +7,6 @@ Bob finishes chapter 50 and visits the series hub to look up an artifact mention
 
 After reaching chapter 90, Bob learned new lore about the artifact, but found that the relevant information wasn't updated on the article page. Since he's been using Wikiplotter for a while now, he thinks it's worthwhile to finally create an account. "Log in" redirects him to use a Google or Commons account to access the wiki, and to register his username as a new user. The progress from his browsing session up to Chapter 90 as a guest is automatically updated to his new account. He quickly finds the article page and clicks on the edit button. Bob decides to append a block about the artifact, setting the checkpoint to Chapter 90. He also thinks an image of the updated form of the artifact would fit well here, so he uploads it directly in the editor as another block after the explanation, and saves the edits. The article updates, and the site refreshes for Bob, reflecting the changes. 
 
-### Code Complete (features in Beta)
-
-See [CODE_COMPLETE.md](./docs/decisions/CODE_COMPLETE.md) for the full specification and accepted feature scope, highlighting decisions and changes since the Alpha.
-
 #### Features
 
 - Spoiler-aware reading: Browse articles and view content filtered by ordered reading checkpoints, including NotStarted.
