@@ -7,6 +7,7 @@ import { ReaderProgressApi } from "@/api/ReaderProgress.ts";
 import type { Hub } from "@/api.ts";
 import {
   currentReturnPath,
+  articleUrl,
   findArticleForRoute,
   findHubForRoute,
   hubCreateUrl,
@@ -225,7 +226,7 @@ async function load() {
             const segments = window.location.pathname.split("/");
             const index = segments.findIndex(Boolean);
             if (index >= 0 && segments[index + 1] !== undefined)
-              segments[index + 1] = encodeURIComponent(found.title);
+              segments[index + 1] = articleUrl(currentHub.hub, found.document, found.title).split("/").at(-1)!;
             history.replaceState(
               null,
               "",

@@ -12,8 +12,8 @@ describe('frontend route links', () => {
     expect(hubCreateUrl()).toBe('/hubs/new');
     expect(welcomeUrl('hub:one')).toBe('/star-harbor/welcome');
     expect(settingsUrl('hub:one')).toBe('/star-harbor/settings');
-    expect(articleUrl('hub:one', 'document:two')).toBe('/star-harbor/A%2FB%3A%20The%20Long%20Way');
-    expect(editUrl('hub:one', 'document:two')).toBe('/star-harbor/A%2FB%3A%20The%20Long%20Way/edit');
+    expect(articleUrl('hub:one', 'document:two')).toBe('/star-harbor/A_B_The_Long_Way');
+    expect(editUrl('hub:one', 'document:two')).toBe('/star-harbor/A_B_The_Long_Way/edit');
     expect(newArticleUrl('hub:one')).toBe('/star-harbor/articles/new');
     expect(assetUrl('asset:id')).toBe('/assets/asset%3Aid');
   });
@@ -48,7 +48,7 @@ describe('frontend route links', () => {
     expect(findHubForRoute(hubs, 'renamed-harbor')).toEqual(hubs[0]);
     expect(findHubForRoute(hubs, 'old-harbor')).toBeUndefined();
     const documents = [{ document: 'doc:one', title: 'Current Title' }];
-    expect(findArticleForRoute(documents, 'Current Title')).toEqual(documents[0]);
+    expect(findArticleForRoute(documents, 'Current_Title')).toEqual(documents[0]);
     expect(findArticleForRoute(documents, 'Missing Article')).toBeUndefined();
   });
   test('keeps login return paths internal and preserves route query and hash', () => {
@@ -78,6 +78,6 @@ describe('frontend route links', () => {
   test('article cancel keeps the saved title route after a draft title change', () => {
     rememberHubDirectory([{ hub: 'hub:one', slug: 'star-harbor' }]);
     expect(articleCancelUrl('hub:one', 'document:two', 'Saved: Title / One'))
-      .toBe('/star-harbor/Saved%3A%20Title%20%2F%20One');
+      .toBe('/star-harbor/Saved_Title_One');
   });
 });

@@ -5,6 +5,7 @@ export type Route =
   | { kind: 'article' | 'article-edit' | 'article-hidden'; hub: string; document: string };
 
 const part = (id: string) => encodeURIComponent(id);
+const articlePathPart = (title: string) => title.replace(/[^a-zA-Z0-9 ]/g, '').replace(/ +/g, '_');
 const slugByHub = new Map<string, string>();
 const articleTitleById = new Map<string, string>();
 const articleMapKey = (hub: string, document: string) => `${hub}\u0000${document}`;
@@ -64,7 +65,7 @@ export const settingsUrl = (hub: string) => `${hubUrl(hub)}/settings`;
 export const articleUrl = (hub: string, document: string, knownTitle?: string) => {
   const title = knownTitle ?? articleTitleById.get(articleMapKey(hub, document));
   if (!title) throw new Error(`No readable title is available for article ${document}`);
-  return `${hubUrl(hub)}/${part(title)}`;
+  return `${hubUrl(hub)}/${part(articlePathPart(title))}`;
 };
 export const articleCancelUrl = (hub: string, document: string, savedTitle: string) =>
   articleUrl(hub, document, savedTitle);
@@ -75,7 +76,7 @@ export function findHubForRoute(hubs: { hub: string; slug: string }[], value: st
   return hubs.find((hub) => hub.hub === value || hub.slug === value);
 }
 export function findArticleForRoute(documents: { document: string; title: string }[], value: string) {
-  return documents.find((document) => document.document === value || document.title === value);
+  return documents.find((document) => document.document === value || articlePathPart(document.title) === value);
 }
 export function routeFromPath(path: string): Route {
   try {
