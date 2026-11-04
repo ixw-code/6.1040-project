@@ -24,6 +24,11 @@ The project is built with Vue, TypeScript, Bun, sync-engine **1.1.0**, and Mongo
 - **Live application:** [wikiplotter.mit-sdg.dev](https://wikiplotter.mit-sdg.dev)
 - **Final design summary + Demo:** [Code Complete decisions](./docs/decisions/CODE_COMPLETE.md#code-complete-refinement)
 
+### User testing report 
+
+See the final user testing reports here: [User Testing Report](./docs/decisions/USER_TESTING.md)
+
+
 ## Getting Started
 
 Follow the instructions below to get started with Wikiplotter locally, or deploy on your own server.
