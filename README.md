@@ -93,6 +93,8 @@ Runs design, framework, artifact, and type checks, builds the frontend in develo
 
 ### Testing
 
+See the passing tests and validation for the current development iteration: [P3 Testing Output](./tests/output/p3_tests.out)
+
 Configure `.env.test.local` and ensure MongoDB is running, then run:
 
 ```sh

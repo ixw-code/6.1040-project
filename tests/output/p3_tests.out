@@ -1,0 +1,156 @@
+bun test v1.4.2 (744846f84)
+
+frontend/tests/routes.test.ts:
+(pass) frontend route links > encodes only backend-resolved readable slugs and article titles [1.98ms]
+(pass) frontend route links > legacy Alpha images remain readable without opening unsafe schemes [3.65ms]
+(pass) frontend route links > uses the readable slug while preserving the hub identity for API operations [1.07ms]
+(pass) frontend route links > ignores query strings and hashes when matching routes (regression: login navigation) [3.42ms]
+(pass) frontend route links > resolves decoded readable route parameters and exact breadcrumb levels [0.08ms]
+(pass) frontend route links > article cancel keeps the saved title route after a draft title change [0.03ms]
+
+frontend/tests/confirm.test.ts:
+(pass) confirmation state > distinguishes saved and unsaved editor snapshots
+(pass) confirmation state > resolves Cancel and Continue/Delete outcomes explicitly [1.40ms]
+(pass) confirmation state > cancelling a destructive confirmation never runs the deletion action [0.06ms]
+
+frontend/tests/checkpoints.test.ts:
+(pass) checkpoint UI values > uses position zero NotStarted as the baseline, independent of array order [0.03ms]
+(pass) checkpoint UI values > maps empty article rules to the NotStarted baseline without changing stored rules [0.01ms]
+(pass) checkpoint UI values > distinguishes missing progress from a real NotStarted selection
+(pass) checkpoint UI values > shows the label belonging to the saved checkpoint selection [0.03ms]
+
+frontend/tests/permissions.test.ts:
+(pass) frontend permission display rules > any signed-in account can see article edit, not guests [0.01ms]
+(pass) frontend permission display rules > hub management and article deletion are hub creator only [0.02ms]
+(pass) frontend permission display rules > missing owner metadata never grants destructive controls
+
+tests/compositions/ReaderProgress.test.ts:
+(pass) ReaderProgress local gateway > returns missing progress, records NotStarted, moves backward, and clears idempotently [254.41ms]
+(pass) ReaderProgress local gateway > isolates readers and hubs, and rejects unknown and foreign selections [200.27ms]
+(pass) ReaderProgress local gateway > validates reader input through the reader gateway [172.64ms]
+
+tests/compositions/Reading.test.ts:
+(pass) Reading local gateway > lists hubs in identity order and distinguishes missing progress from NotStarted [216.36ms]
+(pass) Reading local gateway > filters document titles and complete block metadata at each checkpoint, then revokes on retreat [294.18ms]
+(pass) Reading local gateway > isolates hubs and readers, and returns null for inaccessible documents [185.96ms]
+
+tests/compositions/Accounts.test.ts:
+(pass) Accounts local composition > registers only through explicit Register, then logs in and resolves the current user [198.01ms]
+
+tests/compositions/MediaAssets.test.ts:
+(pass) MediaAssets composition and GridFS > persists pending and ready uploads, reuses references, and blocks referenced deletion [272.13ms]
+(pass) MediaAssets composition and GridFS > concept enforces unique metadata and ready references [169.15ms]
+(pass) MediaAssets composition and GridFS > rejects invalid bytes and removes unreferenced bytes on deletion [217.53ms]
+
+tests/compositions/Hubs.test.ts:
+(pass) Hubs composition > creates atomically, manages slug and checkpoints only for the creator [218.00ms]
+(pass) Hubs composition > deletes documents, rules, progress and sequence together; leaves assets unscoped [220.28ms]
+
+tests/compositions/Articles.test.ts:
+(pass) Articles composition > creates explicit rules and saves stable surviving blocks atomically [262.13ms]
+(pass) Articles composition > allows authenticated editing and limits deletion to the hub creator [238.01ms]
+(pass) Articles composition > rejects media references until a READY asset can be verified [201.85ms]
+
+tests/acceptance/AlphaJourney.test.ts:
+(pass) Alpha reader journey over HTTP > keeps spoiler metadata hidden across readers, hubs, progress changes, and reconnection [399.92ms]
+
+tests/http/ReaderIdentityHttp.test.ts:
+(pass) reader identity HTTP boundary > guest selection stays in a signed cookie, rejects tampering and expiry, and filters reading [202.24ms]
+(pass) reader identity HTTP boundary > session user overrides forged reader and guest cookie; expiry blocks access [203.13ms]
+
+tests/http/HealthHttp.test.ts:
+(pass) health HTTP endpoint > responds publicly before application handling and preserves other routes [0.20ms]
+
+tests/http/HubsHttp.test.ts:
+(pass) protected Hubs HTTP boundary > requires a valid cookie and origin; ignores supplied user identity [228.81ms]
+
+tests/http/MediaHttp.test.ts:
+(pass) Media HTTP > protects upload and preview while reader bytes follow spoiler eligibility [269.36ms]
+
+tests/http/ReaderHttp.test.ts:
+(pass) reader HTTP adapter > serves hub, progress, and reading routes with existing response shapes [265.94ms]
+(pass) reader HTTP adapter > preserves validation and domain refusals over HTTP [201.68ms]
+(pass) reader HTTP adapter > rejects fixture authoring operations at the HTTP boundary [227.24ms]
+
+tests/http/AuthProviders.test.ts:
+(pass) verified provider adapters > uses MIT SDG Commons connect/redeem with state and S256 verifier binding [0.47ms]
+(pass) verified provider adapters > verifies Google's signed ID token, audience, expiry, and nonce [25.03ms]
+
+tests/http/ArticlesHttp.test.ts:
+(pass) Articles HTTP boundary > allows authenticated editing and requires the hub owner for deletion [317.51ms]
+
+tests/http/AccountsHttp.test.ts:
+(pass) Accounts HTTP boundary > requires explicit Create account after verified callback, then issues and revokes a session [209.28ms]
+(pass) Accounts HTTP boundary > rejects forged callbacks, invalid codes, and protected mutations without a session [161.51ms]
+(pass) Accounts HTTP boundary > clears an expired session cookie even before MongoDB removes its row [182.37ms]
+
+tests/http/ProgressImportHttp.test.ts:
+(pass) login progress synchronization > imports only absent account hubs after verified login and clears guest cookie [217.66ms]
+
+tests/concepts/RequirementTagging.test.ts:
+(pass) RequirementTagging > missing rules deny, but an explicit empty rule permits [169.03ms]
+(pass) RequirementTagging > requires all tokens, disregarding order and duplicates [163.37ms]
+(pass) RequirementTagging > replacing and removing rules change eligibility; items are independent [176.19ms]
+(pass) RequirementTagging > neither caller input nor query output can mutate stored requirements [161.24ms]
+(pass) RequirementTagging > finds existing rules and items requiring a token without inventing empty rules [162.68ms]
+
+tests/concepts/Sessioning.test.ts:
+(pass) Sessioning > persists only verifier hashes and resolves sessions after reconnection [174.31ms]
+(pass) Sessioning > expires exactly seven days after start without renewal by use [170.52ms]
+(pass) Sessioning > ends one session or all sessions for a user without affecting others [175.64ms]
+
+tests/concepts/Registering.test.ts:
+(pass) Registering > persists provider identities through rename and MongoDB reconnection [193.36ms]
+(pass) Registering > enforces exact username and provider uniqueness, including concurrent registrations [188.58ms]
+(pass) Registering > rejects invalid names and preserves account identity on failed updates [182.54ms]
+
+tests/concepts/ProgressRecording.test.ts:
+(pass) ProgressRecording > Beta import is atomic and persists across reconnection [172.58ms]
+(pass) ProgressRecording > distinguishes missing progress from an actual selected first checkpoint [157.98ms]
+(pass) ProgressRecording > replaces progress in either direction [162.87ms]
+(pass) ProgressRecording > isolates records by both reader and scope [162.49ms]
+(pass) ProgressRecording > clears an existing record and reports false on repeated clearing [177.24ms]
+
+tests/concepts/Documenting.test.ts:
+(pass) Documenting > stores blocks in input order with distinct stable IDs [175.88ms]
+(pass) Documenting > keeps title in document state for image-only and empty block lists [164.12ms]
+(pass) Documenting > enforces scoped unique titles and rejects invalid blocks [165.20ms]
+(pass) Documenting > enforces scope isolation and returns defensive block copies [170.79ms]
+(pass) Documenting > legacy stored TITLE blocks are omitted from block reads [165.37ms]
+(pass) Documenting > replaces ordered blocks with stable surviving identities across reconnection [179.26ms]
+
+tests/concepts/Checkpointing.test.ts:
+(pass) Checkpointing > initialization is idempotent and creates a fixed NotStarted checkpoint [166.45ms]
+(pass) Checkpointing > prefixes include NotStarted and the selected checkpoint [180.52ms]
+(pass) Checkpointing > relabel preserves checkpoint IDs, sequence order, and prefixes [172.81ms]
+(pass) Checkpointing > validates all checkpoint tokens within one scoped sequence [181.82ms]
+(pass) Checkpointing > wrong scopes and unknown checkpoints return no rows; invalid mutations refuse [169.33ms]
+(pass) Checkpointing > deletes a complete sequence only within its scope [173.69ms]
+
+tests/concepts/HubCataloguing.test.ts:
+(pass) HubCataloguing > creates trimmed names and keeps stable hub IDs through rename [168.02ms]
+(pass) HubCataloguing > rejects blank and duplicate names without changing state [170.18ms]
+(pass) HubCataloguing > names compare case-sensitively and queries return defensive records [180.06ms]
+(pass) HubCataloguing > retains creator and slug through rename, enforces URL uniqueness, and deletes [185.47ms]
+(pass) HubCataloguing > unique slug index resolves concurrent creates with different display names [213.59ms]
+
+tests/db/MongoReplica.test.ts:
+(pass) local MongoDB replica set > is primary and commits or rolls back multi-document transactions [177.90ms]
+
+tests/db/MongoPersistence.test.ts:
+(pass) MongoDB persistence and concurrent invariants > all five concepts survive reconstruction and MongoClient reconnection [190.94ms]
+(pass) MongoDB persistence and concurrent invariants > a unique index rejects concurrent hub creations with the same name [168.29ms]
+(pass) MongoDB persistence and concurrent invariants > a unique index rejects concurrent document titles within a scope [166.22ms]
+(pass) MongoDB persistence and concurrent invariants > existing sequences gain a stable NotStarted identity without rewriting stored checkpoints [159.66ms]
+(pass) MongoDB persistence and concurrent invariants > concurrent progress writes still store one checkpoint per reader and hub [166.93ms]
+(pass) MongoDB persistence and concurrent invariants > concurrent sequence creation remains idempotent and appends are not lost [162.86ms]
+
+tests/db/MongoTarget.test.ts:
+(pass) MongoDB profile guard > development permits only the development database [0.69ms]
+(pass) MongoDB profile guard > test permits only named test databases [0.03ms]
+(pass) MongoDB profile guard > production requires an explicit production profile [0.10ms]
+
+ 90 pass
+ 0 fail
+ 623 expect() calls
+Ran 90 tests across 30 files. [13.76s]
