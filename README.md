@@ -136,6 +136,7 @@ Production checks must not run destructive tests against the production database
 | `frontend/` | Vue application, routes, components, API modules, and styles |
 | `scripts/` | Local fixtures and development utilities |
 | `tests/` | Acceptance, concept, composition, HTTP, and persistence tests |
+| `tests/output/` | Test outputs for milestone commits | 
 | `generated/`, `generated*.config.ts` | Generated contracts and sync-engine configuration |
 | `package.json`, `.env.*.example` | Project scripts, dependencies, and environment examples |
 
