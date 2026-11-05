@@ -12,8 +12,8 @@ describe('frontend route links', () => {
     expect(hubCreateUrl()).toBe('/hubs/new');
     expect(welcomeUrl('hub:one')).toBe('/star-harbor/welcome');
     expect(settingsUrl('hub:one')).toBe('/star-harbor/settings');
-    expect(articleUrl('hub:one', 'document:two')).toBe('/star-harbor/A_B_The_Long_Way');
-    expect(editUrl('hub:one', 'document:two')).toBe('/star-harbor/A_B_The_Long_Way/edit');
+    expect(articleUrl('hub:one', 'document:two')).toBe('/star-harbor/AB_The_Long_Way');
+    expect(editUrl('hub:one', 'document:two')).toBe('/star-harbor/AB_The_Long_Way/edit');
     expect(newArticleUrl('hub:one')).toBe('/star-harbor/articles/new');
     expect(assetUrl('asset:id')).toBe('/assets/asset%3Aid');
   });
