@@ -90,6 +90,8 @@ Tests application build in development.
 
 ### Testing
 
+See the passing tests and validation for the current development iteration: [P3 Testing Output](./tests/output/p3_tests.out)
+
 Configure `.env.test.local` and ensure MongoDB is running, then run:
 
 ```sh
